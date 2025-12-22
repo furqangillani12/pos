@@ -1,9 +1,18 @@
 @extends('layouts.admin')
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 
 @section('title', 'Suppliers')
 
 @section('content')
-    <div class="mb-4">
+    <div class="main-div mb-4">
         <a href="{{ route('suppliers.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow inline-block">
             + Add Supplier
         </a>

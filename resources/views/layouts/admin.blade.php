@@ -11,19 +11,138 @@
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <!-- Tailwind CSS -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Alpine.js -->
     <script src="//unpkg.com/alpinejs" defer></script>
+
+    <style>
+        /* Mobile-specific styles */
+        @media (max-width: 768px) {
+            .mobile-sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 50;
+                height: 100vh;
+                overflow-y: auto;
+            }
+            .mobile-sidebar.open {
+                transform: translateX(0);
+            }
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 49;
+            }
+            .sidebar-overlay.open {
+                display: block;
+            }
+            /* Shift main content when sidebar opens */
+            .main-content-mobile {
+                transition: transform 0.3s ease-in-out;
+            }
+            .main-content-mobile.shifted {
+                transform: translateX(64px);
+            }
+            
+            /* Fix for mobile header */
+            .mobile-header {
+                width: 100%;
+                max-width: 100%;
+                left: 0;
+                right: 0;
+            }
+        }
+        
+        /* Fix for desktop sidebar */
+        @media (min-width: 769px) {
+            .mobile-sidebar {
+                position: relative;
+                transform: none !important;
+            }
+            .mobile-header {
+                display: none !important;
+            }
+            .mobile-sidebar-header {
+                display: none !important;
+            }
+        }
+         @media (max-width: 769px)
+            {
+                .main-div{
+                    margin-top:50px;
+                }
+                
+            }
+        
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100 font-sans antialiased">
-<div class="min-h-screen flex">
+<div class="min-h-screen flex flex-col md:flex-row" x-data="{ mobileSidebarOpen: false }">
+
+    <!-- Mobile Header with Hamburger Menu - FULL WIDTH -->
+    <div class="mobile-header md:hidden fixed top-0 left-0 right-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 z-40 w-full">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Left: Burger menu -->
+                <div class="flex items-center flex-shrink-0">
+                    <button @click="mobileSidebarOpen = !mobileSidebarOpen" 
+                            class="text-gray-700 dark:text-gray-300 focus:outline-none mr-3">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+                
+                <!-- Center: App Name -->
+                <div class="flex-1 flex justify-center">
+                    <div class="text-lg font-semibold text-gray-800 dark:text-gray-200 truncate">
+                        Almufeed POS
+                    </div>
+                </div>
+                
+                <!-- Right: Logout button -->
+                <div class="flex items-center flex-shrink-0">
+                    <form method="POST" action="{{ route('logout') }}">
+                        @csrf
+                        <button type="submit" 
+                                class="text-gray-700 dark:text-gray-300 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+                            <i class="fas fa-sign-out-alt text-lg"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay md:hidden" 
+         :class="{ 'open': mobileSidebarOpen }"
+         @click="mobileSidebarOpen = false"
+         x-show="mobileSidebarOpen"
+         x-transition></div>
 
     <!-- Sidebar -->
-    <aside class="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700">
+    <aside class="mobile-sidebar w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700"
+           :class="{ 'open': mobileSidebarOpen }">
+        <!-- Desktop sidebar title -->
         <div class="p-5 text-xl font-semibold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
             Almufeed POS
+        </div>
+        
+        <!-- Mobile sidebar header (only shows on mobile) -->
+        <div class="mobile-sidebar-header md:hidden p-5 text-xl font-semibold border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex justify-between items-center">
+            <span>Menu</span>
+            <button @click="mobileSidebarOpen = false" class="text-gray-700 dark:text-gray-300">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
 
         <nav class="p-4 space-y-1 text-sm" x-data="{
@@ -53,6 +172,15 @@
                 🏭 Suppliers
             </a>
             @endcan
+
+{{--            @can('manage customers')--}}
+                <a href="{{ route('admin.customers.index') }}"
+                   class="block px-4 py-2 rounded-md transition hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300">
+                    👥 Customers
+                </a>
+{{--            @endcan--}}
+
+
             <!-- Inventory Management Toggle -->
 
             <button @click="inventoryOpen = !inventoryOpen"
@@ -181,10 +309,10 @@
                    class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">
                     📝 Mark Attendance
                 </a>
-                <a href="{{ route('admin.attendance.bulk-create') }}"
-                   class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">
-                    📝 Mark Bulk Attendance
-                </a>
+{{--                <a href="{{ route('admin.attendance.bulk-create') }}"--}}
+{{--                   class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">--}}
+{{--                    📝 Mark Bulk Attendance--}}
+{{--                </a>--}}
 
                 <!-- Reports Dropdown -->
                 <div x-data="{ open: false }" class="relative">
@@ -259,11 +387,17 @@
             @endcan
             <!-- Roles & Permissions Section -->
 
+                <a href="{{ route('admin.payroll.index') }}"
+                   class="block px-4 py-2 rounded-md transition hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300">
+                    💵 Payroll Management
+                </a>
+
+
 
             <div x-data="{ openRoles: false }" class="relative">
 
                 <button @click="openRoles = !openRoles"
-                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                    class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
                     🔐 Roles & Permissions
                     <svg class="w-4 h-4 ml-2 transform transition-transform"
                          :class="{ 'rotate-180': openRoles }" xmlns="http://www.w3.org/2000/svg"
@@ -315,8 +449,9 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 p-6 bg-gray-50 dark:bg-gray-950">
-        <header class="mb-6 border-b pb-4 border-gray-200 dark:border-gray-700">
+    <main class="flex-1 p-6 bg-gray-50 dark:bg-gray-950 pt-20 md:pt-6 md:mt-0 main-content-mobile"
+          :class="{ 'shifted': mobileSidebarOpen && window.innerWidth < 768 }">
+        <header class="mb-6 border-b pb-4 border-gray-200 dark:border-gray-700 hidden md:block">
             <h1 class="text-2xl font-bold leading-tight tracking-tight">
                 @yield('title', 'Dashboard')
             </h1>
@@ -332,11 +467,51 @@
             </form>
         </header>
 
-        <section class="space-y-4">
+        <section class="main-div space-y-4">
             @yield('content')
+            @yield('scripts')
         </section>
     </main>
 
 </div>
+
+<script>
+    // Close mobile sidebar when clicking on a link
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebarLinks = document.querySelectorAll('aside nav a');
+        sidebarLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth < 768) {
+                    // Close sidebar on mobile
+                    const alpineData = document.querySelector('[x-data]');
+                    if (alpineData && alpineData.__x) {
+                        alpineData.__x.$data.mobileSidebarOpen = false;
+                    }
+                }
+            });
+        });
+        
+        // Close sidebar when clicking on overlay
+        const overlay = document.querySelector('.sidebar-overlay');
+        if (overlay) {
+            overlay.addEventListener('click', () => {
+                const alpineData = document.querySelector('[x-data]');
+                if (alpineData && alpineData.__x) {
+                    alpineData.__x.$data.mobileSidebarOpen = false;
+                }
+            });
+        }
+        
+        // Close sidebar when pressing escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const alpineData = document.querySelector('[x-data]');
+                if (alpineData && alpineData.__x && window.innerWidth < 768) {
+                    alpineData.__x.$data.mobileSidebarOpen = false;
+                }
+            }
+        });
+    });
+</script>
 </body>
 </html>

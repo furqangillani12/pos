@@ -12,7 +12,6 @@ use App\Imports\ProductsImport;
 use App\Exports\ProductsExport;
 use Maatwebsite\Excel\Facades\Excel;
 
-
 class ProductController extends Controller
 {
     public function index()
@@ -29,17 +28,22 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+//        dd($request->all());
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'barcode' => 'nullable|string|unique:products',
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'cost_price' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
-            'reorder_level' => 'required|integer|min:0',
-            'image' => 'nullable|image|max:50020',
-            'is_active' => 'boolean'
+            'name'             => 'required|string|max:255',
+            'barcode'          => 'nullable|string|unique:products',
+            'category_id'      => 'required|exists:categories,id',
+            'description'      => 'nullable|string',
+            'sale_price'       => 'required|numeric|min:0',
+            'resale_price'     => 'required|numeric|min:0',
+            'wholesale_price'  => 'required|numeric|min:0',
+            'cost_price'       => 'required|numeric|min:0',
+            'weight'           => 'nullable|numeric|min:0',
+            'stock_quantity'   => 'required|integer|min:0',
+            'reorder_level'    => 'required|integer|min:0',
+            'image'            => 'nullable|image|max:2048',
+            'is_active'        => 'boolean',
+            'track_inventory'  => 'boolean'
         ]);
 
         if ($request->hasFile('image')) {
@@ -50,13 +54,13 @@ class ProductController extends Controller
 
         // Log inventory change
         $product->inventoryLogs()->create([
-            'action' => 'initial',
+            'action'          => 'initial',
             'quantity_change' => $validated['stock_quantity'],
-            'notes' => 'Initial stock entry',
-            'user_id' => auth()->id()
+            'notes'           => 'Initial stock entry',
+            'user_id'         => auth()->id()
         ]);
 
-        return redirect()->route('admin.products.index')->with('success', 'Product created successfully');
+        return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
 
     public function edit(Product $product)
@@ -68,16 +72,20 @@ class ProductController extends Controller
     public function update(Request $request, Product $product)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'barcode' => 'nullable|string|unique:products,barcode,'.$product->id,
-            'category_id' => 'required|exists:categories,id',
-            'description' => 'nullable|string',
-            'price' => 'required|numeric|min:0',
-            'cost_price' => 'required|numeric|min:0',
-            'stock_quantity' => 'required|integer|min:0',
-            'reorder_level' => 'required|integer|min:0',
-            'image' => 'nullable|image|max:2048',
-            'is_active' => 'boolean'
+            'name'             => 'required|string|max:255',
+            'barcode'          => 'nullable|string|unique:products,barcode,'.$product->id,
+            'category_id'      => 'required|exists:categories,id',
+            'description'      => 'nullable|string',
+            'sale_price'       => 'required|numeric|min:0',
+            'resale_price'     => 'required|numeric|min:0',
+            'wholesale_price'  => 'required|numeric|min:0',
+            'cost_price'       => 'required|numeric|min:0',
+            'weight'           => 'nullable|numeric|min:0',
+            'stock_quantity'   => 'required|integer|min:0',
+            'reorder_level'    => 'required|integer|min:0',
+            'image'            => 'nullable|image|max:2048',
+            'is_active'        => 'boolean',
+            'track_inventory'  => 'boolean'
         ]);
 
         if ($request->hasFile('image')) {
@@ -98,11 +106,10 @@ class ProductController extends Controller
             Storage::disk('public')->delete($product->image);
         }
         $product->delete();
-        return redirect()->route('products.index')->with('success', 'Product deleted successfully');
+        return redirect()->back()->with('success', 'Product deleted successfully');
     }
 
-    // app/Http/Controllers/Admin/ProductController.php
-
+    // Import form
     public function showImportForm()
     {
         return view('admin.products.import');
@@ -130,5 +137,4 @@ class ProductController extends Controller
     {
         return Excel::download(new ProductsExport, 'products_'.now()->format('Ymd_His').'.xlsx');
     }
-
 }

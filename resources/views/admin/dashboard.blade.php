@@ -1,4 +1,13 @@
 @extends('layouts.admin')
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 
 @section('content')
     @if(session('error'))
@@ -7,7 +16,7 @@
         </div>
     @endif
     @role('admin')
-    <div class="space-y-6">
+    <div class="main-div space-y-6">
 
         <!-- Stat Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

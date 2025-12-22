@@ -25,4 +25,17 @@ class Employee extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($employee) {
+            $employee->shifts()->delete();
+            $employee->attendances()->delete();
+
+            // Also delete user if exists
+            if ($employee->user) {
+                $employee->user->delete();
+            }
+        });
+    }
 }

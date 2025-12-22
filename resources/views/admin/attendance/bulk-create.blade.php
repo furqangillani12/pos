@@ -25,7 +25,7 @@
                         <tr>
                             <th class="px-4 py-2 text-left font-semibold">Employee</th>
                             <th class="px-4 py-2 text-left font-semibold">Status</th>
-                            <th class="px-4 py-2 text-left font-semibold">Check In</th>
+                            <th class="px-4 py-2 text-left font-semibold">Sessions</th>
                         </tr>
                         </thead>
                         <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -34,20 +34,26 @@
                                 <td class="px-4 py-2">
                                     {{ $employee->user->name }}
                                     <input type="hidden" name="attendances[{{ $loop->index }}][employee_id]" value="{{ $employee->id }}">
+                                    <input type="hidden" name="attendances[{{ $loop->index }}][date]" value="{{ old('date', now()->format('Y-m-d')) }}">
                                 </td>
                                 <td class="px-4 py-2">
                                     <select name="attendances[{{ $loop->index }}][status]"
                                             class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 status-select">
                                         <option value="present">Present</option>
+                                        <option value="absent">Absent</option>
                                         <option value="late">Late</option>
                                         <option value="on_leave">On Leave</option>
                                         <option value="half_day">Half Day</option>
                                     </select>
                                 </td>
                                 <td class="px-4 py-2">
-                                    <input type="time" name="attendances[{{ $loop->index }}][check_in]"
-                                           class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 check-in-time"
-                                           value="09:00">
+                                    <div class="sessions-wrapper space-y-2">
+                                        <div class="flex space-x-2 session-row">
+                                            <input type="time" name="attendances[{{ $loop->index }}][sessions][0][check_in]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white" value="09:00">
+                                            <input type="time" name="attendances[{{ $loop->index }}][sessions][0][check_out]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white" value="">
+                                        </div>
+                                    </div>
+                                    <button type="button" class="add-session mt-2 text-blue-600 text-sm">➕ Add Session</button>
                                 </td>
                             </tr>
                         @endforeach
@@ -71,17 +77,35 @@
         document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.status-select').forEach(select => {
                 select.addEventListener('change', function () {
-                    const timeInput = this.closest('tr').querySelector('.check-in-time');
+                    const wrapper = this.closest('tr').querySelector('.sessions-wrapper');
+                    const firstSession = wrapper.querySelector('.session-row input[type="time"]');
                     switch (this.value) {
                         case 'late':
-                            timeInput.value = '10:00';
+                            firstSession.value = '10:00';
                             break;
                         case 'half_day':
-                            timeInput.value = '12:00';
+                            firstSession.value = '12:00';
                             break;
                         default:
-                            timeInput.value = '09:00';
+                            firstSession.value = '09:00';
                     }
+                });
+            });
+
+            // Add session rows dynamically
+            document.querySelectorAll('.add-session').forEach(button => {
+                button.addEventListener('click', function () {
+                    const wrapper = this.closest('td').querySelector('.sessions-wrapper');
+                    const index = wrapper.closest('tr').rowIndex - 1; // employee index
+                    const sessionCount = wrapper.querySelectorAll('.session-row').length;
+
+                    const newRow = document.createElement('div');
+                    newRow.classList.add('flex', 'space-x-2', 'session-row');
+                    newRow.innerHTML = `
+                        <input type="time" name="attendances[${index}][sessions][${sessionCount}][check_in]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                        <input type="time" name="attendances[${index}][sessions][${sessionCount}][check_out]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
+                    `;
+                    wrapper.appendChild(newRow);
                 });
             });
         });

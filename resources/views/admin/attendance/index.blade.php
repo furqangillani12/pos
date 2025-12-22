@@ -43,9 +43,9 @@
                     <th class="p-3 border">Employee</th>
                     <th class="p-3 border">Date</th>
                     <th class="p-3 border">Status</th>
-                    <th class="p-3 border">Check In</th>
-                    <th class="p-3 border">Check Out</th>
-                    <th class="p-3 border">Notes</th>
+                    <th class="p-3 border">Sessions</th>
+                    <th class="p-3 border">Total Hours</th>
+                    <th class="p-3 border">Action</th>
                 </tr>
                 </thead>
                 <tbody class="divide-y">
@@ -60,17 +60,43 @@
                                     'late' => 'bg-yellow-100 text-yellow-800',
                                     'on_leave' => 'bg-red-100 text-red-700',
                                     'half_day' => 'bg-purple-100 text-purple-700',
+                                    'absent' => 'bg-gray-100 text-gray-700',
                                 ];
                             @endphp
                             <span class="px-2 py-1 text-xs font-medium rounded {{ $badgeColors[$attendance->status] ?? 'bg-gray-200 text-gray-700' }}">
                                 {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
                             </span>
                         </td>
-                        <td class="p-3">{{ $attendance->check_in }}</td>
+
                         <td class="p-3">
-                            @if($attendance->check_out)
-                                {{ $attendance->check_out }}
-                            @elseif($attendance->status !== 'on_leave')
+                            @if($attendance->sessions->count())
+                                <ul class="text-xs">
+                                    @foreach($attendance->sessions as $s)
+                                        <li>
+                                            {{ $s->check_in }}
+                                            —
+                                            {{ $s->check_out ?? '—' }}
+                                            @if(!$s->check_out)
+                                                <span class="text-red-500">(open)</span>
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @else
+                                <span class="text-gray-400">No sessions</span>
+                            @endif
+                        </td>
+
+                        <td class="p-3">
+                            {{ $attendance->total_worked_hours }} hrs
+                        </td>
+
+                        <td class="p-3">
+                            @php
+                                $hasOpen = $attendance->sessions->whereNull('check_out')->count() > 0;
+                            @endphp
+
+                            @if($hasOpen && $attendance->status !== 'on_leave')
                                 <form method="POST" action="{{ route('admin.attendance.checkout', $attendance) }}">
                                     @csrf
                                     <button type="submit"
@@ -79,18 +105,7 @@
                                     </button>
                                 </form>
                             @else
-                                <span class="text-gray-400 text-xs">N/A</span>
-                            @endif
-                        </td>
-
-                        <td class="p-3">
-                            @if($attendance->notes)
-                                <details class="text-xs text-gray-700">
-                                    <summary class="cursor-pointer text-blue-600">View</summary>
-                                    <div class="mt-1">{{ $attendance->notes }}</div>
-                                </details>
-                            @else
-                                <span class="text-gray-400">No notes</span>
+                                <span class="text-gray-500 text-xs">—</span>
                             @endif
                         </td>
                     </tr>

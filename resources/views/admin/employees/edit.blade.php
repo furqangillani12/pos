@@ -1,9 +1,18 @@
 @extends('layouts.admin')
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 
 @section('title', 'Edit Employee')
 
 @section('content')
-    <form action="{{ route('employees.update', $employee) }}" method="POST" class="space-y-4">
+    <form action="{{ route('employees.update', $employee) }}" method="POST" class="main-div space-y-4">
         @csrf
         @method('PUT')
         @include('admin.employees.partials.form')

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\CategoryController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\PermissionController;
@@ -13,6 +14,7 @@ use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Auth;
@@ -137,5 +139,25 @@ Route::middleware(['auth', 'permission:assign roles'])->group(function () {
 });
 
 
+
+// routes/web.php
+Route::middleware(['auth', 'permission:manage payroll'])->group(function () {
+Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('/payroll', [PayrollController::class, 'index'])->name('admin.payroll.index');
+    Route::get('/payroll/generate', [PayrollController::class, 'generate'])->name('admin.payroll.generate');
+    Route::post('/payroll/{payroll}/mark-paid', [PayrollController::class, 'markPaid'])->name('admin.payroll.markPaid');
+    Route::get('/payroll/{payroll}/payslip', [PayrollController::class, 'payslip'])->name('admin.payroll.payslip');
+});
+});
+Route::get('/admin/reports/customer-orders/{customer}', [ReportController::class, 'getCustomerOrders']);
+// routes/web.php
+Route::get('/admin/orders/{order}', [ReportController::class, 'show'])->name('admin.orders.show');
+
+
+Route::get('/orders/{order}/receipt-pdf', [PosController::class, 'downloadReceiptPdf'])->name('admin.pos.receipt.pdf');
+
+Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
+    Route::resource('customers', CustomerController::class);
+});
 
 require __DIR__.'/auth.php';

@@ -3,57 +3,67 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
     protected $fillable = [
         'order_number', 'customer_id', 'user_id', 'order_type',
-        'subtotal', 'tax', 'discount', 'total',
-        'payment_method', 'status', 'notes', 'tax_rate'
+        'subtotal', 'tax', 'discount', 'delivery_charges', 'weight', 'total',
+        'payment_method', 'status', 'notes', 'tax_rate',
+        'dispatch_method', 'tracking_id'
     ];
 
     protected $attributes = [
         'subtotal' => 0,
         'tax' => 0,
         'discount' => 0,
+        'delivery_charges' => 0,
+        'weight' => 0, // ✅ ensure default value is set
         'total' => 0,
         'tax_rate' => 10
     ];
 
     // Status constants
-    const STATUS_PENDING = 'pending';
+    const STATUS_PENDING   = 'pending';
     const STATUS_COMPLETED = 'completed';
-    const STATUS_REFUNDED = 'refunded';
+    const STATUS_REFUNDED  = 'refunded';
     const STATUS_CANCELLED = 'cancelled';
 
     // Payment methods
-    const PAYMENT_CASH = 'cash';
-    const PAYMENT_CARD = 'card';
+    const PAYMENT_CASH   = 'cash';
+    const PAYMENT_CARD   = 'card';
     const PAYMENT_MOBILE = 'mobile_money';
-    const PAYMENT_MIXED = 'mixed';
+    const PAYMENT_MIXED  = 'mixed';
 
     public static function generateOrderNumber()
     {
         $prefix = 'ORD-';
-        $date = now()->format('Ymd');
+        $datePart = now()->format('Ymd'); // Example: 20250929
+
         $latest = static::query()
-            ->where('order_number', 'like', $prefix.$date.'%')
+            ->where('order_number', 'like', $prefix . $datePart . '%')
             ->latest('id')
             ->first();
 
-        $number = $latest ? ((int) substr($latest->order_number, -4) + 1) : 1;
+        $number = 1;
+        if ($latest) {
+            $lastNumber = (int) substr($latest->order_number, -4);
+            $number = $lastNumber + 1;
+        }
 
-        return $prefix . $date . str_pad($number, 4, '0', STR_PAD_LEFT);
+        $sequence = str_pad($number, 4, '0', STR_PAD_LEFT);
+
+        return $prefix . $datePart . $sequence;
     }
 
     public function calculateTotals()
     {
         $this->subtotal = $this->items->sum('total_price');
-        $this->tax = $this->subtotal * ($this->tax_rate / 100);
-        $this->total = $this->subtotal + $this->tax - $this->discount;
+        $this->tax      = $this->subtotal * ($this->tax_rate / 100);
+
+        // ✅ weight not directly included in total (but can be used later for shipping cost logic)
+        $this->total = $this->subtotal + $this->tax + $this->delivery_charges - $this->discount;
+
         return $this;
     }
 

@@ -17,6 +17,13 @@
                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
+            <div>
+                <label for="customer_name" class="block text-sm font-medium text-gray-700">Customer Name:</label>
+                <input type="text" name="customer_name" value="{{ $customer_name ?? '' }}"
+                       placeholder="Search by name"
+                       class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+            </div>
+
             <div class="mt-6">
                 <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -24,6 +31,7 @@
                 </button>
             </div>
         </form>
+
 
         <div class="overflow-x-auto bg-white rounded-lg shadow">
             <table class="min-w-full divide-y divide-gray-200">
@@ -41,7 +49,14 @@
                     <tr>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $customer->customer_name }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ $customer->email }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $customer->total_orders }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <button
+                                class="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 view-orders-btn"
+                                data-customer-id="{{ $customer->customer_id }}"
+                                data-customer-name="{{ $customer->customer_name }}">
+                                View Orders
+                            </button>
+                        </td>
                         <td class="px-6 py-4 whitespace-nowrap">Rs{{ number_format($customer->total_spent, 2) }}</td>
                         <td class="px-6 py-4 whitespace-nowrap">{{ \Carbon\Carbon::parse($customer->last_order_date)->format('Y-m-d') }}</td>
                     </tr>
@@ -54,4 +69,78 @@
             </table>
         </div>
     </div>
+
+    <!-- Orders Modal -->
+    <div id="ordersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg w-11/12 md:w-2/3 lg:w-1/2 p-6 relative">
+            <h2 class="text-xl font-bold mb-4" id="modalCustomerName">Orders</h2>
+            <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
+
+            <div id="ordersContent" class="space-y-2 max-h-96 overflow-y-auto">
+                <!-- Orders will be loaded here via AJAX -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('ordersModal');
+            const ordersContent = document.getElementById('ordersContent');
+            const modalCustomerName = document.getElementById('modalCustomerName');
+            const closeModal = document.getElementById('closeModal');
+
+            document.querySelectorAll('.view-orders-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const customerId = this.dataset.customerId;
+                    const customerName = this.dataset.customerName;
+
+                    modalCustomerName.textContent = `Orders of ${customerName}`;
+                    ordersContent.innerHTML = 'Loading...';
+
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+
+                    // Fetch orders via AJAX
+                    fetch(`/admin/reports/customer-orders/${customerId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            const orders = data.orders;
+
+                            if (orders.length === 0) {
+                                ordersContent.innerHTML = '<p>No orders found.</p>';
+                                return;
+                            }
+
+                            let html = '<ul class="divide-y divide-gray-200">';
+                            orders.forEach(order => {
+                                html += `<li class="py-2 flex justify-between items-center">
+                            <span>Order #${order.order_number} - Rs${order.total} (${order.date})</span>
+                            <a href="/admin/orders/${order.id}" class="text-blue-600 hover:underline">View Details</a>
+
+                        </li>`;
+                            });
+                            html += '</ul>';
+
+                            ordersContent.innerHTML = html;
+                        })
+                        .catch(err => {
+                            ordersContent.innerHTML = '<p class="text-red-500">Error loading orders.</p>';
+                            console.error(err);
+                        });
+                });
+            });
+
+            closeModal.addEventListener('click', function() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            });
+
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            });
+        });
+    </script>
 @endsection

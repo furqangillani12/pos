@@ -35,6 +35,8 @@
                         <th class="px-4 py-2 text-center">On Leave</th>
                         <th class="px-4 py-2 text-center">Absent</th>
                         <th class="px-4 py-2">Attendance %</th>
+                        <th class="px-4 py-2 text-center">Total Hours</th>
+                        <th class="px-4 py-2 text-right">Calculated Salary (PKR)</th>
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100 dark:divide-gray-700 text-sm">
@@ -44,8 +46,7 @@
                             $late = $employee->attendances->where('status', 'late')->count();
                             $onLeave = $employee->attendances->where('status', 'on_leave')->count();
                             $absent = $workingDays - ($present + $late + $onLeave);
-                            $attendancePercent = round(($present / $workingDays) * 100, 2);
-                            $progressColor = $attendancePercent > 90 ? 'bg-green-500' : ($attendancePercent > 70 ? 'bg-yellow-500' : 'bg-red-500');
+                            $attendancePercent = $workingDays ? round((($present + $late) / $workingDays) * 100, 2) : 0;
                         @endphp
                         <tr class="hover:bg-gray-50 dark:hover:bg-gray-800">
                             <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100">
@@ -57,11 +58,20 @@
                             <td class="px-4 py-3 text-center">{{ $absent }}</td>
                             <td class="px-4 py-3">
                                 <div class="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
+                                    @php
+                                        $progressColor = $attendancePercent > 90 ? 'bg-green-500' : ($attendancePercent > 70 ? 'bg-yellow-500' : 'bg-red-500');
+                                    @endphp
                                     <div class="h-full {{ $progressColor }} text-white text-xs font-semibold text-center"
                                          style="width: {{ $attendancePercent }}%">
                                         {{ $attendancePercent }}%
                                     </div>
                                 </div>
+                            </td>
+                            <td class="px-4 py-3 text-center font-medium">
+                                {{ $employee->total_hours ?? 0 }} hrs
+                            </td>
+                            <td class="px-4 py-3 text-right font-semibold">
+                                {{ number_format($employee->calculated_salary ?? 0, 2) }}
                             </td>
                         </tr>
                     @endforeach

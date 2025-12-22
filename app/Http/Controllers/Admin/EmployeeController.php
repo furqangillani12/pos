@@ -90,9 +90,9 @@ class EmployeeController extends Controller
 
     public function destroy(Employee $employee)
     {
-        $employee->user->delete();
-        $employee->delete();
-
-        return redirect()->route('employees.index')->with('success', 'Employee deleted successfully');
+        $employee->delete(); // relations will auto-delete
+        return redirect()->route('employees.index')
+            ->with('success', 'Employee deleted successfully');
     }
+
 }

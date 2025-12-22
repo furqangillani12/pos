@@ -3,6 +3,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Models\OrderItem;
 use App\Models\Product;
@@ -12,16 +13,27 @@ class ReportController extends Controller
 {
     public function sales(Request $request)
     {
-        // Default date range = today
+        // Default date range = current month
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
         $end = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $orderNumber = $request->input('order_number'); // ✅ new filter
 
-        $orders = Order::whereBetween('created_at', [$start, $end])->get();
+        $query = Order::query();
+
+        if (!empty($orderNumber)) {
+            // If order number is provided, search by it (partial match allowed)
+            $query->where('order_number', 'like', "%{$orderNumber}%");
+        } else {
+            // Otherwise use start & end date filter
+            $query->whereBetween('created_at', [$start, $end]);
+        }
+
+        $orders = $query->get();
 
         $totalSales = $orders->sum('total'); // Assuming 'total' column in orders table
         $totalOrders = $orders->count();
 
-        return view('admin.reports.sales', compact('orders', 'totalSales', 'totalOrders', 'start', 'end'));
+        return view('admin.reports.sales', compact('orders', 'totalSales', 'totalOrders', 'start', 'end', 'orderNumber'));
     }
 
 
@@ -113,21 +125,58 @@ class ReportController extends Controller
     {
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
         $end = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $customerName = $request->input('customer_name'); // get customer name from input
 
         $customerSales = DB::table('orders')
-            ->join('users', 'orders.user_id', '=', 'users.id')
+            ->join('customers', 'orders.customer_id', '=', 'customers.id')
             ->whereBetween('orders.created_at', [$start, $end])
+            ->when($customerName, function ($query, $customerName) {
+                // Partial match: like '%John%'
+                $query->where('customers.name', 'like', "%{$customerName}%");
+            })
             ->select(
-                'users.name as customer_name',
-                'users.email',
+                'customers.id as customer_id',
+                'customers.name as customer_name',
+                'customers.email',
                 DB::raw('COUNT(orders.id) as total_orders'),
                 DB::raw('SUM(orders.total) as total_spent'),
                 DB::raw('MAX(orders.created_at) as last_order_date')
             )
-            ->groupBy('users.id', 'users.name', 'users.email')
+            ->groupBy('customers.id', 'customers.name', 'customers.email')
             ->get();
 
-        return view('admin.reports.customer_sales', compact('customerSales', 'start', 'end'));
+        return view('admin.reports.customer_sales', compact('customerSales', 'start', 'end', 'customerName'));
+    }
+
+
+    public function getCustomerOrders($customerId)
+    {
+        $customer = \App\Models\Customer::findOrFail($customerId); // ✅ Customer model
+
+        $orders = \App\Models\Order::where('customer_id', $customer->id)
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function($order) {
+                return [
+                    'id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'date' => $order->created_at->format('Y-m-d'),
+                    'total' => $order->total,
+                ];
+            });
+
+        return response()->json([
+            'customer_name' => $customer->name,
+            'orders' => $orders,
+        ]);
+    }
+
+    public function show($orderId)
+    {
+        // Load customer and order items
+        $order = Order::with('customer', 'items.product')->findOrFail($orderId);
+
+        return view('admin.orders.show', compact('order'));
     }
 
 

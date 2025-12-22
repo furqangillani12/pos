@@ -38,10 +38,28 @@
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button onclick="openEditModal({{ $category->id }}, '{{ $category->name }}', '{{ $category->description }}')"
                                         class="text-blue-500 hover:text-blue-700 mr-3">Edit</button>
+
+                                {{-- Delete form --}}
                                 <form action="{{ route('categories.destroy', $category->id) }}" method="POST" class="inline-block">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-500 hover:text-red-700" onclick="return confirm('Are you sure?')">Delete</button>
+
+                                    @if($category->products_count > 0)
+                                        {{-- Confirm delete with related products --}}
+                                        <input type="hidden" name="confirm_delete" value="1">
+                                        <button type="submit"
+                                                class="text-red-500 hover:text-red-700"
+                                                onclick="return confirm('This category has products. Do you really want to delete the category and ALL its products?')">
+                                            Delete
+                                        </button>
+                                    @else
+                                        {{-- Normal delete --}}
+                                        <button type="submit"
+                                                class="text-red-500 hover:text-red-700"
+                                                onclick="return confirm('Are you sure you want to delete this category?')">
+                                            Delete
+                                        </button>
+                                    @endif
                                 </form>
                             </td>
                         </tr>

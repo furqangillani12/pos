@@ -1,9 +1,17 @@
 @extends('layouts.admin')
-
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 @section('title', 'Supplier Details')
 
 @section('content')
-    <div class="max-w-3xl mx-auto">
+    <div class="main-div max-w-3xl mx-auto">
         <div class="bg-white rounded shadow p-6">
             <div class="flex justify-between items-start mb-6">
                 <h2 class="text-2xl font-semibold">Supplier Details</h2>
