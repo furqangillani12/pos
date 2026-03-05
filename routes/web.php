@@ -17,8 +17,15 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\PayrollController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Admin\UnitController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicReceiptController;
+use App\Http\Controllers\Admin\CreditController;
+use App\Http\Controllers\Admin\LedgerController;
+use App\Http\Controllers\Admin\LedgerAccountController;
+use App\Models\Customer;
+use Illuminate\Http\Request;
 
 Route::get('/', function () {
     return view('welcome');
@@ -73,7 +80,7 @@ Route::middleware(['auth', 'permission:manage products'])->group(function () {
     // Product Variant Routes
     Route::post('products/{product}/variants', [ProductVariantController::class, 'store'])->name('variants.store');
     Route::delete('variants/{variant}', [ProductVariantController::class, 'destroy'])->name('variants.destroy');
-
+    Route::resource('units', UnitController::class);
 });
 
 Route::middleware(['auth', 'permission:manage categories'])->group(function () {
@@ -98,13 +105,13 @@ Route::middleware(['auth', 'permission:manage suppliers'])->group(function () {
     Route::resource('suppliers', SupplierController::class);
 });
 
-Route::middleware(['auth', 'permission:access pos'])->group(function () {
-    Route::get('pos', [PosController::class, 'index'])->name('admin.pos.index');
-    Route::post('pos', [PosController::class, 'storeOrder'])->name('admin.pos.store');
-    Route::get('pos/receipt/{order}', [PosController::class, 'showReceipt'])->name('admin.pos.receipt');
-    Route::post('pos/refund/{order}', [PosController::class, 'processRefund'])->name('admin.pos.refund');
-    Route::get('pos/receipt/{order}/download', [PosController::class, 'downloadReceipt'])
-        ->name('admin.pos.receipt.download');
+// Fixed POS routes with admin prefix
+Route::middleware(['auth', 'permission:access pos'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::post('/pos', [PosController::class, 'storeOrder'])->name('pos.store');
+    Route::get('/pos/receipt/{order}', [PosController::class, 'showReceipt'])->name('pos.receipt');
+    Route::post('/pos/refund/{order}', [PosController::class, 'processRefund'])->name('pos.refund');
+    Route::get('/pos/receipt/{order}/download', [PosController::class, 'downloadReceipt'])->name('pos.receipt.download');
 });
 Route::middleware(['auth', 'permission:manage reports'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
@@ -158,6 +165,113 @@ Route::get('/orders/{order}/receipt-pdf', [PosController::class, 'downloadReceip
 
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
     Route::resource('customers', CustomerController::class);
+    Route::get('customers/{customer}/khata',
+        [CustomerController::class, 'khata'])->name('customers.khata');
+
+    Route::post('customers/{customer}/khata/payment',
+        [CustomerController::class, 'storeKhataPayment'])->name('customers.khata.payment');
+
+    Route::delete('customers/{customer}/khata/payment/{payment}',
+    [CustomerController::class, 'deleteKhataPayment'])->name('customers.khata.payment.delete');
+
+     Route::get('customers/generate-barcode', function() {
+        return response()->json(['barcode' => \App\Models\Customer::generateBarcode()]);
+    })->name('customers.generate-barcode');
+    
+    // Search route for AJAX
+    Route::get('customers/search', [CustomerController::class, 'search'])->name('customers.search');
 });
 
+
+// In routes/web.php
+
+// Public receipt routes (for customers)
+Route::get('/receipt/{token}', [PublicReceiptController::class, 'show'])
+    ->name('public.receipt.show');
+
+Route::get('/receipt/{token}/download', [PublicReceiptController::class, 'download'])
+    ->name('public.receipt.download');
+
+Route::get('/receipt/{token}/print', [PublicReceiptController::class, 'print'])
+    ->name('public.receipt.print');
+
+Route::get('/receipt/{token}/json', [PublicReceiptController::class, 'json'])
+    ->name('public.receipt.json');
+
+Route::post('/receipt/{token}/send', [PublicReceiptController::class, 'send'])
+    ->name('public.receipt.send');
+
+
+Route::middleware(['auth', 'permission:manage credit'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // Credit Dashboard
+    Route::get('/credit', [CreditController::class, 'index'])->name('credit.index');
+    
+    // Customer Credit Statement
+    Route::get('/credit/customer/{customer}', [CreditController::class, 'customerStatement'])->name('credit.statement');
+    Route::get('/credit/customer/{customer}/export', [CreditController::class, 'exportStatement'])->name('credit.statement.export');
+    
+    // Credit Enable/Disable
+    Route::post('/credit/customer/{customer}/enable', [CreditController::class, 'enableCredit'])->name('credit.enable');
+    Route::delete('/credit/customer/{customer}/disable', [CreditController::class, 'disableCredit'])->name('credit.disable');
+    
+    // Credit Payments
+    Route::get('/credit/payments', [CreditController::class, 'paymentForm'])->name('credit.payment');
+    Route::post('/credit/payments/process', [CreditController::class, 'processPayment'])->name('credit.payment.process');
+    
+    // Overdue Report
+    Route::get('/credit/overdue', [CreditController::class, 'overdueReport'])->name('credit.overdue');
+    
+    // POS Integration (AJAX)
+    Route::post('/credit/process-sale/{order}', [CreditController::class, 'processCreditSale'])->name('credit.process-sale');
+});
+
+Route::get('/admin/customers/{customer}/credit-status', function(Customer $customer) {
+    return response()->json([
+        'credit_enabled' => $customer->credit_enabled,
+        'credit_limit' => $customer->credit_limit,
+        'current_balance' => $customer->current_balance,
+        'available_credit' => $customer->available_credit
+    ]);
+})->middleware('auth');
+
+Route::post('/admin/customers/{customer}/check-credit', function(Request $request, Customer $customer) {
+    $amount = $request->amount;
+    
+    if (!$customer->credit_enabled) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Credit is not enabled for this customer'
+        ]);
+    }
+    
+    if (!$customer->hasSufficientCredit($amount)) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Insufficient credit limit',
+            'available_credit' => $customer->available_credit
+        ]);
+    }
+    
+    return response()->json([
+        'success' => true,
+        'available_credit' => $customer->available_credit
+    ]);
+})->middleware('auth');
+
+Route::middleware(['auth', 'permission:manage ledger'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/ledger',          [LedgerController::class, 'index'])->name('ledger.index');
+    Route::get('/ledger/accounts', [LedgerController::class, 'accounts'])->name('ledger.accounts');
+    Route::get('/ledger/export',   [LedgerController::class, 'export'])->name('ledger.export');
+    Route::get('/ledger/{ledger}', [LedgerController::class, 'show'])->name('ledger.show');
+
+
+    // Ledger Accounts
+    Route::resource('ledger-accounts', LedgerAccountController::class);
+    Route::patch('ledger-accounts/{ledgerAccount}/toggle', [LedgerAccountController::class, 'toggleActive'])->name('ledger-accounts.toggle');
+    Route::post('ledger-accounts/{ledgerAccount}/add-entry', [LedgerAccountController::class, 'addEntry'])->name('ledger-accounts.add-entry');
+});
+
+
 require __DIR__.'/auth.php';
+

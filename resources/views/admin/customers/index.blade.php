@@ -2,54 +2,308 @@
 
 @section('content')
     <div class="p-6 bg-white rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-4">
-            <h1 class="text-2xl font-semibold text-gray-800">Customers</h1>
-            <a href="{{ route('admin.customers.create') }}"
-               class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">+ Add Customer</a>
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h1 class="text-2xl font-semibold text-gray-800">Customers</h1>
+                <p class="text-sm text-gray-600 mt-1">Manage customers for your POS system</p>
+            </div>
+            <div class="flex space-x-2">
+
+                <a href="{{ route('admin.customers.create') }}"
+                    class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center">
+                    <svg class="h-5 w-5 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd"
+                            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
+                            clip-rule="evenodd" />
+                    </svg>
+                    Add Customer
+                </a>
+            </div>
         </div>
 
-        @if(session('success'))
-            <div class="mb-4 p-3 bg-green-100 text-green-800 rounded">
+        @if (session('success'))
+            <div class="mb-4 p-3 bg-green-100 text-green-800 rounded border border-green-200">
                 {{ session('success') }}
             </div>
         @endif
 
-        <div class="overflow-x-auto">
-            <table class="min-w-full border border-gray-200 divide-y divide-gray-200 rounded">
+        @if (session('warning'))
+            <div class="mb-4 p-3 bg-yellow-100 text-yellow-800 rounded border border-yellow-200">
+                {{ session('warning') }}
+            </div>
+        @endif
+
+        <!-- Search and Filter Bar -->
+        <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div>
+                    <input type="text" id="searchInput" placeholder="Search by name, email, phone, or barcode..."
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value="{{ request('search') }}">
+                </div>
+                <div>
+                    <select id="typeFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        <option value="">All Types</option>
+                        <option value="customer" {{ request('type') == 'customer' ? 'selected' : '' }}>Customer</option>
+                        <option value="reseller" {{ request('type') == 'reseller' ? 'selected' : '' }}>Reseller</option>
+                        <option value="wholesale" {{ request('type') == 'wholesale' ? 'selected' : '' }}>Wholesale</option>
+                    </select>
+                </div>
+
+                <div class="flex space-x-2">
+                    <button onclick="applyFilters()"
+                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
+                        Search
+                    </button>
+                    <button onclick="clearFilters()"
+                        class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm">
+                        Clear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+
+
+        <div class="overflow-x-auto rounded-lg border border-gray-200">
+            <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Name</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Email</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Phone</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Type</th>
-                    <th class="px-4 py-2 text-left text-sm font-medium text-gray-500">Actions</th>
-                </tr>
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type
+                        </th>
+
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions
+                        </th>
+                    </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                @forelse($customers as $customer)
-                    <tr>
-                        <td class="px-4 py-2">{{ $customer->name }}</td>
-                        <td class="px-4 py-2">{{ $customer->email }}</td>
-                        <td class="px-4 py-2">{{ $customer->phone }}</td>
-                        <td class="px-4 py-2">{{ $customer->type_label }}</td>
-                        <td class="px-4 py-2 flex gap-2">
-                            <a href="{{ route('admin.customers.show', $customer) }}" class="text-blue-600 hover:underline">View</a>
-                            <a href="{{ route('admin.customers.edit', $customer) }}" class="text-yellow-600 hover:underline">Edit</a>
-                            <form action="{{ route('admin.customers.destroy', $customer) }}" method="POST" onsubmit="return confirm('Are you sure?');">
-                                @csrf @method('DELETE')
-                                <button type="submit" class="text-red-600 hover:underline">Delete</button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="5" class="px-4 py-3 text-center text-gray-500">No customers found.</td>
-                    </tr>
-                @endforelse
+                    @forelse($customers as $customer)
+                        <tr
+                            class="hover:bg-gray-50 {{ $customer->credit_enabled && $customer->current_balance > $customer->credit_limit * 0.8 ? 'bg-red-50' : '' }}">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if ($customer->barcode)
+                                    <span
+                                        class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <svg class="h-3 w-3 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path fill-rule="evenodd"
+                                                d="M1 4a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H2a1 1 0 01-1-1V4zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H7a1 1 0 01-1-1V4zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V4zM1 9a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H2a1 1 0 01-1-1V9zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H7a1 1 0 01-1-1V9zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1V9zM1 14a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H2a1 1 0 01-1-1v-2zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1H7a1 1 0 01-1-1v-2zm5 0a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 01-1 1h-2a1 1 0 01-1-1v-2z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                        {{ $customer->barcode }}
+                                    </span>
+                                @else
+                                    <span class="text-gray-400 text-sm">-</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center">
+                                    <div
+                                        class="flex-shrink-0 h-8 w-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                        <span
+                                            class="text-gray-600 font-medium text-sm">{{ substr($customer->name, 0, 1) }}</span>
+                                    </div>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">{{ $customer->name }}</div>
+                                        @if ($customer->address)
+                                            <div class="text-xs text-gray-500 truncate max-w-xs">{{ $customer->address }}
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-sm text-gray-900">
+                                    @if ($customer->phone)
+                                        <div class="flex items-center">
+                                            <svg class="h-4 w-4 mr-1 text-gray-400" xmlns="http://www.w3.org/2000/svg"
+                                                viewBox="0 0 20 20" fill="currentColor">
+                                                <path
+                                                    d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                                            </svg>
+                                            {{ $customer->phone }}
+                                        </div>
+                                    @endif
+                                    @if ($customer->email)
+                                        <div class="text-xs text-gray-500 truncate max-w-xs">{{ $customer->email }}</div>
+                                    @endif
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @if ($customer->customer_type === 'reseller')
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        🏪 Reseller
+                                    </span>
+                                @elseif($customer->customer_type === 'wholesale')
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
+                                        🏭 Wholesale
+                                    </span>
+                                @else
+                                    <span
+                                        class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                        🛒 Customer
+                                    </span>
+                                @endif
+                            </td>
+
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <div class="flex items-center space-x-2">
+                                    <a href="{{ route('admin.customers.show', $customer) }}"
+                                        class="text-blue-600 hover:text-blue-900 flex items-center" title="View Details">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                                            <path fill-rule="evenodd"
+                                                d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
+                                                clip-rule="evenodd" />
+                                        </svg>
+                                    </a>
+
+                                    @if ($customer->credit_enabled)
+                                        <a href="{{ route('admin.credit.statement', $customer->id) }}"
+                                            class="text-amber-600 hover:text-amber-900 flex items-center"
+                                            title="Credit Statement">
+                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                                                </path>
+                                            </svg>
+                                        </a>
+
+                                        @if ($customer->current_balance > 0)
+                                            <a href="{{ route('admin.credit.payment', ['customer_id' => $customer->id]) }}"
+                                                class="text-green-600 hover:text-green-900 flex items-center"
+                                                title="Collect Payment">
+                                                <svg class="h-4 w-4" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                                </svg>
+                                            </a>
+                                        @endif
+                                    @endif
+
+                                    <a href="{{ route('admin.customers.khata', $customer) }}"
+                                        class="text-emerald-600 hover:text-emerald-800 text-xs font-medium"
+                                        title="View Khata">
+                                        📒 Khata
+                                    </a>
+
+                                    <a href="{{ route('admin.customers.edit', $customer) }}"
+                                        class="text-yellow-600 hover:text-yellow-900 flex items-center" title="Edit">
+                                        <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                            fill="currentColor">
+                                            <path
+                                                d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                        </svg>
+                                    </a>
+
+                                    <form action="{{ route('admin.customers.destroy', $customer) }}" method="POST"
+                                        onsubmit="return confirm('Are you sure you want to delete this customer?');"
+                                        class="inline">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="text-red-600 hover:text-red-900 flex items-center"
+                                            title="Delete">
+                                            <svg class="h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"
+                                                fill="currentColor">
+                                                <path fill-rule="evenodd"
+                                                    d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                                    clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="9" class="px-6 py-12 text-center">
+                                <div class="text-gray-400">
+                                    <svg class="h-12 w-12 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                                    </svg>
+                                    <p class="text-lg font-medium text-gray-600">No customers found</p>
+                                    <p class="text-sm text-gray-500 mt-1">Get started by creating your first customer</p>
+                                    <a href="{{ route('admin.customers.create') }}"
+                                        class="mt-4 inline-block px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                        Add First Customer
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    @endforelse
                 </tbody>
             </table>
         </div>
 
-        <div class="mt-4">{{ $customers->links() }}</div>
+        <div class="mt-6">
+            {{ $customers->links() }}
+        </div>
     </div>
+
+    <script>
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value;
+            const type = document.getElementById('typeFilter').value;
+            const credit = document.getElementById('creditFilter').value;
+
+            let url = new URL(window.location.href);
+            let params = new URLSearchParams();
+
+            if (search) params.append('search', search);
+            if (type) params.append('type', type);
+            if (credit) params.append('credit', credit);
+
+            window.location.href = url.pathname + '?' + params.toString();
+        }
+
+        function clearFilters() {
+            window.location.href = '{{ route('admin.customers.index') }}';
+        }
+
+        // Auto-submit search on Enter
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                applyFilters();
+            }
+        });
+
+        // Auto-submit filters on change
+        document.getElementById('typeFilter').addEventListener('change', function() {
+            applyFilters();
+        });
+
+        document.getElementById('creditFilter').addEventListener('change', function() {
+            applyFilters();
+        });
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const searchParam = urlParams.get('search');
+            const typeParam = urlParams.get('type');
+            const creditParam = urlParams.get('credit');
+
+            if (searchParam) {
+                document.getElementById('searchInput').value = searchParam;
+            }
+
+            if (typeParam) {
+                document.getElementById('typeFilter').value = typeParam;
+            }
+
+            if (creditParam) {
+                document.getElementById('creditFilter').value = creditParam;
+            }
+        });
+    </script>
 @endsection

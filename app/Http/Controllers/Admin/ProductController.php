@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Unit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -16,35 +17,55 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with('category')->filter(request(['search']))->paginate(20);
-        return view('admin.products.index', compact('products'));
+        $products = Product::with(['category', 'unit'])
+            ->filter(request(['search', 'unit_id']))
+            ->orderBy('created_at', 'desc') // Newest first
+            ->paginate(20);
+        
+        $units = Unit::where('is_active', true)->get();
+        
+        return view('admin.products.index', compact('products', 'units'));
     }
+
 
     public function create()
     {
         $categories = Category::all();
-        return view('admin.products.create', compact('categories'));
+        $units = Unit::where('is_active', true)->get();
+        return view('admin.products.create', compact('categories', 'units'));
     }
 
     public function store(Request $request)
     {
-//        dd($request->all());
         $validated = $request->validate([
             'name'             => 'required|string|max:255',
             'barcode'          => 'nullable|string|unique:products',
             'category_id'      => 'required|exists:categories,id',
+            'unit_id'          => 'nullable|exists:units,id',
             'description'      => 'nullable|string',
+            'rank'             => 'nullable|string|max:50', 
             'sale_price'       => 'required|numeric|min:0',
             'resale_price'     => 'required|numeric|min:0',
             'wholesale_price'  => 'required|numeric|min:0',
             'cost_price'       => 'required|numeric|min:0',
-            'weight'           => 'nullable|numeric|min:0',
+            'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
+            'weight_g'         => 'nullable|integer|min:0',
             'stock_quantity'   => 'required|integer|min:0',
             'reorder_level'    => 'required|integer|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean'
         ]);
+
+        if (!empty($validated['weight_kg'])) {
+            $weight = $validated['weight_kg'];
+        } elseif (!empty($validated['weight_g'])) {
+            $weight = $validated['weight_g'] / 1000;
+        } else {
+            $weight = null;
+        }
+        unset($validated['weight_kg'], $validated['weight_g']);
+        $validated['weight'] = $weight;
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
@@ -66,7 +87,8 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $categories = Category::all();
-        return view('admin.products.edit', compact('product', 'categories'));
+        $units = Unit::where('is_active', true)->get(); 
+        return view('admin.products.edit', compact('product', 'categories', 'units')); 
     }
 
     public function update(Request $request, Product $product)
@@ -75,19 +97,32 @@ class ProductController extends Controller
             'name'             => 'required|string|max:255',
             'barcode'          => 'nullable|string|unique:products,barcode,'.$product->id,
             'category_id'      => 'required|exists:categories,id',
+            'unit_id'          => 'nullable|exists:units,id', 
             'description'      => 'nullable|string',
+            'rank'             => 'nullable|string|max:50', 
             'sale_price'       => 'required|numeric|min:0',
             'resale_price'     => 'required|numeric|min:0',
             'wholesale_price'  => 'required|numeric|min:0',
             'cost_price'       => 'required|numeric|min:0',
-            'weight'           => 'nullable|numeric|min:0',
+            'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
+            'weight_g'         => 'nullable|integer|min:0',
             'stock_quantity'   => 'required|integer|min:0',
             'reorder_level'    => 'required|integer|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean'
         ]);
+        if (!empty($validated['weight_kg'])) {
+        $weight = $validated['weight_kg'];
+        } elseif (!empty($validated['weight_g'])) {
+            $weight = $validated['weight_g'] / 1000;
+        } else {
+            $weight = null;
+        }
 
+        unset($validated['weight_kg'], $validated['weight_g']);
+        $validated['weight'] = $weight;
+        
         if ($request->hasFile('image')) {
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
