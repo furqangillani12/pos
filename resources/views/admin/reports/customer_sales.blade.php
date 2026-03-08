@@ -4,7 +4,7 @@
     <div class="container mx-auto px-4 py-6">
         <h1 class="text-2xl font-bold mb-6">Customer-wise Sales</h1>
 
-        <form method="GET" class="flex flex-wrap gap-4 items-center mb-6">
+        <form method="GET" class="flex flex-wrap gap-4 items-end mb-6">
             <div>
                 <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date:</label>
                 <input type="date" name="start_date" value="{{ $start }}" required
@@ -24,7 +24,7 @@
                        class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
             </div>
 
-            <div class="mt-6">
+            <div class="self-end">
                 <button type="submit"
                         class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                     Filter
@@ -72,7 +72,7 @@
 
     <!-- Orders Modal -->
     <div id="ordersModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div class="bg-white rounded-lg w-11/12 md:w-2/3 lg:w-1/2 p-6 relative">
+        <div class="bg-white rounded-lg w-11/12 max-w-2xl p-6 relative">
             <h2 class="text-xl font-bold mb-4" id="modalCustomerName">Orders</h2>
             <button id="closeModal" class="absolute top-3 right-3 text-gray-500 hover:text-gray-800">&times;</button>
 

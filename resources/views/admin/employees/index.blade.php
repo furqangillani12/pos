@@ -42,13 +42,15 @@
                     <td class="px-4 py-3">{{ $employee->user->name }}</td>
                     <td class="px-4 py-3">{{ $employee->user->email }}</td>
                     <td class="px-4 py-3">{{ $employee->phone }}</td>
-                    <td class="px-4 py-3 space-x-2">
-                        <a href="{{ route('employees.show', $employee) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">View</a>
-                        <a href="{{ route('employees.edit', $employee) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
-                        <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete employee?');">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
-                        </form>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ route('employees.show', $employee) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">View</a>
+                            <a href="{{ route('employees.edit', $employee) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
+                            <form action="{{ route('employees.destroy', $employee) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete employee?');">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @endforeach

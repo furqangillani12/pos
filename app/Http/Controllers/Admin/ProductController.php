@@ -50,8 +50,8 @@ class ProductController extends Controller
             'cost_price'       => 'required|numeric|min:0',
             'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
             'weight_g'         => 'nullable|integer|min:0',
-            'stock_quantity'   => 'required|integer|min:0',
-            'reorder_level'    => 'required|integer|min:0',
+            'stock_quantity'   => 'required|numeric|min:0',
+            'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean'
@@ -106,8 +106,8 @@ class ProductController extends Controller
             'cost_price'       => 'required|numeric|min:0',
             'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
             'weight_g'         => 'nullable|integer|min:0',
-            'stock_quantity'   => 'required|integer|min:0',
-            'reorder_level'    => 'required|integer|min:0',
+            'stock_quantity'   => 'required|numeric|min:0',
+            'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean'

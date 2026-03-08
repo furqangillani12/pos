@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="p-6 bg-white rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Customer Details</h1>
                 <p class="text-sm text-gray-600 mt-1">Complete customer information</p>
             </div>
-            <div class="flex space-x-3">
+            <div class="flex flex-wrap gap-3">
                 <a href="{{ route('admin.customers.edit', $customer) }}"
                     class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 flex items-center">
                     <svg class="h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -39,7 +39,7 @@
         <!-- Customer Information Card -->
         <div class="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden mb-6">
             <div class="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b">
-                <div class="flex justify-between items-center">
+                <div class="flex flex-wrap justify-between items-center gap-3">
                     <div>
                         <h2 class="text-xl font-bold text-gray-800">{{ $customer->name }}</h2>
                         <p class="text-sm text-gray-600">

@@ -68,7 +68,7 @@
                 <p class="text-sm text-gray-500 mb-3">Add one or more work sessions. Breaks are the gaps between sessions.</p>
 
                 <div id="sessions-list" class="space-y-2">
-                    <div class="grid grid-cols-2 gap-4 session-row">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 session-row">
                         <div>
                             <label class="block text-xs text-gray-600">Check In</label>
                             <input type="time" name="sessions[0][check_in]" required
@@ -84,9 +84,9 @@
                     </div>
                 </div>
 
-                <div class="mt-3">
+                <div class="mt-3 flex flex-wrap gap-2">
                     <button type="button" id="add-session" class="px-3 py-1 bg-green-600 text-white rounded">➕ Add Another Session</button>
-                    <button type="button" id="remove-session" class="px-3 py-1 bg-red-500 text-white rounded ml-2">➖ Remove Last</button>
+                    <button type="button" id="remove-session" class="px-3 py-1 bg-red-500 text-white rounded">➖ Remove Last</button>
                 </div>
             </div>
 
@@ -108,7 +108,7 @@
                 let wrapper = document.getElementById('sessions-list');
                 let idx = wrapper.querySelectorAll('.session-row').length;
                 let row = document.createElement('div');
-                row.className = 'grid grid-cols-2 gap-4 session-row mt-2';
+                row.className = 'grid grid-cols-1 sm:grid-cols-2 gap-4 session-row mt-2';
                 row.innerHTML = `
                 <div>
                     <label class="block text-xs text-gray-600">Check In</label>

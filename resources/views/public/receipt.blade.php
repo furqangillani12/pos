@@ -5,521 +5,395 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt - {{ $order->order_number }}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Add html2canvas library for image conversion -->
     <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
     <style>
-        @media print {
-            .no-print {
-                display: none !important;
-            }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-            body {
-                padding: 0;
-                margin: 0;
-                font-size: 12px;
-            }
-
-            .receipt-container {
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-            }
-
-            .product-table {
-                font-size: 11px !important;
-            }
-
-            .product-table th,
-            .product-table td {
-                padding: 6px 4px !important;
-            }
-        }
-
-        /* Main container styling */
         body {
-            background: #f5f7fa;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f0f2f5;
+            color: #1e293b;
+            padding: 10px;
+            -webkit-text-size-adjust: 100%;
         }
 
-        .main-card {
-            max-width: 800px;
+        /* ── Main card ── */
+        .receipt-card {
+            max-width: 640px;
             margin: 0 auto;
-            background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,.08);
+            overflow: hidden;
         }
 
-        /* Mobile responsiveness */
-        @media (max-width: 768px) {
-            body {
-                padding: 10px !important;
-                font-size: 13px;
-            }
-
-            .main-card {
-                padding: 15px;
-                border-radius: 8px;
-            }
-
-            /* Remove horizontal scroll from product table */
-            .product-table-container {
-                overflow-x: hidden !important;
-                -webkit-overflow-scrolling: auto !important;
-            }
-
-            .product-table {
-                min-width: auto !important;
-                width: 100% !important;
-                font-size: 11px !important;
-            }
-
-            .product-table th,
-            .product-table td {
-                padding: 6px 4px !important;
-                font-size: 11px !important;
-            }
-
-            /* Adjust product name column for mobile */
-            .product-name-cell {
-                max-width: 120px !important;
-                word-wrap: break-word !important;
-                overflow: hidden !important;
-            }
-
-            .receipt-number {
-                font-size: 14px !important;
-                word-break: break-all;
-            }
-
-            .company-header {
-                padding: 10px 15px !important;
-            }
-
-            /* Larger logo on mobile */
-            .logo {
-                max-height: 70px !important;
-            }
-
-            .info-grid {
-                grid-template-columns: 1fr !important;
-                gap: 10px !important;
-                padding: 0 10px !important;
-            }
-
-            .info-box {
-                padding: 10px !important;
-            }
-
-            .info-row {
-                margin-bottom: 4px !important;
-                font-size: 12px !important;
-            }
-
-            .info-label {
-                min-width: 100px !important;
-                font-size: 12px !important;
-            }
-
-            .summary-box {
-                margin: 10px !important;
-                padding: 12px !important;
-            }
-
-            .summary-row {
-                font-size: 12px !important;
-                margin-bottom: 6px !important;
-            }
-
-            .grand-total {
-                font-size: 14px !important;
-            }
-
-            /* Keep buttons in single row on mobile */
-            .action-buttons {
-                flex-direction: row !important;
-                gap: 10px !important;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-
-            .action-btn {
-                padding: 10px 15px !important;
-                font-size: 13px !important;
-                flex: 1;
-                min-width: 140px;
-                justify-content: center;
-            }
-        }
-
-        /* Very small phones */
-        @media (max-width: 480px) {
-            body {
-                font-size: 12px;
-            }
-
-            .main-card {
-                padding: 12px;
-            }
-
-            .product-table {
-                font-size: 10px !important;
-            }
-
-            .product-table th,
-            .product-table td {
-                padding: 5px 3px !important;
-                font-size: 10px !important;
-            }
-
-            .logo {
-                max-height: 100px !important;
-            }
-
-            .action-buttons {
-                gap: 8px !important;
-            }
-
-            .action-btn {
-                padding: 8px 12px !important;
-                font-size: 12px !important;
-                min-width: 120px;
-            }
-
-            /* Even smaller fonts for many items */
-            .product-name-cell {
-                max-width: 100px !important;
-                font-size: 10px !important;
-            }
-        }
-
-        /* Extra small phones */
-        @media (max-width: 360px) {
-            .product-table {
-                font-size: 9px !important;
-            }
-
-            .product-table th,
-            .product-table td {
-                padding: 4px 2px !important;
-                font-size: 9px !important;
-            }
-
-            .product-name-cell {
-                max-width: 80px !important;
-                font-size: 9px !important;
-            }
-
-            .action-btn {
-                padding: 6px 10px !important;
-                font-size: 11px !important;
-                min-width: 100px !important;
-            }
-        }
-
-        /* Company header */
+        /* ── Company header ── */
         .company-header {
             text-align: center;
-            padding: 15px 0;
-            border-bottom: 2px solid #e0e0e0;
-            margin-bottom: 20px;
+            padding: 10px 20px 8px;
+            border-bottom: 2px dashed #e5e7eb;
         }
 
-        /* Larger logo on desktop */
-        .logo {
-            max-height: 90px;
-            display: block;
-            margin: 0 auto 15px auto;
+        .company-header .logo {
+            max-height: 80px;
             width: auto;
+            display: block;
+            margin: 0 auto;
         }
 
-        .company-name {
+        /* ── Invoice title ── */
+        .invoice-title {
+            text-align: center;
+            padding: 10px 20px;
+            border-bottom: 2px solid #2563eb;
+        }
+
+        .invoice-title h1 {
             font-size: 18px;
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 5px;
+            font-weight: 800;
+            color: #1e293b;
+            letter-spacing: 1px;
         }
 
-        .company-address {
-            font-size: 12px;
-            color: #666;
-            line-height: 1.4;
+        .invoice-title .receipt-num {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 2px;
         }
 
-        /* Section titles without green tag */
+        /* ── Section title ── */
         .section-title {
-            background: #f8f9fa;
-            padding: 10px 15px;
-            margin: 20px 0 15px 0;
-            font-weight: bold;
-            color: #333;
-            border-radius: 5px;
-            border-left: none;
-            font-size: 15px;
+            background: #f8fafc;
+            padding: 6px 20px;
+            font-size: 12px;
+            font-weight: 800;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: .5px;
         }
 
-        /* Information grid */
+        /* ── Info grid ── */
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            padding: 0 15px;
+            gap: 10px;
+            padding: 10px 20px;
         }
 
         .info-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            border: 1px solid #e9ecef;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 12px;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 13px;
+            align-items: flex-start;
+            padding: 3px 0;
+            font-size: 12px;
+            gap: 8px;
         }
 
-        .info-label {
-            color: #666;
-            min-width: 120px;
+        .info-row .label {
+            color: #6b7280;
+            flex-shrink: 0;
         }
 
-        .info-value {
-            color: #333;
+        .info-row .value {
+            color: #1e293b;
             font-weight: 500;
             text-align: right;
             word-break: break-word;
         }
 
-        /* Summary box */
+        /* ── Items table ── */
+        .items-section { padding: 0 20px 10px; }
+
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .items-table thead th {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            padding: 8px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #6b7280;
+        }
+
+        .items-table thead th:first-child { text-align: center; width: 36px; }
+        .items-table thead th:nth-child(2) { text-align: left; }
+        .items-table thead th:nth-child(3) { text-align: center; width: 50px; }
+        .items-table thead th:nth-child(4) { text-align: right; width: 80px; }
+        .items-table thead th:last-child { text-align: right; width: 90px; }
+
+        .items-table tbody td {
+            border: 1px solid #f1f5f9;
+            padding: 8px 6px;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .items-table tbody td:first-child { text-align: center; color: #9ca3af; }
+        .items-table tbody td:nth-child(2) { word-break: break-word; }
+        .items-table tbody td:nth-child(3) { text-align: center; font-weight: 500; }
+        .items-table tbody td:nth-child(4) { text-align: right; font-family: ui-monospace, monospace; font-size: 12px; }
+        .items-table tbody td:last-child { text-align: right; font-family: ui-monospace, monospace; font-size: 12px; font-weight: 600; }
+
+        .items-table tbody tr:nth-child(even) { background: #fafbfc; }
+
+        .product-sku { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+        /* ── Summary ── */
         .summary-box {
-            background: #f8f9fa;
-            border: 1px solid #e9ecef;
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 15px;
+            margin: 0 20px 10px;
+            background: #f8fafc;
+            border: 1px solid #f1f5f9;
+            border-radius: 8px;
+            padding: 10px 14px;
         }
 
         .summary-row {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 10px;
-            font-size: 14px;
+            align-items: center;
+            padding: 4px 0;
+            font-size: 13px;
         }
 
-        .grand-total {
-            border-top: 2px solid #dee2e6;
-            margin-top: 15px;
-            padding-top: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #333;
+        .summary-row .label { color: #6b7280; }
+        .summary-row .value { font-weight: 600; color: #1e293b; font-family: ui-monospace, monospace; }
+
+        .summary-row.discount .label,
+        .summary-row.discount .value { color: #16a34a; }
+
+        .summary-row.grand {
+            border-top: 2px solid #1e293b;
+            margin-top: 8px;
+            padding-top: 10px;
         }
 
-        /* Notes section */
-        .notes-section {
-            padding: 0 15px 20px 15px;
+        .summary-row.grand .label { font-size: 15px; font-weight: 800; color: #1e293b; }
+        .summary-row.grand .value { font-size: 18px; font-weight: 900; color: #2563eb; }
+
+        .summary-row.payment-status {
             font-size: 12px;
-            color: #666;
+            padding-top: 8px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 6px;
         }
 
-        /* Action buttons - smaller and centered */
-        .action-buttons {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #e9ecef;
-            flex-wrap: wrap;
+        .summary-row.payment-status .label { color: #9ca3af; }
+        .summary-row.payment-status .value { color: #9ca3af; }
+
+        /* ── Notes ── */
+        .notes-section {
+            padding: 0 20px 10px;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
         }
 
-        .action-btn {
+        /* ── Footer ── */
+        .receipt-footer {
+            text-align: center;
+            padding: 10px 20px;
+            border-top: 2px dashed #e5e7eb;
+            font-size: 12px;
+            color: #9ca3af;
+        }
+
+        .receipt-footer p { margin: 2px 0; }
+
+        /* ── Action buttons ── */
+        .actions-wrap {
+            max-width: 640px;
+            margin: 16px auto 0;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .act-btn {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 10px;
             border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 500;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #fff;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 150px;
+            text-decoration: none;
+            transition: opacity .15s;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .print-btn {
-            background: #4CAF50;
-            color: white;
-        }
+        .act-btn:hover { opacity: .85; }
+        .act-btn i { font-size: 14px; }
 
-        .download-btn {
-            background: #2196F3;
-            color: white;
-        }
+        .act-btn.print-btn { background: #16a34a; }
+        .act-btn.pdf-btn { background: #2563eb; }
+        .act-btn.jpg-btn { background: #7c3aed; }
 
-        .image-btn {
-            background: #9C27B0;
-            color: white;
-        }
-
-        .action-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
-        .print-btn:hover {
-            background: #45a049;
-        }
-
-        .download-btn:hover {
-            background: #0b7dda;
-        }
-
-        .image-btn:hover {
-            background: #7B1FA2;
-        }
-
-        /* Product table styling - no horizontal scroll */
-        .product-table-container {
-            padding: 0 15px;
-        }
-
-        .product-table {
-            width: 100%;
-            border-collapse: collapse;
-            table-layout: fixed;
-            /* Ensures columns fit within container */
-        }
-
-        /* Column width adjustments */
-        .product-table th:nth-child(1),
-        .product-table td:nth-child(1) {
-            width: 8%;
-            /* # column */
-            text-align: center;
-        }
-
-        .product-table th:nth-child(2),
-        .product-table td:nth-child(2) {
-            width: 45%;
-            /* Product Description column */
-            text-align: left;
-            word-wrap: break-word;
-        }
-
-        .product-table th:nth-child(3),
-        .product-table td:nth-child(3) {
-            width: 10%;
-            /* Qty column */
-            text-align: center;
-        }
-
-        .product-table th:nth-child(4),
-        .product-table td:nth-child(4) {
-            width: 18%;
-            /* Unit Price column */
-            text-align: right;
-        }
-
-        .product-table th:nth-child(5),
-        .product-table td:nth-child(5) {
-            width: 19%;
-            /* Total column */
-            text-align: right;
-        }
-
-        /* Print specific styles */
-        @media print {
-            body {
-                background: white !important;
-            }
-
-            .main-card {
-                box-shadow: none !important;
-                border: none !important;
-                padding: 0 !important;
-                border-radius: 0 !important;
-            }
-
-            .company-header {
-                border-bottom: 2px solid #000 !important;
-                padding: 10px 0 !important;
-            }
-
-            .logo {
-                max-height: 70px !important;
-            }
-
-            .section-title {
-                background: none !important;
-                border: 1px solid #ddd !important;
-            }
-
-            .info-box {
-                background: none !important;
-                border: 1px solid #ddd !important;
-            }
-
-            .summary-box {
-                background: none !important;
-                border: 1px solid #ddd !important;
-            }
-
-            .product-table {
-                border-collapse: collapse;
-                width: 100%;
-            }
-
-            .product-table th,
-            .product-table td {
-                border: 1px solid #ddd;
-            }
-        }
-
-        /* Loading overlay */
+        /* ── Loading overlay ── */
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            display: flex;
+            inset: 0;
+            background: rgba(0,0,0,.6);
+            display: none;
             justify-content: center;
             align-items: center;
             z-index: 9999;
-            display: none;
         }
 
-        .loading-spinner {
-            background: white;
-            padding: 30px;
-            border-radius: 10px;
+        .loading-overlay.show { display: flex; }
+
+        .loading-box {
+            background: #fff;
+            padding: 28px;
+            border-radius: 12px;
             text-align: center;
         }
 
         .spinner {
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #2196F3;
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top-color: #2563eb;
             border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px auto;
+            animation: spin .8s linear infinite;
+            margin: 0 auto 14px;
         }
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── Mobile responsive ── */
+        @media (max-width: 640px) {
+            body { padding: 0; }
+
+            .receipt-card {
+                border-radius: 0;
+                box-shadow: none;
             }
 
-            100% {
-                transform: rotate(360deg);
+            .company-header { padding: 8px 14px 6px; }
+            .company-header .logo { max-height: 60px; }
+
+            .invoice-title { padding: 8px 14px; }
+            .invoice-title h1 { font-size: 16px; }
+
+            .section-title { padding: 5px 14px; font-size: 11px; }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                padding: 8px 14px;
             }
+
+            .info-box { padding: 10px; }
+            .info-row { font-size: 11px; }
+
+            .items-section { padding: 0 10px 8px; }
+
+            .items-table thead th {
+                padding: 6px 4px;
+                font-size: 10px;
+            }
+
+            .items-table tbody td {
+                padding: 6px 4px;
+                font-size: 11px;
+            }
+
+            .items-table tbody td:nth-child(4),
+            .items-table tbody td:last-child { font-size: 10px; }
+
+            .items-table thead th:nth-child(4) { width: 65px; }
+            .items-table thead th:last-child { width: 70px; }
+
+            .summary-box { margin: 0 10px 8px; padding: 8px 10px; }
+            .summary-row { font-size: 12px; }
+            .summary-row.grand .label { font-size: 14px; }
+            .summary-row.grand .value { font-size: 16px; }
+
+            .notes-section { padding: 0 14px 8px; }
+            .receipt-footer { padding: 8px 14px; }
+
+            .actions-wrap { margin: 8px 8px 16px; }
+            .actions-grid { gap: 6px; }
+            .act-btn { padding: 10px 6px; font-size: 12px; }
+        }
+
+        @media (max-width: 380px) {
+            .items-table thead th:first-child,
+            .items-table tbody td:first-child { display: none; }
+
+            .items-table thead th:nth-child(4),
+            .items-table tbody td:nth-child(4) { display: none; }
+
+            .items-table thead th:last-child { width: auto; }
+
+            .items-table tbody td { font-size: 10px; padding: 5px 3px; }
+            .items-table thead th { font-size: 9px; padding: 5px 3px; }
+
+            .act-btn { padding: 10px 4px; font-size: 11px; gap: 4px; }
+            .act-btn i { font-size: 12px; }
+        }
+
+        /* ── Dark mode ── */
+        @media (prefers-color-scheme: dark) {
+            body { background: #111827; }
+            .receipt-card { background: #1f2937; box-shadow: 0 4px 24px rgba(0,0,0,.3); }
+            .company-header .company-name { color: #f3f4f6; }
+            .company-header .company-contact { color: #9ca3af; }
+            .invoice-title { border-color: #3b82f6; }
+            .invoice-title h1 { color: #f3f4f6; }
+            .invoice-title .receipt-num { color: #9ca3af; }
+            .section-title { background: #111827; color: #9ca3af; }
+            .info-grid .info-box { background: #111827; border-color: #374151; }
+            .info-row .label { color: #9ca3af; }
+            .info-row .value { color: #e5e7eb; }
+            .items-table thead th { background: #111827; border-color: #374151; color: #9ca3af; }
+            .items-table tbody td { border-color: #374151; color: #e5e7eb; }
+            .items-table tbody tr:nth-child(even) { background: rgba(55,65,81,0.3); }
+            .product-sku { color: #6b7280; }
+            .summary-box { background: #111827; border-color: #374151; }
+            .summary-row .label { color: #9ca3af; }
+            .summary-row .value { color: #e5e7eb; }
+            .summary-row.grand .label { color: #f3f4f6; }
+            .summary-row.grand .value { color: #60a5fa; }
+            .summary-row.discount .label, .summary-row.discount .value { color: #4ade80; }
+            .summary-row.payment-status .label, .summary-row.payment-status .value { color: #6b7280; }
+            .notes-section { color: #9ca3af; }
+            .receipt-footer { border-color: #374151; color: #6b7280; }
+            .loading-box { background: #1f2937; color: #e5e7eb; }
+            .spinner { border-color: #374151; border-top-color: #3b82f6; }
+        }
+
+        /* ── Print ── */
+        @media print {
+            body { background: #fff; padding: 0; }
+
+            .receipt-card { box-shadow: none; border-radius: 0; max-width: 100%; }
+
+            .no-print { display: none !important; }
+
+            .info-grid { grid-template-columns: 1fr 1fr; }
+
+            .items-table thead th,
+            .items-table tbody td { border: 1px solid #ddd; }
         }
     </style>
 </head>
@@ -527,123 +401,112 @@
 <body>
     <!-- Loading overlay -->
     <div class="loading-overlay" id="loadingOverlay">
-        <div class="loading-spinner">
+        <div class="loading-box">
             <div class="spinner"></div>
             <div id="loadingText">Converting to image...</div>
         </div>
     </div>
 
-    <div class="main-card" id="receiptContent">
+    <div class="receipt-card" id="receiptContent">
+
         <!-- Company Header -->
         <div class="company-header">
-            <div>
-                @if (file_exists(public_path('assets/images/mufeed.png')))
-                    <img src="{{ asset('assets/images/mufeed.png') }}" alt="AlMufeed Saqafti Markaz" class="logo">
-                @endif
-                <div class="company-name">AlMufeed Saqafti Markaz</div>
-                <div class="company-address">
-                    {{-- AL MUFEED Traders PanjGirain Tehsil DaryaKhan District Bhakkar<br> --}}
-                    Phone: 0300-7951919 | Email: Amt7212@gmail.com
-                </div>
-            </div>
+            @if (file_exists(public_path('assets/images/mufeed.png')))
+                <img src="{{ asset('assets/images/mufeed.png') }}" alt="AlMufeed Saqafti Markaz" class="logo" style="max-height:110px;">
+            @endif
         </div>
 
-        <!-- Receipt Title -->
-        <div style="text-align: center; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #4CAF50;">
-            <h1 style="font-size: 24px; font-weight: bold; color: #333;">SALES INVOICE</h1>
-            <p style="font-size: 14px; color: #666; margin-top: 5px;">Receipt #{{ $order->order_number }}</p>
+        <!-- Invoice Title -->
+        <div class="invoice-title">
+            <h1>SALES INVOICE</h1>
+            <div class="receipt-num">Receipt #{{ $order->order_number }}</div>
         </div>
 
-        <!-- Order Information -->
-        <div class="section-title">ORDER INFORMATION</div>
+        <!-- Order & Customer Information -->
+        <div class="section-title">Order Information</div>
         <div class="info-grid">
             <div class="info-box">
                 <div class="info-row">
-                    <span class="info-label">Date & Time:</span>
-                    <span class="info-value">{{ $order->created_at->format('d M, Y h:i A') }}</span>
+                    <span class="label">Date & Time:</span>
+                    <span class="value">{{ $order->created_at->format('d M, Y h:i A') }}</span>
                 </div>
                 <div class="info-row">
-                    <span class="info-label">Payment Method:</span>
-                    <span class="info-value capitalize">{{ $order->payment_method }}</span>
+                    <span class="label">Payment:</span>
+                    <span class="value" style="text-transform:capitalize;">{{ $order->payment_method }}</span>
                 </div>
                 @if ($order->dispatch_method)
                     <div class="info-row">
-                        <span class="info-label">Dispatch Method:</span>
-                        <span class="info-value">{{ $order->dispatch_method }}</span>
+                        <span class="label">Dispatch:</span>
+                        <span class="value">{{ $order->dispatch_method }}</span>
                     </div>
                 @endif
                 @if ($order->tracking_id)
                     <div class="info-row">
-                        <span class="info-label">Tracking ID:</span>
-                        <span class="info-value">{{ $order->tracking_id }}</span>
+                        <span class="label">Tracking:</span>
+                        <span class="value">{{ $order->tracking_id }}</span>
                     </div>
                 @endif
             </div>
 
-            <!-- Customer Information -->
             <div class="info-box">
                 @if ($order->customer)
                     <div class="info-row">
-                        <span class="info-label">Customer Name:</span>
-                        <span class="info-value">{{ $order->customer->name }}</span>
+                        <span class="label">Customer:</span>
+                        <span class="value">{{ $order->customer->name }}@if($order->customer->customer_type) ({{ ucfirst($order->customer->customer_type) }})@endif</span>
                     </div>
                     @if ($order->customer->phone)
                         <div class="info-row">
-                            <span class="info-label">Phone:</span>
-                            <span class="info-value">{{ $order->customer->phone }}</span>
+                            <span class="label">Phone:</span>
+                            <span class="value">{{ $order->customer->phone }}</span>
                         </div>
                     @endif
                     @if ($order->customer->email)
                         <div class="info-row">
-                            <span class="info-label">Email:</span>
-                            <span class="info-value">{{ $order->customer->email }}</span>
+                            <span class="label">Email:</span>
+                            <span class="value">{{ $order->customer->email }}</span>
                         </div>
                     @endif
                 @else
                     <div class="info-row">
-                        <span class="info-label">Customer:</span>
-                        <span class="info-value">Walk-in Customer</span>
+                        <span class="label">Customer:</span>
+                        <span class="value">Walk-in Customer</span>
                     </div>
                 @endif
             </div>
         </div>
 
-        <!-- Purchased Items -->
-        <div class="section-title">PURCHASED ITEMS</div>
-        <div class="product-table-container">
-            <table class="product-table">
+        <!-- Items Table -->
+        <div class="section-title">Purchased Items</div>
+        <div class="items-section">
+            <table class="items-table">
                 <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th style="border: 1px solid #dee2e6; padding: 10px; font-weight: bold;">#</th>
-                        <th style="border: 1px solid #dee2e6; padding: 10px; font-weight: bold;">Product Description
-                        </th>
-                        <th style="border: 1px solid #dee2e6; padding: 10px; font-weight: bold;">Qty</th>
-                        <th style="border: 1px solid #dee2e6; padding: 10px; font-weight: bold;">Unit Price</th>
-                        <th style="border: 1px solid #dee2e6; padding: 10px; font-weight: bold;">Total</th>
+                    <tr>
+                        <th>#</th>
+                        <th>Product</th>
+                        <th>Qty</th>
+                        <th>Price</th>
+                        <th>Total</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($order->items as $index => $item)
                         <tr>
-                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: center;">
-                                {{ $index + 1 }}</td>
-                            <td style="border: 1px solid #dee2e6; padding: 10px; word-wrap: break-word;"
-                                class="product-name-cell">
-                                <div style="font-weight: 500;">{{ $item->product->name }}</div>
-                                @if ($item->product->sku)
-                                    <div style="color: #666;">SKU: {{ $item->product->sku }}</div>
+                            <td>{{ $index + 1 }}</td>
+                            <td>
+                                {{ $item->product->name ?? 'Deleted Product' }}
+                                @if ($item->product && $item->product->sku)
+                                    <div class="product-sku">SKU: {{ $item->product->sku }}</div>
                                 @endif
                             </td>
-                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: center;">
-                                {{ $item->quantity }}</td>
-                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: right;">
+                            <td>{{ $item->quantity }}</td>
+                            <td>
                                 @if ($item->unit_price == floor($item->unit_price))
                                     {{ number_format($item->unit_price, 0) }}
                                 @else
                                     {{ number_format($item->unit_price, 2) }}
                                 @endif
                             </td>
-                            <td style="border: 1px solid #dee2e6; padding: 10px; text-align: right; font-weight: 500;">
+                            <td>
                                 @if ($item->total_price == floor($item->total_price))
                                     {{ number_format($item->total_price, 0) }}
                                 @else
@@ -657,76 +520,115 @@
         </div>
 
         <!-- Payment Summary -->
-        <div class="section-title">PAYMENT SUMMARY</div>
+        <div class="section-title">Payment Summary</div>
         <div class="summary-box">
             <div class="summary-row">
-                <span>Subtotal:</span>
-                <span>Rs. {{ number_format($order->subtotal, 2) }}</span>
+                <span class="label">Subtotal</span>
+                <span class="value">Rs. {{ number_format($order->subtotal, 2) }}</span>
             </div>
 
             @if ($order->tax_rate > 0 && $order->tax > 0)
                 <div class="summary-row">
-                    <span>Tax ({{ $order->tax_rate }}%):</span>
-                    <span>Rs. {{ number_format($order->tax, 2) }}</span>
+                    <span class="label">Tax ({{ $order->tax_rate }}%)</span>
+                    <span class="value">Rs. {{ number_format($order->tax, 2) }}</span>
                 </div>
             @endif
 
             @if ($order->discount > 0)
-                <div class="summary-row" style="color: #4CAF50;">
-                    <span>Discount:</span>
-                    <span>- Rs. {{ number_format($order->discount, 2) }}</span>
+                <div class="summary-row discount">
+                    <span class="label">Discount</span>
+                    <span class="value">- Rs. {{ number_format($order->discount, 2) }}</span>
                 </div>
             @endif
 
             @if ($order->delivery_charges > 0)
                 <div class="summary-row">
-                    <span>Delivery Charges:</span>
-                    <span>Rs. {{ number_format($order->delivery_charges, 2) }}</span>
+                    <span class="label">Delivery Charges</span>
+                    <span class="value">Rs. {{ number_format($order->delivery_charges, 2) }}</span>
                 </div>
             @endif
 
             @if ($order->weight > 0)
                 <div class="summary-row">
-                    <span>Total Weight:</span>
-                    <span>{{ number_format($order->weight, 2) }} kg</span>
+                    <span class="label">Total Weight</span>
+                    <span class="value">{{ number_format($order->weight, 2) }} kg</span>
                 </div>
             @endif
 
-            <div class="summary-row grand-total">
-                <span>GRAND TOTAL:</span>
-                <span style="color: #4CAF50; font-size: 18px;">Rs. {{ number_format($order->total, 2) }}</span>
+            <div class="summary-row grand">
+                <span class="label">GRAND TOTAL</span>
+                <span class="value">Rs. {{ number_format($order->total, 2) }}</span>
             </div>
 
-            @if ($order->payment_method === 'cash')
-                <div class="summary-row" style="margin-top: 10px; font-size: 13px; color: #666;">
-                    <span>Payment Status:</span>
-                    <span>Paid in Cash</span>
+            {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
+            @php
+                $paidAmount = $order->paid_amount ?? $order->total;
+                $balanceOnBill = $order->balance_amount ?? 0;
+                $prevBalance = $order->previous_balance ?? 0;
+                $currentBalance = $prevBalance + ($balanceOnBill ?: ($order->total - $paidAmount));
+                $hasKhata = $balanceOnBill > 0 || $prevBalance > 0 || $paidAmount < $order->total;
+            @endphp
+
+            @if ($hasKhata)
+                <div class="summary-row" style="background:#f0fdf4;padding:6px 8px;border-radius:6px;margin-top:6px;">
+                    <span class="label" style="color:#16a34a;font-weight:600;">Amount Paid</span>
+                    <span class="value" style="color:#16a34a;">Rs. {{ number_format($paidAmount, 0) }}</span>
                 </div>
+
+                @if ($balanceOnBill > 0)
+                    <div class="summary-row" style="background:#fef2f2;padding:6px 8px;border-radius:6px;margin-top:4px;">
+                        <span class="label" style="color:#dc2626;font-weight:600;">Balance on Bill</span>
+                        <span class="value" style="color:#dc2626;">Rs. {{ number_format($balanceOnBill, 0) }}</span>
+                    </div>
+                @endif
+
+                @if ($prevBalance > 0)
+                    <div class="summary-row" style="background:#fff7ed;padding:5px 8px;border-radius:6px;margin-top:4px;">
+                        <span class="label" style="color:#c2410c;font-size:12px;">Previous Balance</span>
+                        <span class="value" style="color:#c2410c;font-size:12px;">Rs. {{ number_format($prevBalance, 0) }}</span>
+                    </div>
+                @endif
+
+                @if ($currentBalance > 0)
+                    <div class="summary-row" style="background:#fefce8;padding:8px;border-radius:6px;margin-top:4px;border:1.5px solid #fbbf24;">
+                        <span class="label" style="color:#a16207;font-weight:800;">Current Balance Due</span>
+                        <span class="value" style="color:#a16207;font-weight:800;">Rs. {{ number_format($currentBalance, 0) }}</span>
+                    </div>
+                @elseif ($currentBalance < 0)
+                    <div class="summary-row" style="background:#f0fdf4;padding:8px;border-radius:6px;margin-top:4px;border:1.5px solid #4ade80;">
+                        <span class="label" style="color:#16a34a;font-weight:800;">Advance Credit</span>
+                        <span class="value" style="color:#16a34a;font-weight:800;">Rs. {{ number_format(abs($currentBalance), 0) }}</span>
+                    </div>
+                @endif
             @endif
+
         </div>
 
         <!-- Notes -->
         @if ($order->notes)
-            <div class="section-title">ORDER NOTES</div>
-            <div class="notes-section">
-                {{ $order->notes }}
-            </div>
+            <div class="section-title">Order Notes</div>
+            <div class="notes-section">{{ $order->notes }}</div>
         @endif
 
-        <!-- Action Buttons -->
-        <div class="action-buttons no-print">
-            <button onclick="window.print()" class="action-btn print-btn">
-                <i class="fas fa-print"></i> Print Receipt
+        <!-- Footer -->
+        <div class="receipt-footer">
+            <p>Thank you for your business!</p>
+            <p>Items can be returned within 7 days with receipt</p>
+            <p style="margin-top:8px;font-size:11px;">AlMufeed Saqafti Markaz | www.almufeed.com.pk</p>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions-wrap no-print">
+        <div class="actions-grid">
+            <button onclick="window.print()" class="act-btn print-btn">
+                <i class="fas fa-print"></i> Print
             </button>
-            <a href="{{ route('public.receipt.download', $order->receipt_token) }}" class="action-btn download-btn"
-                style="text-decoration: none;">
-                <i class="fas fa-file-pdf"></i> Download PDF
+            <a href="{{ route('public.receipt.download', $order->receipt_token) }}" class="act-btn pdf-btn">
+                <i class="fas fa-file-pdf"></i> PDF
             </a>
-            {{-- <button onclick="downloadAsPNG()" class="action-btn image-btn">
-                <i class="fas fa-image"></i> Download PNG
-            </button> --}}
-            <button onclick="downloadAsJPG()" class="action-btn image-btn">
-                <i class="fas fa-image"></i> Download JPG
+            <button onclick="downloadAsJPG()" class="act-btn jpg-btn">
+                <i class="fas fa-image"></i> JPG
             </button>
         </div>
     </div>
@@ -734,137 +636,40 @@
     <script>
         // Print shortcut
         document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.key === 'p') {
-                e.preventDefault();
-                window.print();
-            }
+            if (e.ctrlKey && e.key === 'p') { e.preventDefault(); window.print(); }
+            if (e.ctrlKey && e.shiftKey && e.key === 'J') { e.preventDefault(); downloadAsJPG(); }
         });
-
-        // Function to adjust table for long data
-        function adjustTableForLongData() {
-            const table = document.querySelector('.product-table');
-            const container = document.querySelector('.product-table-container');
-            const rows = table.querySelectorAll('tbody tr');
-
-            if (window.innerWidth < 768 && rows.length > 5) {
-                // If many rows on mobile, make fonts even smaller
-                table.style.fontSize = '10px';
-                const cells = table.querySelectorAll('td, th');
-                cells.forEach(cell => {
-                    cell.style.fontSize = '10px';
-                    cell.style.padding = '4px 3px';
-                });
-
-                // Adjust product name column width
-                const productCells = table.querySelectorAll('td:nth-child(2)');
-                productCells.forEach(cell => {
-                    cell.style.maxWidth = '100px';
-                    cell.style.fontSize = '10px';
-                });
-            }
-        }
-
-        // Adjust on load and resize
-        window.addEventListener('load', adjustTableForLongData);
-        window.addEventListener('resize', adjustTableForLongData);
-
-        // Image download functions
-        function showLoading(message = 'Converting to image...') {
-            document.getElementById('loadingText').textContent = message;
-            document.getElementById('loadingOverlay').style.display = 'flex';
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
-
-        function downloadAsPNG() {
-            showLoading('Converting to PNG...');
-
-            // Temporarily hide the action buttons for clean screenshot
-            const actionButtons = document.querySelector('.action-buttons');
-            const originalDisplay = actionButtons.style.display;
-            actionButtons.style.display = 'none';
-
-            // Add a small delay to ensure DOM updates
-            setTimeout(() => {
-                html2canvas(document.getElementById('receiptContent'), {
-                    scale: 2, // Higher quality
-                    useCORS: true, // For loading external images
-                    backgroundColor: '#ffffff',
-                    logging: false,
-                    allowTaint: true
-                }).then(canvas => {
-                    // Restore action buttons
-                    actionButtons.style.display = originalDisplay;
-
-                    // Convert canvas to PNG
-                    const link = document.createElement('a');
-                    link.download =
-                        `Receipt-{{ $order->order_number }}-${new Date().toISOString().split('T')[0]}.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-
-                    hideLoading();
-                }).catch(error => {
-                    console.error('Error converting to PNG:', error);
-                    alert('Failed to convert to PNG. Please try again.');
-                    actionButtons.style.display = originalDisplay;
-                    hideLoading();
-                });
-            }, 100);
-        }
 
         function downloadAsJPG() {
-            showLoading('Converting to JPG...');
+            const overlay = document.getElementById('loadingOverlay');
+            document.getElementById('loadingText').textContent = 'Converting to JPG...';
+            overlay.classList.add('show');
 
-            // Temporarily hide the action buttons for clean screenshot
-            const actionButtons = document.querySelector('.action-buttons');
-            const originalDisplay = actionButtons.style.display;
-            actionButtons.style.display = 'none';
+            const actions = document.querySelector('.actions-wrap');
+            if (actions) actions.style.display = 'none';
 
-            // Add a small delay to ensure DOM updates
             setTimeout(() => {
                 html2canvas(document.getElementById('receiptContent'), {
-                    scale: 2, // Higher quality
-                    useCORS: true, // For loading external images
+                    scale: 2,
+                    useCORS: true,
                     backgroundColor: '#ffffff',
                     logging: false,
                     allowTaint: true
                 }).then(canvas => {
-                    // Restore action buttons
-                    actionButtons.style.display = originalDisplay;
-
-                    // Convert canvas to JPG with quality
+                    if (actions) actions.style.display = '';
                     const link = document.createElement('a');
-                    link.download =
-                        `Receipt-{{ $order->order_number }}-${new Date().toISOString().split('T')[0]}.jpg`;
-
-                    // Use toDataURL with quality parameter for JPG
-                    link.href = canvas.toDataURL('image/jpeg', 0.95); // 95% quality
+                    link.download = `Receipt-{{ $order->order_number }}-${new Date().toISOString().split('T')[0]}.jpg`;
+                    link.href = canvas.toDataURL('image/jpeg', 0.95);
                     link.click();
-
-                    hideLoading();
-                }).catch(error => {
-                    console.error('Error converting to JPG:', error);
-                    alert('Failed to convert to JPG. Please try again.');
-                    actionButtons.style.display = originalDisplay;
-                    hideLoading();
+                    overlay.classList.remove('show');
+                }).catch(err => {
+                    console.error('JPG conversion error:', err);
+                    alert('Failed to convert. Please try again.');
+                    if (actions) actions.style.display = '';
+                    overlay.classList.remove('show');
                 });
             }, 100);
         }
-
-        // Optional: Add keyboard shortcuts for image downloads
-        document.addEventListener('keydown', (e) => {
-            if (e.ctrlKey && e.shiftKey && e.key === 'P') {
-                e.preventDefault();
-                downloadAsPNG();
-            }
-            if (e.ctrlKey && e.shiftKey && e.key === 'J') {
-                e.preventDefault();
-                downloadAsJPG();
-            }
-        });
     </script>
 </body>
 

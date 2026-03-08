@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Admin/AttendanceController.php
 
 namespace App\Http\Controllers\Admin;
 
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
-    // Display all attendance records (filterable by date)
     public function index(Request $request)
     {
         $date = $request->date ?? Carbon::today()->format('Y-m-d');
@@ -22,94 +20,109 @@ class AttendanceController extends Controller
             ->orderBy('date', 'desc')
             ->paginate(20);
 
-        return view('admin.attendance.index', compact('attendances', 'date'));
+        // Summary counts for the selected date
+        $allAttendances = Attendance::whereDate('date', $date)->get();
+        $totalEmployees = Employee::count();
+        $summary = [
+            'present'  => $allAttendances->where('status', 'present')->count(),
+            'late'     => $allAttendances->where('status', 'late')->count(),
+            'on_leave' => $allAttendances->where('status', 'on_leave')->count(),
+            'half_day' => $allAttendances->where('status', 'half_day')->count(),
+            'absent'   => $allAttendances->where('status', 'absent')->count(),
+            'unmarked' => $totalEmployees - $allAttendances->count(),
+        ];
+
+        return view('admin.attendance.index', compact('attendances', 'date', 'summary', 'totalEmployees'));
     }
 
-    // Show form to manually mark attendance
     public function create()
     {
         $employees = Employee::with('user')->get();
         return view('admin.attendance.create', compact('employees'));
     }
 
-    // Bulk create form
-    public function bulkCreate()
+    public function bulkCreate(Request $request)
     {
+        $date = $request->date ?? today()->format('Y-m-d');
+
         $employees = Employee::with('user')
-            ->whereDoesntHave('attendances', function($query) {
-                $query->whereDate('date', today());
+            ->whereDoesntHave('attendances', function ($query) use ($date) {
+                $query->whereDate('date', $date);
             })
             ->get();
 
-        return view('admin.attendance.bulk-create', compact('employees'));
+        $markedEmployees = Employee::with(['user', 'attendances' => function ($q) use ($date) {
+            $q->whereDate('date', $date)->with('sessions');
+        }])
+            ->whereHas('attendances', function ($query) use ($date) {
+                $query->whereDate('date', $date);
+            })
+            ->get();
+
+        return view('admin.attendance.bulk-create', compact('employees', 'markedEmployees', 'date'));
     }
 
     public function bulkStore(Request $request)
     {
         $request->validate([
-            'date' => 'required|date',
-            'attendances' => 'required|array',
-            'attendances.*.employee_id' => 'required|exists:employees,id',
-            'attendances.*.date' => 'required|date',
-            'attendances.*.status' => 'required|in:present,absent,late,on_leave,half_day,break',
-            'attendances.*.check_in' => 'nullable|date_format:H:i',
-            'attendances.*.check_out' => 'nullable|date_format:H:i',
-            'attendances.*.notes' => 'nullable|string',
+            'date'                          => 'required|date',
+            'attendances'                   => 'required|array',
+            'attendances.*.employee_id'     => 'required|exists:employees,id',
+            'attendances.*.status'          => 'required|in:present,absent,late,on_leave,half_day,break',
+            'attendances.*.notes'           => 'nullable|string',
         ]);
 
-        foreach ($request->attendances as $att) {
-            $date = $att['date'] ?? $request->date;
+        $date = $request->date;
 
-            // Create or find attendance
+        foreach ($request->attendances as $att) {
             $attendance = Attendance::firstOrCreate(
                 [
                     'employee_id' => $att['employee_id'],
-                    'date' => $date,
+                    'date'        => $date,
                 ],
                 [
                     'status' => $att['status'],
-                    'notes' => $att['notes'] ?? null,
+                    'notes'  => $att['notes'] ?? null,
                 ]
             );
 
-            // Always update status/notes
             $attendance->update([
                 'status' => $att['status'],
-                'notes' => $att['notes'] ?? $attendance->notes,
+                'notes'  => $att['notes'] ?? $attendance->notes,
             ]);
 
-            // Save session if check-in given
-            if (!empty($att['check_in'])) {
-                $ci = Carbon::parse($att['check_in']);
-                $co = !empty($att['check_out']) ? Carbon::parse($att['check_out']) : null;
+            // Save sessions if provided
+            if (!empty($att['sessions']) && is_array($att['sessions'])) {
+                foreach ($att['sessions'] as $s) {
+                    if (empty($s['check_in'])) continue;
 
-                if ($co && $co->lessThanOrEqualTo($ci)) {
-                    continue; // skip invalid
+                    $ci = Carbon::parse($s['check_in']);
+                    $co = !empty($s['check_out']) ? Carbon::parse($s['check_out']) : null;
+
+                    if ($co && $co->lessThanOrEqualTo($ci)) continue;
+
+                    $attendance->sessions()->create([
+                        'check_in'  => $ci->format('H:i'),
+                        'check_out' => $co ? $co->format('H:i') : null,
+                    ]);
                 }
-
-                $attendance->sessions()->create([
-                    'check_in'  => $ci->format('H:i'),
-                    'check_out' => $co ? $co->format('H:i') : null,
-                ]);
             }
         }
 
         return redirect()
-            ->route('admin.attendance.index')
+            ->route('admin.attendance.index', ['date' => $date])
             ->with('success', 'Bulk attendance recorded successfully');
     }
 
-    // Store manual attendance record (supports multiple sessions per day)
     public function store(Request $request)
     {
         $basic = $request->validate([
             'employee_id' => 'required|exists:employees,id',
             'date'        => 'required|date',
             'status'      => 'required|in:present,absent,late,on_leave,half_day',
-            'notes'       => 'nullable|string'
+            'notes'       => 'nullable|string',
         ]);
 
-        // Check if attendance already exists for this employee/date
         $attendance = Attendance::firstOrCreate(
             [
                 'employee_id' => $basic['employee_id'],
@@ -117,17 +130,15 @@ class AttendanceController extends Controller
             ],
             [
                 'status' => $basic['status'],
-                'notes'  => isset($basic['notes']) ? $basic['notes'] : null,
+                'notes'  => $basic['notes'] ?? null,
             ]
         );
 
-        // Update status/notes if provided (so they don’t get stuck with old values)
         $attendance->update([
             'status' => $basic['status'],
-            'notes'  => isset($basic['notes']) ? $basic['notes'] : $attendance->notes,
+            'notes'  => $basic['notes'] ?? $attendance->notes,
         ]);
 
-        // Sessions: accept sessions[] array with check_in/check_out times
         $sessions = $request->input('sessions', []);
 
         if (!empty($sessions) && is_array($sessions)) {
@@ -140,10 +151,7 @@ class AttendanceController extends Controller
                 if (!empty($s['check_out'])) {
                     $ci = Carbon::parse($s['check_in']);
                     $co = Carbon::parse($s['check_out']);
-
-                    // Skip invalid (check_out before check_in)
                     if ($co->lessThanOrEqualTo($ci)) continue;
-
                     $checkOut = $co->format('H:i');
                 }
 
@@ -155,12 +163,10 @@ class AttendanceController extends Controller
         }
 
         return redirect()
-            ->route('admin.attendance.index')
+            ->route('admin.attendance.index', ['date' => $basic['date']])
             ->with('success', 'Attendance recorded successfully');
     }
 
-
-    // Mark checkout: close the last open session for this attendance
     public function checkOut(Attendance $attendance)
     {
         $openSession = $attendance->sessions()->whereNull('check_out')->orderBy('id', 'desc')->first();
@@ -173,10 +179,57 @@ class AttendanceController extends Controller
             'check_out' => now()->format('H:i'),
         ]);
 
-        return back()->with('success', 'Check-out recorded successfully');
+        return back()->with('success', 'Check-out recorded at ' . now()->format('h:i A'));
     }
 
-    // Daily attendance report
+    /**
+     * Quick check-in: create attendance + open session in one click
+     */
+    public function quickCheckIn(Request $request)
+    {
+        $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+        ]);
+
+        $date = today()->format('Y-m-d');
+        $now  = now()->format('H:i');
+
+        $attendance = Attendance::firstOrCreate(
+            [
+                'employee_id' => $request->employee_id,
+                'date'        => $date,
+            ],
+            [
+                'status' => $now > '09:15' ? 'late' : 'present',
+            ]
+        );
+
+        // Check if there's already an open session
+        $openSession = $attendance->sessions()->whereNull('check_out')->first();
+        if ($openSession) {
+            return back()->with('error', 'Already checked in with an open session.');
+        }
+
+        $attendance->sessions()->create([
+            'check_in' => $now,
+        ]);
+
+        $employeeName = Employee::with('user')->find($request->employee_id)->user->name ?? '';
+
+        return back()->with('success', "{$employeeName} checked in at " . now()->format('h:i A'));
+    }
+
+    /**
+     * Delete an attendance record
+     */
+    public function destroy(Attendance $attendance)
+    {
+        $attendance->sessions()->delete();
+        $attendance->delete();
+
+        return back()->with('success', 'Attendance record deleted.');
+    }
+
     public function dailyReport(Request $request)
     {
         $date = $request->date ?? Carbon::today()->format('Y-m-d');
@@ -191,40 +244,37 @@ class AttendanceController extends Controller
         return view('admin.attendance.report', compact('attendances', 'date', 'allEmployees'));
     }
 
-    // Monthly report (now includes total hours and calculated salary based on hours)
     public function monthlyReport(Request $request)
     {
         $month = $request->month ?? now()->format('Y-m');
         $start = Carbon::parse($month)->startOfMonth();
-        $end = Carbon::parse($month)->endOfMonth();
+        $end   = Carbon::parse($month)->endOfMonth();
 
-        $employees = Employee::with(['user', 'attendances' => function($query) use ($start, $end) {
+        $employees = Employee::with(['user', 'attendances' => function ($query) use ($start, $end) {
             $query->whereBetween('date', [$start, $end])->with('sessions');
         }])->get();
 
         $workingDays = $this->getWorkingDays($start, $end);
 
-        // Add totals to each employee model instance
         foreach ($employees as $employee) {
             $totalMinutes = 0;
             foreach ($employee->attendances as $attendance) {
                 $totalMinutes += $attendance->total_worked_minutes;
             }
-            $totalHours = round($totalMinutes / 60, 2);
-            $hoursPerMonth = max($workingDays * 8, 1); // assume 8h working day
-            $hourlyRate = $employee->salary ? ($employee->salary / $hoursPerMonth) : 0;
+            $totalHours   = round($totalMinutes / 60, 2);
+            $hoursPerMonth = max($workingDays * 8, 1);
+            $hourlyRate   = $employee->salary ? ($employee->salary / $hoursPerMonth) : 0;
             $calculatedSalary = round($totalHours * $hourlyRate, 2);
 
-            $employee->total_minutes = $totalMinutes;
-            $employee->total_hours = $totalHours;
-            $employee->hourly_rate = round($hourlyRate, 2);
+            $employee->total_minutes     = $totalMinutes;
+            $employee->total_hours       = $totalHours;
+            $employee->hourly_rate       = round($hourlyRate, 2);
             $employee->calculated_salary = $calculatedSalary;
         }
 
         return view('admin.attendance.monthly-report', compact('employees', 'month', 'workingDays'));
     }
 
-    // Yearly report unchanged (keeps count-based metrics)
     public function yearlyReport(Request $request)
     {
         $year = $request->year ?? now()->format('Y');
@@ -232,23 +282,15 @@ class AttendanceController extends Controller
         $report = [];
         for ($month = 1; $month <= 12; $month++) {
             $start = Carbon::create($year, $month, 1)->startOfMonth();
-            $end = Carbon::create($year, $month, 1)->endOfMonth();
+            $end   = Carbon::create($year, $month, 1)->endOfMonth();
 
             $report[$month] = [
-                'name' => $start->format('F'),
-                'present' => Attendance::whereBetween('date', [$start, $end])
-                    ->where('status', 'present')
-                    ->count(),
-                'absent' => Attendance::whereBetween('date', [$start, $end])
-                    ->where('status', 'absent')
-                    ->count(),
-                'late' => Attendance::whereBetween('date', [$start, $end])
-                    ->where('status', 'late')
-                    ->count(),
-                'on_leave' => Attendance::whereBetween('date', [$start, $end])
-                    ->where('status', 'on_leave')
-                    ->count(),
-                'working_days' => $this->getWorkingDays($start, $end)
+                'name'         => $start->format('F'),
+                'present'      => Attendance::whereBetween('date', [$start, $end])->where('status', 'present')->count(),
+                'absent'       => Attendance::whereBetween('date', [$start, $end])->where('status', 'absent')->count(),
+                'late'         => Attendance::whereBetween('date', [$start, $end])->where('status', 'late')->count(),
+                'on_leave'     => Attendance::whereBetween('date', [$start, $end])->where('status', 'on_leave')->count(),
+                'working_days' => $this->getWorkingDays($start, $end),
             ];
         }
 
@@ -257,7 +299,7 @@ class AttendanceController extends Controller
 
     private function getWorkingDays($start, $end)
     {
-        $days = 0;
+        $days   = 0;
         $cursor = $start->copy();
         while ($cursor <= $end) {
             if (!$cursor->isWeekend()) {

@@ -89,7 +89,411 @@
             .main-div {
                 margin-top: 50px;
             }
+        }
 
+        /* ══════════════════════════════════════════════════════════
+           GLOBAL MOBILE RESPONSIVE FIXES
+           Applied to all admin screens
+        ══════════════════════════════════════════════════════════ */
+        @media (max-width: 768px) {
+
+            /* ── Main content area ── */
+            main.flex-1 {
+                padding: 12px !important;
+                padding-top: 70px !important;
+            }
+
+            .main-div {
+                margin-top: 0 !important;
+            }
+
+            /* ── Tables: horizontal scroll + compact cells ── */
+            table {
+                font-size: 13px;
+            }
+
+            table th,
+            table td {
+                padding: 8px 6px !important;
+                font-size: 12px;
+            }
+
+            table th {
+                font-size: 11px;
+                white-space: nowrap;
+            }
+
+            /* Ensure table wrappers scroll */
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* ── Buttons: better touch targets & wrapping ── */
+            .space-x-2 > * + *,
+            .space-x-3 > * + * {
+                margin-left: 4px !important;
+            }
+
+            /* Make inline action buttons wrap */
+            td .flex,
+            td .inline-flex,
+            td .space-x-2,
+            td .space-x-3 {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+
+            /* Minimum touch target for buttons/links in tables */
+            td a, td button {
+                min-height: 32px;
+                min-width: 32px;
+            }
+
+            /* ── Forms: stack filter rows ── */
+            .flex.items-center.space-x-2,
+            .flex.items-center.space-x-3,
+            .flex.items-center.space-x-4 {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            /* ── Page headers: wrap title + buttons ── */
+            .flex.justify-between.items-center {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            /* ── Modals: constrain to screen ── */
+            .fixed.inset-0 .bg-white,
+            .fixed.inset-0 [class*="w-96"],
+            .fixed.inset-0 [class*="max-w-"] {
+                width: 92vw !important;
+                max-width: 92vw !important;
+                margin: 0 auto;
+            }
+
+            /* ── Cards & containers: reduce padding ── */
+            .p-6 {
+                padding: 12px !important;
+            }
+
+            .p-8 {
+                padding: 14px !important;
+            }
+
+            .px-6 {
+                padding-left: 12px !important;
+                padding-right: 12px !important;
+            }
+
+            .px-8 {
+                padding-left: 14px !important;
+                padding-right: 14px !important;
+            }
+
+            /* ── Text: slightly smaller on mobile ── */
+            .text-2xl {
+                font-size: 1.25rem !important;
+            }
+
+            .text-3xl {
+                font-size: 1.5rem !important;
+            }
+
+            h1.text-2xl, h2.text-2xl {
+                font-size: 1.15rem !important;
+            }
+
+            /* ── Grid fixes: force cols on tiny screens ── */
+            .grid.grid-cols-2:not(.md\:grid-cols-2) {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .grid.grid-cols-3 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            .grid.grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr) !important;
+            }
+
+            /* ── Footer action rows: stack vertically ── */
+            .flex.justify-end.space-x-3,
+            .flex.justify-end.space-x-2 {
+                flex-direction: column;
+                gap: 8px;
+                width: 100%;
+            }
+
+            .flex.justify-end.space-x-3 > *,
+            .flex.justify-end.space-x-2 > * {
+                margin-left: 0 !important;
+                width: 100%;
+                text-align: center;
+            }
+
+            .flex.justify-end.space-x-3 a,
+            .flex.justify-end.space-x-3 button,
+            .flex.justify-end.space-x-2 a,
+            .flex.justify-end.space-x-2 button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* ── Stat cards: ensure readable ── */
+            .grid .bg-white.rounded-lg,
+            .grid .bg-white.shadow,
+            .grid .dark\:bg-gray-800 {
+                padding: 10px !important;
+            }
+
+            /* ── Whitespace fixes ── */
+            .whitespace-nowrap {
+                white-space: normal !important;
+            }
+
+            /* ── Max-width containers: full width on mobile ── */
+            .max-w-2xl,
+            .max-w-3xl,
+            .max-w-4xl,
+            .max-w-5xl,
+            .max-w-6xl,
+            .max-w-7xl {
+                max-width: 100% !important;
+            }
+        }
+
+        /* Very small screens (< 400px) */
+        @media (max-width: 400px) {
+            main.flex-1 {
+                padding: 8px !important;
+                padding-top: 68px !important;
+            }
+
+            table th, table td {
+                padding: 6px 4px !important;
+                font-size: 11px;
+            }
+
+            .grid.grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+        /* ══════════════════════════════════════════════════════════
+           GLOBAL DARK MODE — applies to ALL admin pages
+           Uses prefers-color-scheme (Tailwind default media strategy)
+        ══════════════════════════════════════════════════════════ */
+        @media (prefers-color-scheme: dark) {
+
+            /* ── Base cards & containers ── */
+            .bg-white,
+            .bg-gray-50 {
+                background-color: #1f2937 !important;
+                color: #e5e7eb !important;
+            }
+
+            .bg-gray-100 {
+                background-color: #111827 !important;
+            }
+
+            /* ── Text colors ── */
+            .text-gray-800,
+            .text-gray-900,
+            .text-gray-700 {
+                color: #e5e7eb !important;
+            }
+
+            .text-gray-600,
+            .text-gray-500 {
+                color: #9ca3af !important;
+            }
+
+            .text-gray-400 {
+                color: #6b7280 !important;
+            }
+
+            /* ── Headings inside cards ── */
+            h1, h2, h3, h4, h5, h6 {
+                color: #f3f4f6;
+            }
+
+            /* ── Borders ── */
+            .border-gray-200,
+            .border-gray-300,
+            .divide-gray-200 > :not([hidden]) ~ :not([hidden]) {
+                border-color: #374151 !important;
+            }
+
+            .border-gray-100 {
+                border-color: #1f2937 !important;
+            }
+
+            /* ── Tables ── */
+            table thead,
+            table thead th,
+            .bg-gray-50 th {
+                background-color: #111827 !important;
+                color: #9ca3af !important;
+            }
+
+            table tbody td {
+                color: #e5e7eb !important;
+                border-color: #374151 !important;
+            }
+
+            table tbody tr:hover {
+                background-color: #374151 !important;
+            }
+
+            table tbody tr:nth-child(even) {
+                background-color: rgba(55, 65, 81, 0.3) !important;
+            }
+
+            /* ── Forms: inputs, selects, textareas ── */
+            input[type="text"],
+            input[type="email"],
+            input[type="password"],
+            input[type="number"],
+            input[type="date"],
+            input[type="search"],
+            input[type="tel"],
+            input[type="url"],
+            select,
+            textarea {
+                background-color: #374151 !important;
+                color: #f3f4f6 !important;
+                border-color: #4b5563 !important;
+            }
+
+            input::placeholder,
+            textarea::placeholder {
+                color: #6b7280 !important;
+            }
+
+            input:focus,
+            select:focus,
+            textarea:focus {
+                border-color: #3b82f6 !important;
+                background-color: #1f2937 !important;
+            }
+
+            /* ── Labels ── */
+            label {
+                color: #d1d5db !important;
+            }
+
+            /* ── Shadows (softer in dark) ── */
+            .shadow,
+            .shadow-sm,
+            .shadow-md {
+                box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4) !important;
+            }
+
+            /* ── Rounded cards / panels ── */
+            .rounded-lg.shadow-md,
+            .rounded-lg.shadow,
+            .p-6.bg-white {
+                background-color: #1f2937 !important;
+            }
+
+            /* ── Alerts / flash messages ── */
+            .bg-green-100 { background-color: #064e3b !important; color: #6ee7b7 !important; border-color: #065f46 !important; }
+            .bg-red-100 { background-color: #7f1d1d !important; color: #fca5a5 !important; border-color: #991b1b !important; }
+            .bg-yellow-100 { background-color: #78350f !important; color: #fde68a !important; border-color: #92400e !important; }
+            .bg-blue-100 { background-color: #1e3a5f !important; color: #93c5fd !important; border-color: #1e40af !important; }
+
+            /* ── Stat cards (colored) — keep as-is but soften text ── */
+            .bg-blue-600, .bg-green-600, .bg-yellow-400,
+            .bg-cyan-600, .bg-indigo-600, .bg-purple-600,
+            .bg-red-500, .bg-orange-500 {
+                opacity: 0.92;
+            }
+
+            /* ── Badges / pills ── */
+            .bg-green-100.text-green-800 { background-color: #064e3b !important; color: #6ee7b7 !important; }
+            .bg-red-100.text-red-800,
+            .bg-red-100.text-red-600 { background-color: #7f1d1d !important; color: #fca5a5 !important; }
+            .bg-blue-100.text-blue-800 { background-color: #1e3a5f !important; color: #93c5fd !important; }
+            .bg-purple-100.text-purple-800 { background-color: #3b0764 !important; color: #d8b4fe !important; }
+            .bg-yellow-100.text-yellow-800 { background-color: #78350f !important; color: #fde68a !important; }
+            .bg-gray-200 { background-color: #374151 !important; color: #d1d5db !important; }
+
+            /* ── Pagination ── */
+            nav[role="navigation"] span,
+            nav[role="navigation"] a {
+                background-color: #1f2937 !important;
+                color: #d1d5db !important;
+                border-color: #374151 !important;
+            }
+
+            nav[role="navigation"] span[aria-current="page"] {
+                background-color: #2563eb !important;
+                color: #fff !important;
+            }
+
+            /* ── Modals ── */
+            .modal-content,
+            [x-show] > div > div {
+                background-color: #1f2937 !important;
+                color: #e5e7eb !important;
+            }
+
+            /* ── Links inside tables/cards ── */
+            a.text-blue-600 { color: #60a5fa !important; }
+            a.text-blue-600:hover { color: #93c5fd !important; }
+            a.text-yellow-600 { color: #fbbf24 !important; }
+            a.text-red-600 { color: #f87171 !important; }
+            a.text-green-600,
+            a.text-emerald-600 { color: #34d399 !important; }
+
+            /* ── Buttons: keep existing colors, just make borders dark ── */
+            .border-gray-300 {
+                border-color: #4b5563 !important;
+            }
+
+            button.text-gray-700,
+            a.text-gray-700 {
+                color: #d1d5db !important;
+            }
+
+            /* ── Hover backgrounds on filter/action areas ── */
+            .hover\:bg-gray-50:hover {
+                background-color: #374151 !important;
+            }
+
+            /* ── Info/detail cards used in order show, receipt etc ── */
+            .order-detail-card,
+            .info-grid .info-item,
+            .receipt-card {
+                background-color: #1f2937 !important;
+                color: #e5e7eb !important;
+            }
+
+            .info-item label {
+                color: #9ca3af !important;
+            }
+
+            .info-item p {
+                color: #f3f4f6 !important;
+            }
+
+            /* ── Status badges on order show ── */
+            .status-completed { background: #064e3b !important; color: #6ee7b7 !important; }
+            .status-pending { background: #78350f !important; color: #fde68a !important; }
+            .status-cancelled { background: #374151 !important; color: #9ca3af !important; }
+            .status-refunded { background: #7f1d1d !important; color: #fca5a5 !important; }
+
+            /* ── Filter / search bars ── */
+            .bg-gray-50.p-4.rounded-lg {
+                background-color: #111827 !important;
+                border-color: #374151 !important;
+            }
+
+            /* ── Scrollbar (for webkit browsers) ── */
+            ::-webkit-scrollbar { width: 8px; height: 8px; }
+            ::-webkit-scrollbar-track { background: #1f2937; }
+            ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+            ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
         }
     </style>
 </head>
@@ -430,6 +834,10 @@
                             <a href="{{ route('admin.reports.customer-sales') }}"
                                 class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
                                 👥 Customer Sales
+                            </a>
+                            <a href="{{ route('admin.reports.product-statement') }}"
+                                class="block px-4 py-2 rounded-md transition hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300">
+                                📦 Product Statement
                             </a>
                         </div>
                     </div>

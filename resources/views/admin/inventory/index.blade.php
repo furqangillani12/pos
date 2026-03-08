@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Inventory Management</h1>
             <div>
                 <a href="{{ route('inventory.low-stock') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
@@ -16,10 +16,10 @@
 
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-4 border-b">
-                <form method="GET" class="flex items-center">
+                <form method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center">
                     <input type="text" name="search" placeholder="Search inventory..." value="{{ request('search') }}"
-                           class="px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow">
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600">
+                           class="px-4 py-2 border rounded-lg sm:rounded-r-none sm:rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg sm:rounded-l-none sm:rounded-r-lg hover:bg-blue-600 mt-2 sm:mt-0">
                         Search
                     </button>
                 </form>

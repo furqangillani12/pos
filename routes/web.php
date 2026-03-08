@@ -62,6 +62,10 @@ Route::middleware(['auth', 'permission:manage attendance'])->group(function () {
 
     Route::post('attendance/{attendance}/checkout', [AttendanceController::class, 'checkOut'])
         ->name('admin.attendance.checkout');
+    Route::post('attendance/quick-checkin', [AttendanceController::class, 'quickCheckIn'])
+        ->name('admin.attendance.quick-checkin');
+    Route::delete('attendance/{attendance}', [AttendanceController::class, 'destroy'])
+        ->name('admin.attendance.destroy');
     Route::get('attendance/report', [AttendanceController::class, 'dailyReport'])
         ->name('admin.attendance.report');
 
@@ -108,10 +112,15 @@ Route::middleware(['auth', 'permission:manage suppliers'])->group(function () {
 // Fixed POS routes with admin prefix
 Route::middleware(['auth', 'permission:access pos'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/pos', [PosController::class, 'index'])->name('pos.index');
+    Route::get('/pos/products', [PosController::class, 'searchProducts'])->name('pos.products');
     Route::post('/pos', [PosController::class, 'storeOrder'])->name('pos.store');
     Route::get('/pos/receipt/{order}', [PosController::class, 'showReceipt'])->name('pos.receipt');
     Route::post('/pos/refund/{order}', [PosController::class, 'processRefund'])->name('pos.refund');
     Route::get('/pos/receipt/{order}/download', [PosController::class, 'downloadReceipt'])->name('pos.receipt.download');
+    Route::get('/pos/edit/{order}', [PosController::class, 'editOrder'])->name('pos.edit');
+    Route::put('/pos/edit/{order}', [PosController::class, 'updateOrder'])->name('pos.update');
+    Route::post('/pos/cancel/{order}', [PosController::class, 'cancelOrder'])->name('pos.cancel');
+    Route::delete('/pos/delete/{order}', [PosController::class, 'deleteOrder'])->name('pos.delete');
 });
 Route::middleware(['auth', 'permission:manage reports'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
@@ -121,6 +130,7 @@ Route::middleware(['auth', 'permission:manage reports'])->group(function () {
             Route::get('/profit-loss', [ReportController::class, 'profitLoss'])->name('profit-loss');
             Route::get('/category-sales', [ReportController::class, 'categorySales'])->name('category-sales');
             Route::get('/customer-sales', [ReportController::class, 'customerSales'])->name('customer-sales');
+            Route::get('/product-statement', [ReportController::class, 'productStatement'])->name('product-statement');
         });
     });
 });
@@ -147,14 +157,12 @@ Route::middleware(['auth', 'permission:assign roles'])->group(function () {
 
 
 
-// routes/web.php
-Route::middleware(['auth', 'permission:manage payroll'])->group(function () {
-Route::prefix('admin')->middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'permission:manage payroll'])->prefix('admin')->group(function () {
     Route::get('/payroll', [PayrollController::class, 'index'])->name('admin.payroll.index');
-    Route::get('/payroll/generate', [PayrollController::class, 'generate'])->name('admin.payroll.generate');
+    Route::post('/payroll/generate', [PayrollController::class, 'generate'])->name('admin.payroll.generate');
+    Route::post('/payroll/mark-all-paid', [PayrollController::class, 'markAllPaid'])->name('admin.payroll.markAllPaid');
     Route::post('/payroll/{payroll}/mark-paid', [PayrollController::class, 'markPaid'])->name('admin.payroll.markPaid');
     Route::get('/payroll/{payroll}/payslip', [PayrollController::class, 'payslip'])->name('admin.payroll.payslip');
-});
 });
 Route::get('/admin/reports/customer-orders/{customer}', [ReportController::class, 'getCustomerOrders']);
 // routes/web.php

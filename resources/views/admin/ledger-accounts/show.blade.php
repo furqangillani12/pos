@@ -206,7 +206,8 @@
 
                 {{-- Entries --}}
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                    <table class="w-full text-sm">
+                    <div class="overflow-x-auto">
+                    <table class="min-w-full text-sm">
                         <thead class="bg-gray-50 dark:bg-gray-700 text-xs uppercase text-gray-500">
                             <tr>
                                 <th class="px-3 py-3 text-left">Date</th>
@@ -291,6 +292,7 @@
                         @endif
                     </table>
 
+                    </div>
                     @if ($entries->hasPages())
                         <div class="px-4 py-3 border-t dark:border-gray-700">
                             {{ $entries->appends(request()->query())->links() }}

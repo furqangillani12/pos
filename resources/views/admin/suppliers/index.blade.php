@@ -44,13 +44,15 @@
                     <td class="px-4 py-3">{{ $supplier->company_name ?? 'N/A' }}</td>
                     <td class="px-4 py-3">{{ $supplier->email ?? 'N/A' }}</td>
                     <td class="px-4 py-3">{{ $supplier->phone }}</td>
-                    <td class="px-4 py-3 space-x-2 whitespace-nowrap">
-                        <a href="{{ route('suppliers.show', $supplier) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">View</a>
-                        <a href="{{ route('suppliers.edit', $supplier) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
-                        <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete supplier?');">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
-                        </form>
+                    <td class="px-4 py-3">
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ route('suppliers.show', $supplier) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">View</a>
+                            <a href="{{ route('suppliers.edit', $supplier) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
+                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete supplier?');">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             @empty

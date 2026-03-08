@@ -23,7 +23,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            padding: 12px 12px 50px 12px;
+            padding: 12px 12px 12px 12px;
             gap: 10px;
         }
 
@@ -111,9 +111,7 @@
         /* THE KEY FIX: product grid area is flex:1 with overflow-y:auto */
         .pos-grid-wrap {
             flex: 1;
-            /* take all remaining height */
             min-height: 0;
-            /* CRITICAL — allows flex child to shrink */
             overflow-y: auto;
             overflow-x: hidden;
             border-radius: 10px;
@@ -218,6 +216,10 @@
             color: #ef4444;
         }
 
+        .product-item .stock-ok {
+            color: #16a34a;
+        }
+
         /* ── RIGHT: Cart Panel ─────────────────────────────────────── */
         .pos-cart {
             width: 320px;
@@ -254,9 +256,7 @@
         /* Row 2: Cart Items - Takes remaining space, scrollable */
         .cart-items-wrap {
             flex: 1 1 auto;
-            /* This is the KEY - it will grow and shrink */
             min-height: 0;
-            /* CRITICAL - allows container to shrink */
             overflow-y: auto;
             padding: 10px 12px;
             background: #f8fafc;
@@ -378,14 +378,10 @@
         /* Row 3: Cart Footer - Fixed height based on content, scrollable if needed */
         .cart-footer {
             flex-shrink: 0;
-            /* Don't grow or shrink */
             max-height: 50%;
-            /* Limit maximum height */
             overflow-y: auto;
-            /* Enable scrolling within footer if content exceeds max-height */
             border-top: 1.5px solid #f1f5f9;
             background: #fff;
-            padding-bottom: 50px !important;
         }
 
         /* Totals */
@@ -658,47 +654,296 @@
             align-items: center;
         }
 
-        .product-item .stock-low {
-            color: #ef4444;
+        /* ── MOBILE CUSTOMER BAR (hidden on desktop) ────────────── */
+        .mobile-customer-bar {
+            display: none;
         }
 
-        .product-item .stock-ok {
-            color: #16a34a;
+        /* ── MOBILE FLOATING CART BAR ──────────────────────────────── */
+        .mobile-cart-bar {
+            display: none;
+        }
+
+        /* ── MOBILE CART OVERLAY ───────────────────────────────────── */
+        .mobile-cart-overlay {
+            display: none;
+        }
+
+        .mobile-cart-close-btn {
+            display: none;
         }
 
         /* ── MOBILE ─────────────────────────────────────────────────── */
         @media (max-width: 767px) {
+            body {
+                overflow: hidden !important;
+            }
+
+            /* Override parent layout padding/margin for POS */
+            .main-content-mobile,
+            main.flex-1 {
+                padding: 0 !important;
+                padding-top: 64px !important;
+                margin: 0 !important;
+            }
+
+            .main-div {
+                margin-top: 0 !important;
+                padding: 0 !important;
+            }
+
+            .main-div.space-y-4>*+* {
+                margin-top: 0 !important;
+            }
+
+            /* Hide desktop header on POS mobile */
+            main header.mb-6 {
+                display: none !important;
+            }
+
             .pos-root {
                 flex-direction: column;
-                height: 100vh;
+                height: calc(100vh - 64px);
+                max-height: calc(100vh - 64px);
+                position: relative;
             }
 
-            .pos-cart {
-                width: 100%;
-                height: 44vh;
-                min-height: 44vh;
-                max-height: 44vh;
-                border-left: none;
-                border-bottom: 2px solid #e5e7eb;
-                flex-shrink: 0;
-            }
-
-            .cart-footer {
-                max-height: 30vh;
-            }
-
+            /* Products take full space minus floating bar */
             .pos-products {
-                height: 56vh;
-                flex: none;
-                padding: 8px;
+                flex: 1;
+                height: auto;
+                min-height: 0;
+                padding: 8px 8px 0 8px;
+                padding-bottom: 70px;
+                /* space for floating cart bar */
+            }
+
+            .pos-toolbar {
+                padding: 8px 10px;
+                gap: 6px;
+            }
+
+            .pos-toolbar input {
+                padding: 7px 10px 7px 30px;
+                font-size: 13px;
+            }
+
+            .cat-tab {
+                padding: 5px 12px;
+                font-size: 11.5px;
             }
 
             .pos-grid {
-                grid-template-columns: repeat(2, 1fr);
+                grid-template-columns: repeat(3, 1fr);
+                gap: 8px;
             }
 
             .product-item .img-area {
-                height: 75px;
+                height: 70px;
+            }
+
+            .product-item .card-info {
+                padding: 5px 6px 7px;
+            }
+
+            .product-item h3 {
+                font-size: 11px;
+                -webkit-line-clamp: 1;
+            }
+
+            .product-item .price-text {
+                font-size: 11.5px;
+            }
+
+            .product-item .barcode-text,
+            .product-item .stock-text {
+                font-size: 9.5px;
+            }
+
+            /* Hide desktop cart panel */
+            .pos-cart {
+                display: none;
+            }
+
+            /* ── Mobile customer selector ── */
+            .mobile-customer-bar {
+                display: flex;
+                position: relative;
+                align-items: center;
+                gap: 8px;
+                flex-shrink: 0;
+                background: #fff;
+                border-radius: 10px;
+                padding: 8px 10px;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, .07);
+            }
+
+            /* ── Floating cart bar at bottom ── */
+            .mobile-cart-bar {
+                display: flex;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                z-index: 100;
+                background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+                color: #fff;
+                padding: 12px 16px;
+                align-items: center;
+                justify-content: space-between;
+                box-shadow: 0 -4px 20px rgba(0, 0, 0, .15);
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                min-height: 56px;
+            }
+
+            .mobile-cart-bar .cart-bar-left {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+            .mobile-cart-bar .cart-bar-badge {
+                background: #fff;
+                color: #2563eb;
+                font-size: 13px;
+                font-weight: 900;
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .mobile-cart-bar .cart-bar-text {
+                font-size: 14px;
+                font-weight: 700;
+            }
+
+            .mobile-cart-bar .cart-bar-total {
+                font-size: 16px;
+                font-weight: 900;
+            }
+
+            /* ── Full-screen cart overlay ── */
+            .mobile-cart-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 200;
+                background: #fff;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .mobile-cart-overlay.open {
+                display: flex;
+            }
+
+            .mobile-cart-overlay .overlay-header {
+                flex-shrink: 0;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 12px 16px;
+                background: #fff;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .mobile-cart-overlay .overlay-header h2 {
+                font-size: 16px;
+                font-weight: 800;
+                color: #1e293b;
+                margin: 0;
+            }
+
+            .mobile-cart-close-btn {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 36px;
+                height: 36px;
+                border-radius: 50%;
+                border: none;
+                background: #f1f5f9;
+                color: #64748b;
+                font-size: 18px;
+                cursor: pointer;
+            }
+
+            .mobile-cart-close-btn:hover {
+                background: #e2e8f0;
+            }
+
+            .mobile-cart-overlay .overlay-body {
+                flex: 1;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* Inside the overlay, re-show cart sections */
+            .mobile-cart-overlay .m-cart-head {
+                padding: 10px 14px;
+                border-bottom: 1px solid #e5e7eb;
+                background: #fff;
+            }
+
+            .mobile-cart-overlay .m-cart-items-wrap {
+                padding: 10px 12px;
+                background: #f8fafc;
+                min-height: 80px;
+            }
+
+            .mobile-cart-overlay .m-cart-footer {
+                background: #fff;
+                border-top: 1.5px solid #f1f5f9;
+            }
+
+            /* Reuse all cart styles inside overlay */
+            .mobile-cart-overlay .cart-item {
+                display: flex;
+                align-items: flex-start;
+                gap: 8px;
+                background: #fff;
+                border: 1px solid #f1f5f9;
+                border-radius: 8px;
+                padding: 8px;
+                margin-bottom: 6px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, .04);
+            }
+
+            .mobile-cart-overlay .empty-cart-message {
+                padding: 30px 20px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                color: #cbd5e1;
+                gap: 8px;
+            }
+
+            .mobile-cart-overlay .action-section {
+                padding: 10px 14px 20px;
+                position: sticky;
+                bottom: 0;
+                background: #fff;
+                border-top: 1px solid #e5e7eb;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, .05);
+            }
+        }
+
+        @media (max-width: 400px) {
+            .pos-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+            }
+
+            .product-item .img-area {
+                height: 65px;
             }
         }
 
@@ -711,6 +956,229 @@
                 grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
             }
         }
+
+        /* ── Dark mode support ── */
+        @media (prefers-color-scheme: dark) {
+            .pos-root {
+                background: #111827;
+            }
+
+            .pos-toolbar {
+                background: #1f2937;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+            }
+
+            .pos-toolbar input {
+                background: #374151;
+                border-color: #4b5563;
+                color: #f3f4f6;
+            }
+
+            .pos-toolbar input:focus {
+                border-color: #3b82f6;
+                background: #1f2937;
+            }
+
+            .cat-tab {
+                background: #1f2937;
+                border-color: #4b5563;
+                color: #d1d5db;
+            }
+
+            .cat-tab.active {
+                background: #2563eb;
+                border-color: #2563eb;
+                color: #fff;
+            }
+
+            .cat-tab:hover {
+                background: #374151;
+            }
+
+            .product-item {
+                background: #1f2937;
+                border-color: #374151;
+            }
+
+            .product-item:hover {
+                border-color: #3b82f6;
+            }
+
+            .product-item .img-area {
+                background: #374151;
+            }
+
+            .product-item .img-area i {
+                color: #6b7280;
+            }
+
+            .product-item h3 {
+                color: #f3f4f6;
+            }
+
+            .product-item .price-text {
+                color: #60a5fa;
+            }
+
+            .product-item .barcode-text {
+                color: #9ca3af;
+            }
+
+            .product-item .stock-ok {
+                color: #4ade80;
+            }
+
+            .product-item .stock-low {
+                color: #f87171;
+            }
+
+            .pos-cart {
+                background: #1e293b;
+            }
+
+            .cart-head {
+                background: #1e293b;
+                border-color: #374151;
+            }
+
+            .cart-head h2 {
+                color: #f3f4f6;
+            }
+
+            .cart-items {
+                background: #111827;
+            }
+
+            .cart-item {
+                background: #1f2937;
+                border-color: #374151;
+            }
+
+            .cart-footer {
+                background: #1e293b;
+                border-color: #374151;
+            }
+
+            .trow .lbl {
+                color: #d1d5db;
+            }
+
+            .trow .val {
+                color: #f3f4f6;
+            }
+
+            .mobile-customer-bar {
+                background: #1f2937;
+                box-shadow: 0 1px 4px rgba(0, 0, 0, .3);
+            }
+
+            #mobileCustomerSearch {
+                background: #374151 !important;
+                border-color: #4b5563 !important;
+                color: #f3f4f6 !important;
+            }
+
+            #mobileCustomerName {
+                color: #f3f4f6 !important;
+            }
+
+            #mobileCustomerDropdown {
+                background: #1f2937 !important;
+                border-color: #4b5563 !important;
+            }
+
+            #mobileCustomerDropdown [data-value] {
+                border-color: #374151 !important;
+                color: #f3f4f6;
+            }
+
+            #mobileCustomerDropdown [data-value] strong {
+                color: #f3f4f6;
+            }
+
+            #mobileCustomerDropdown [data-value]:hover {
+                background: #374151 !important;
+            }
+
+            .mobile-cart-bar {
+                background: #1e40af;
+            }
+
+            .mobile-cart-overlay {
+                background: #111827;
+            }
+
+            .mobile-cart-overlay .overlay-header {
+                background: #1f2937;
+                border-color: #374151;
+            }
+
+            .mobile-cart-overlay .overlay-header h2 {
+                color: #f3f4f6;
+            }
+
+            .mobile-cart-close-btn {
+                background: #374151;
+                color: #d1d5db;
+            }
+
+            .mobile-cart-overlay .m-cart-items-wrap {
+                background: #111827;
+            }
+
+            .mobile-cart-overlay .m-cart-footer {
+                background: #1f2937;
+            }
+
+            .mobile-cart-overlay .cart-item {
+                background: #1f2937;
+            }
+
+            .mobile-cart-overlay .empty-cart-message {
+                color: #6b7280;
+            }
+
+            .pm-btn {
+                background: #374151;
+                color: #d1d5db;
+                border-color: #4b5563;
+            }
+
+            .pm-btn.active {
+                background: #2563eb;
+                color: #fff;
+            }
+
+            .pos-select {
+                background: #374151;
+                color: #f3f4f6;
+                border-color: #4b5563;
+            }
+
+            .payment-big-input {
+                background: #374151 !important;
+                color: #f3f4f6 !important;
+                border-color: #4b5563 !important;
+            }
+
+            .sec-label {
+                color: #d1d5db;
+            }
+
+            .inline-num {
+                background: #374151;
+                color: #f3f4f6;
+                border-color: #4b5563;
+            }
+
+            #productEmpty {
+                color: #6b7280;
+            }
+
+            #productLoader i {
+                color: #6b7280;
+            }
+        }
     </style>
 @endpush
 
@@ -721,6 +1189,27 @@
          LEFT — PRODUCTS PANEL
     ══════════════════════════════════════════════════════ --}}
         <div class="pos-products">
+
+            {{-- Mobile-only customer selector (above product search on mobile) --}}
+            <div class="mobile-customer-bar" id="mobileCustomerBar">
+                <div style="position:relative;flex:1;">
+                    <input type="text" id="mobileCustomerSearch" placeholder="Search customer..." autocomplete="off"
+                        style="width:100%;padding:8px 10px 8px 32px;background:#fff;border:1.5px solid #e5e7eb;border-radius:8px;color:#1e293b;font-size:13px;outline:none;">
+                    <i class="fas fa-user"
+                        style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#9ca3af;font-size:12px;pointer-events:none;"></i>
+                </div>
+                <div id="mobileCustomerDropdown"
+                    style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #e5e7eb;border-radius:0 0 10px 10px;max-height:200px;overflow-y:auto;z-index:50;box-shadow:0 4px 12px rgba(0,0,0,.1);">
+                </div>
+                <div id="mobileCustomerSelected" style="display:none;align-items:center;gap:6px;flex:1;">
+                    <span id="mobileCustomerName"
+                        style="font-size:12px;font-weight:600;color:#1e293b;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></span>
+                    <button onclick="clearMobileCustomer()"
+                        style="background:#fee2e2;color:#dc2626;border:none;border-radius:6px;width:28px;height:28px;font-size:12px;cursor:pointer;flex-shrink:0;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
 
             {{-- Search toolbar --}}
             <div class="pos-toolbar">
@@ -742,67 +1231,38 @@
                 @endforeach
             </div>
 
-            {{-- ⬇⬇ THIS IS THE SCROLLABLE PRODUCT AREA ⬇⬇ --}}
-            <div class="pos-grid-wrap">
-                <div class="pos-grid" id="productGrid">
-                    @foreach ($products as $product)
-                        <div class="product-item" data-id="{{ $product->id }}" data-name="{{ $product->name }}"
-                            data-barcode="{{ $product->barcode ?? '' }}" data-price="{{ $product->sale_price }}"
-                            data-sale-price="{{ $product->sale_price }}" data-resale-price="{{ $product->resale_price }}"
-                            data-wholesale-price="{{ $product->wholesale_price }}" data-weight="{{ $product->weight ?? 0 }}"
-                            data-category-id="{{ $product->category_id }}">
-                            <div class="img-area">
-                                @if ($product->image)
-                                    <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}">
-                                @else
-                                    <i class="fas fa-box-open"></i>
-                                @endif
-                            </div>
-                            <div class="card-info">
-                                <h3>{{ $product->name }}</h3>
-                                @if ($product->barcode)
-                                    <div class="barcode-text"><i class="fas fa-barcode"></i> {{ $product->barcode }}</div>
-                                @endif
-                                <div class="price-text">Rs. {{ number_format($product->sale_price, 2) }}</div>
-                                {{-- AFTER --}}
-                                @if ($product->rank)
-                                    <div class="stock-text">Box: {{ $product->rank }}</div>
-                                @endif
-                                <div
-                                    class="stock-text {{ $product->stock_quantity <= ($product->reorder_level ?? 5) ? 'stock-low' : 'stock-ok' }}">
-                                    Stock: {{ $product->stock_quantity }}
-                                </div>
-                            </div>
-                        </div>
-                    @endforeach
+            {{-- Scrollable product area (loaded via AJAX) --}}
+            <div class="pos-grid-wrap" id="productGridWrap">
+                <div class="pos-grid" id="productGrid"></div>
+                <div id="productLoader" style="text-align:center;padding:20px;display:none;">
+                    <i class="fas fa-spinner fa-spin" style="font-size:24px;color:#6b7280;"></i>
+                </div>
+                <div id="productEmpty" style="text-align:center;padding:40px;display:none;color:#9ca3af;">
+                    <i class="fas fa-box-open" style="font-size:36px;margin-bottom:8px;display:block;"></i>
+                    No products found
                 </div>
             </div>
 
         </div>
 
         {{-- ══════════════════════════════════════════════════════
-         RIGHT — CART PANEL (3-row flex column)
-         Row 1: Header (fixed)
-         Row 2: Cart items (scrollable, flex:1)
-         Row 3: Footer totals+payment (capped height, scrollable)
+         RIGHT — CART PANEL (Desktop only, 3-row flex column)
     ══════════════════════════════════════════════════════ --}}
         <div class="pos-cart" data-pos-route="{{ route('admin.pos.store') }}">
 
-            {{-- ── ROW 1: HEADER (fixed) ── --}}
+            {{-- ROW 1: HEADER --}}
             <div class="cart-head">
-                <h2>🛒 Current Order</h2>
+                <h2><i class="fas fa-shopping-cart"></i> Current Order</h2>
 
                 {{-- Customer select with search --}}
                 <div class="customer-wrap" style="position:relative;">
-
-                    {{-- AFTER --}}
-                    <input type="text" id="customerSearchInput" placeholder="🔍 Search or select customer..."
+                    <input type="text" id="customerSearchInput" placeholder="Search or select customer..."
                         autocomplete="off"
                         style="width:100%;padding:8px 10px;background:#f9fafb;border:1.5px solid #e5e7eb;border-radius:8px;color:#1e293b;font-size:13px;outline:none;"
                         onfocus="this.style.borderColor='#3b82f6';this.style.background='#fff'"
                         onblur="this.style.borderColor='#e5e7eb';this.style.background='#f9fafb'">
 
-                    {{-- Hidden actual select (used for form value) --}}
+                    {{-- Hidden actual select --}}
                     <select id="customerSelect" style="display:none;">
                         <option value="">Walk-in Customer</option>
                         @foreach ($customers as $customer)
@@ -843,14 +1303,14 @@
                             <span id="customerDueBadge"
                                 style="display:none;background:#ef4444;color:#fff;font-size:10px;font-weight:800;padding:2px 7px;border-radius:10px;"></span>
                             <button onclick="clearCustomerSelection()"
-                                style="background:none;border:none;color:rgba(0, 0, 0, 0.6);font-size:11px;cursor:pointer;">✕
+                                style="background:none;border:none;color:rgba(0, 0, 0, 0.6);font-size:11px;cursor:pointer;">
                                 Clear</button>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {{-- ── ROW 2: CART ITEMS (scrollable, flex:1) ── --}}
+            {{-- ROW 2: CART ITEMS --}}
             <div class="cart-items-wrap">
                 <div class="cart-items"></div>
                 <div class="empty-cart-message">
@@ -860,7 +1320,7 @@
                 </div>
             </div>
 
-            {{-- ── ROW 3: FOOTER (totals + payment) ── --}}
+            {{-- ROW 3: FOOTER --}}
             <div class="cart-footer">
 
                 {{-- Totals --}}
@@ -878,10 +1338,16 @@
                         <span class="val tax">Rs. 0.00</span>
                     </div>
                     <div class="trow">
-                        <span class="lbl">Discount (Rs.)</span>
+                        <span class="lbl">Discount
+                            <select id="discount_type" class="inline-num"
+                                style="width:50px;padding:2px 4px;font-size:11px;"
+                                onchange="updateCartDisplay();updateBalanceSummary()">
+                                <option value="fixed">Rs.</option>
+                                <option value="percent">%</option>
+                            </select>
+                        </span>
                         <input type="number" id="discount" class="inline-num" value="0" min="0"
                             step="0.01" oninput="updateCartDisplay();updateBalanceSummary()">
-
                     </div>
                     <div class="trow">
                         <span class="lbl">Weight</span>
@@ -895,32 +1361,30 @@
 
                 {{-- Payment Method --}}
                 <div class="pay-section">
-                    <div class="sec-label">ادائیگی کا طریقہ — Payment</div>
+                    <div class="sec-label">Payment Method</div>
                     <div class="pm-grid">
-                        <button class="pm-btn active" data-method="cash" onclick="selectPM(this)">💵 Cash</button>
-                        <button class="pm-btn" data-method="jazzcash" onclick="selectPM(this)">📱 Jazz</button>
-                        <button class="pm-btn" data-method="easypaisa" onclick="selectPM(this)">📱 Easy</button>
-                        <button class="pm-btn" data-method="bank" onclick="selectPM(this)">🏦 Bank</button>
-                        <button class="pm-btn" data-method="card" onclick="selectPM(this)">💳 Card</button>
-                        <button class="pm-btn" data-method="cod" onclick="selectPM(this)">🚚 COD</button>
+                        <button class="pm-btn active" data-method="cash" onclick="selectPM(this)">Cash</button>
+                        <button class="pm-btn" data-method="jazzcash" onclick="selectPM(this)">Jazz</button>
+                        <button class="pm-btn" data-method="easypaisa" onclick="selectPM(this)">Easy</button>
+                        <button class="pm-btn" data-method="bank" onclick="selectPM(this)">Bank</button>
+                        <button class="pm-btn" data-method="cod" onclick="selectPM(this)">COD</button>
+                        <button class="pm-btn" data-method="pending" onclick="selectPM(this)">Pending</button>
                     </div>
                     <input type="hidden" id="payment_method" value="cash">
                 </div>
 
                 {{-- Partial Payment Box --}}
                 <div class="payment-box" id="paymentBalanceBox">
-                    {{-- Previous balance --}}
-                    <div class="flex justify-between text-sm hidden" id="previousBalanceRow"
-                        style="background:#fff7ed;padding:5px 8px;border-radius:6px;margin-bottom:8px;">
-                        <span style="color:#c2410c;font-weight:700;">⚠️ پچھلا باقی (Prev. Balance):</span>
+                    <div id="previousBalanceRow"
+                        style="display:none;background:#fff7ed;padding:5px 8px;border-radius:6px;margin-bottom:8px;font-size:14px;">
+                        <span style="color:#c2410c;font-weight:700;">Prev. Balance:</span>
                         <span style="color:#c2410c;font-weight:800;" id="previousBalanceDisplay">Rs. 0</span>
                     </div>
 
-                    <label>💵 رقم موصولہ — Amount Received</label>
+                    <label>Amount Received</label>
                     <input type="number" id="paid_amount" name="paid_amount" class="payment-big-input" min="0"
                         step="0.01" placeholder="0.00" oninput="updateBalanceSummary()">
 
-                    {{-- Balance summary rows --}}
                     <div class="bal-summary" id="balanceSummaryRows" style="display:none;">
                         <div class="bal-row" style="color:#6b7280;">
                             <span>Total Bill:</span>
@@ -931,11 +1395,11 @@
                             <span id="summaryAmountPaid" style="font-weight:700;">Rs. 0</span>
                         </div>
                         <div class="bal-row change" id="changeRow" style="display:none;">
-                            <span>واپسی (Change):</span>
+                            <span>Change:</span>
                             <strong id="changeDisplay">Rs. 0</strong>
                         </div>
                         <div class="bal-row remaining" id="balanceRow" style="display:none;">
-                            <span>باقی (Remaining):</span>
+                            <span>Remaining:</span>
                             <strong id="balanceDisplay">Rs. 0</strong>
                         </div>
                         <div class="bal-row new-bal" id="newBalanceRow">
@@ -953,8 +1417,7 @@
                         <option value="By Bus">By Bus</option>
                         <option value="TCS">TCS</option>
                         <option value="Pak Post">Pak Post</option>
-                        <option value="TCS-COD">TCS-COD</option>
-                        <option value="Pak Post-COD">Pak Post-COD</option>
+                        <option value="PostEx">PostEx</option>
                     </select>
                     <div id="tracking_id_field" style="display:none;margin-top:6px;">
                         <input type="text" id="tracking_id" class="pos-select" placeholder="Tracking ID"
@@ -967,20 +1430,52 @@
                     </div>
                 </div>
 
+                {{-- Notes --}}
+                <div style="padding:0 10px 8px;">
+                    <textarea id="order_notes" placeholder="Notes / comments..." rows="2"
+                        style="width:100%;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;resize:vertical;background:#f9fafb;color:#1e293b;"></textarea>
+                </div>
+
                 {{-- Action buttons --}}
                 <div class="action-section">
                     <button class="btn-process checkout-btn">
-                        ✅ Process Payment — رقم وصول کریں
+                        Process Payment
                     </button>
                     <button class="btn-clear clear-cart-btn">
-                        🗑 Clear Cart
+                        Clear Cart
                     </button>
                 </div>
 
-            </div>{{-- end cart-footer --}}
-        </div>{{-- end pos-cart --}}
+            </div>
+        </div>
 
-    </div>{{-- end pos-root --}}
+    </div>
+
+    {{-- ══════════════════════════════════════════════════════
+     MOBILE — FLOATING CART BAR (bottom of screen)
+    ══════════════════════════════════════════════════════ --}}
+    <div class="mobile-cart-bar" id="mobileCartBar" onclick="openMobileCart()">
+        <div class="cart-bar-left">
+            <div class="cart-bar-badge" id="mobileCartCount">0</div>
+            <div class="cart-bar-text">View Cart</div>
+        </div>
+        <div class="cart-bar-total" id="mobileCartTotal">Rs. 0.00</div>
+    </div>
+
+    {{-- ══════════════════════════════════════════════════════
+     MOBILE — FULL SCREEN CART OVERLAY
+    ══════════════════════════════════════════════════════ --}}
+    <div class="mobile-cart-overlay" id="mobileCartOverlay">
+        <div class="overlay-header">
+            <h2><i class="fas fa-shopping-cart"></i> Cart</h2>
+            <button class="mobile-cart-close-btn" onclick="closeMobileCart()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="overlay-body" id="mobileCartBody">
+            {{-- Filled dynamically by JS --}}
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -997,83 +1492,207 @@
 
         // ── Payment method toggle ──────────────────────────────────
         window.selectPM = function(btn) {
+            // Update in both desktop and mobile
             document.querySelectorAll('.pm-btn').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
+            // Sync all payment_method inputs
+            document.querySelectorAll('[id=payment_method], .payment-method-input').forEach(el => {
+                el.value = btn.dataset.method;
+            });
             document.getElementById('payment_method').value = btn.dataset.method;
         };
 
         // ── Dispatch toggle ────────────────────────────────────────
         document.addEventListener('DOMContentLoaded', function() {
-            const dispatchSelect = document.getElementById('dispatch_method');
-            if (dispatchSelect) {
-                dispatchSelect.addEventListener('change', function() {
-                    const val = this.value;
-                    const needsTracking = val.includes('TCS') || val.includes('Pak Post');
-                    document.getElementById('tracking_id_field').style.display = needsTracking ? 'block' :
-                        'none';
-                    document.getElementById('delivery_charges_field').style.display = needsTracking ?
-                        'block' : 'none';
+            function setupDispatchToggle() {
+                document.querySelectorAll('[id=dispatch_method]').forEach(sel => {
+                    sel.addEventListener('change', function() {
+                        const val = this.value;
+                        const needsTracking = val.includes('TCS') || val.includes('Pak Post') || val
+                            .includes('PostEx');
+                        // Find sibling fields
+                        const parent = this.closest('.dispatch-section');
+                        if (parent) {
+                            const trackField = parent.querySelector('[id=tracking_id_field]');
+                            const delField = parent.querySelector('[id=delivery_charges_field]');
+                            if (trackField) trackField.style.display = needsTracking ? 'block' :
+                                'none';
+                            if (delField) delField.style.display = needsTracking ? 'block' : 'none';
+                        }
+                    });
                 });
+            }
+            setupDispatchToggle();
+        });
+
+        // ── AJAX Product Loading ──────────────────────────────────
+        window.productPage = 1;
+        window.productLastPage = 1;
+        window.productLoading = false;
+        window.productSearchTerm = '';
+        window.productCategoryId = '';
+
+        const productGrid = document.getElementById('productGrid');
+        const productLoader = document.getElementById('productLoader');
+        const productEmpty = document.getElementById('productEmpty');
+        const productGridWrap = document.getElementById('productGridWrap');
+        const productsUrl = "{{ route('admin.pos.products') }}";
+
+        function renderProductCard(p) {
+            const stockClass = p.stock_quantity <= p.reorder_level ? 'stock-low' : 'stock-ok';
+            const imgHtml = p.image ?
+                `<img src="${p.image}" alt="${p.name}" loading="lazy">` :
+                `<i class="fas fa-box-open"></i>`;
+            const unitLabel = p.unit ? ` <small style="font-weight:400;color:#6b7280;font-size:10px;">(${p.unit})</small>` :
+                '';
+            let barcodeHtml = '';
+            if (p.barcode) {
+                barcodeHtml =
+                    `<div class="barcode-text"><i class="fas fa-barcode"></i> ${p.barcode}${p.rank ? ' | Box: ' + p.rank : ''}</div>`;
+            } else if (p.rank) {
+                barcodeHtml = `<div class="barcode-text">Box: ${p.rank}</div>`;
+            }
+
+            const card = document.createElement('div');
+            card.className = 'product-item';
+            card.dataset.id = p.id;
+            card.dataset.name = p.name;
+            card.dataset.barcode = p.barcode || '';
+            card.dataset.price = p.sale_price;
+            card.dataset.salePrice = p.sale_price;
+            card.dataset.resalePrice = p.resale_price || p.sale_price;
+            card.dataset.wholesalePrice = p.wholesale_price || p.sale_price;
+            card.dataset.weight = p.weight;
+            card.dataset.unit = p.unit || '';
+            card.dataset.categoryId = p.category_id || '';
+
+            card.innerHTML = `
+                <div class="img-area">${imgHtml}</div>
+                <div class="card-info">
+                    <h3>${p.name}${unitLabel}</h3>
+                    ${barcodeHtml}
+                    <div class="price-text">Rs. ${parseFloat(p.sale_price).toFixed(2)}</div>
+                    <div class="stock-text ${stockClass}">Stock: ${p.stock_quantity}${p.unit ? ' ' + p.unit : ''}</div>
+                </div>`;
+
+            card.addEventListener('click', function() {
+                addProductToCart(this);
+            });
+
+            return card;
+        }
+
+        function addProductToCart(card) {
+            const typeSelect = document.querySelector('.customer-type-select');
+            const type = typeSelect?.value || 'walkin';
+
+            let price = parseFloat(card.dataset.salePrice);
+            if (type === 'reseller') price = parseFloat(card.dataset.resalePrice) || price;
+            if (type === 'wholesale') price = parseFloat(card.dataset.wholesalePrice) || price;
+
+            const existing = window.cart.find(i => i.id === card.dataset.id);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                window.cart.push({
+                    id: card.dataset.id,
+                    name: card.dataset.name,
+                    price: price,
+                    weight: parseFloat(card.dataset.weight) || 0,
+                    unit: card.dataset.unit || '',
+                    quantity: 1,
+                    salePrice: parseFloat(card.dataset.salePrice),
+                    resalePrice: parseFloat(card.dataset.resalePrice) || parseFloat(card.dataset.salePrice),
+                    wholesalePrice: parseFloat(card.dataset.wholesalePrice) || parseFloat(card.dataset.salePrice),
+                });
+            }
+
+            card.style.borderColor = '#22c55e';
+            setTimeout(() => {
+                card.style.borderColor = '';
+            }, 300);
+            updateCartDisplay();
+        }
+
+        async function loadProducts(append = false) {
+            if (window.productLoading) return;
+            if (append && window.productPage > window.productLastPage) return;
+
+            window.productLoading = true;
+            productLoader.style.display = 'block';
+            productEmpty.style.display = 'none';
+
+            const params = new URLSearchParams({
+                page: window.productPage,
+                per_page: 30,
+            });
+            if (window.productSearchTerm) params.append('search', window.productSearchTerm);
+            if (window.productCategoryId) params.append('category_id', window.productCategoryId);
+
+            try {
+                const res = await fetch(`${productsUrl}?${params}`);
+                const json = await res.json();
+
+                if (!append) productGrid.innerHTML = '';
+
+                json.data.forEach(p => {
+                    productGrid.appendChild(renderProductCard(p));
+                });
+
+                window.productLastPage = json.last_page;
+
+                if (json.data.length === 0 && !append) {
+                    productEmpty.style.display = 'block';
+                }
+
+                // Update price display if customer type is set
+                const typeSelect = document.querySelector('.customer-type-select');
+                if (typeSelect && typeSelect.value !== 'walkin') {
+                    typeSelect.dispatchEvent(new Event('change'));
+                }
+            } catch (e) {
+                console.error('Failed to load products:', e);
+            } finally {
+                window.productLoading = false;
+                productLoader.style.display = 'none';
+            }
+        }
+
+        // Infinite scroll
+        productGridWrap.addEventListener('scroll', function() {
+            if (this.scrollTop + this.clientHeight >= this.scrollHeight - 100) {
+                if (window.productPage < window.productLastPage) {
+                    window.productPage++;
+                    loadProducts(true);
+                }
             }
         });
 
-        // ── Product search + category filter ──────────────────────
-        document.getElementById('productSearch')?.addEventListener('input', filterProducts);
+        // Search with debounce
+        let searchTimer;
+        document.getElementById('productSearch')?.addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                window.productSearchTerm = this.value.trim();
+                window.productPage = 1;
+                loadProducts(false);
+            }, 300);
+        });
+
+        // Category tabs
         document.querySelectorAll('.cat-tab').forEach(btn => {
             btn.addEventListener('click', function() {
                 document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-                filterProducts();
+                const catId = this.dataset.category;
+                window.productCategoryId = catId === 'all' ? '' : catId;
+                window.productPage = 1;
+                loadProducts(false);
             });
         });
 
-        function filterProducts() {
-            const term = (document.getElementById('productSearch')?.value || '').toLowerCase();
-            const catId = document.querySelector('.cat-tab.active')?.dataset.category || 'all';
-            document.querySelectorAll('.product-item').forEach(card => {
-                const matchSearch = !term ||
-                    card.dataset.name.toLowerCase().includes(term) ||
-                    (card.dataset.barcode || '').toLowerCase().includes(term);
-                const matchCat = catId === 'all' || card.dataset.categoryId === catId;
-                card.style.display = (matchSearch && matchCat) ? '' : 'none';
-            });
-        }
-
-        document.querySelectorAll('.product-item').forEach(card => {
-            card.addEventListener('click', function() {
-                const typeSelect = document.querySelector('.customer-type-select');
-                const type = typeSelect?.value || 'walkin';
-
-                // Read correct price based on current type
-                let price = parseFloat(this.dataset.salePrice);
-                if (type === 'reseller') price = parseFloat(this.dataset.resalePrice) || price;
-                if (type === 'wholesale') price = parseFloat(this.dataset.wholesalePrice) || price;
-
-                const existing = window.cart.find(i => i.id === this.dataset.id);
-                if (existing) {
-                    existing.quantity++;
-                } else {
-                    window.cart.push({
-                        id: this.dataset.id,
-                        name: this.dataset.name,
-                        price: price,
-                        weight: parseFloat(this.dataset.weight) || 0,
-                        quantity: 1,
-                        salePrice: parseFloat(this.dataset.salePrice),
-                        resalePrice: parseFloat(this.dataset.resalePrice) || parseFloat(this.dataset
-                            .salePrice),
-                        wholesalePrice: parseFloat(this.dataset.wholesalePrice) || parseFloat(this
-                            .dataset.salePrice),
-                    });
-                }
-
-                this.style.borderColor = '#22c55e';
-                setTimeout(() => {
-                    this.style.borderColor = '';
-                }, 300);
-                updateCartDisplay();
-            });
-        });
+        // Initial load
+        loadProducts(false);
 
         // ── Cart display ───────────────────────────────────────────
         window.updateCartDisplay = function() {
@@ -1088,15 +1707,17 @@
 
             if (window.cart.length === 0) {
                 cartEl.innerHTML = '';
-                emptyEl.style.display = 'flex';
+                if (emptyEl) emptyEl.style.display = 'flex';
                 if (subtotalEl) subtotalEl.textContent = 'Rs. 0.00';
                 if (totalEl) totalEl.textContent = 'Rs. 0.00';
                 if (taxEl) taxEl.textContent = 'Rs. 0.00';
                 if (weightEl) weightEl.textContent = '0.00 kg';
                 updateBalanceSummary();
+                updateMobileCartBar();
+                updateMobileCartOverlay();
                 return;
             }
-            emptyEl.style.display = 'none';
+            if (emptyEl) emptyEl.style.display = 'none';
 
             let subtotal = 0,
                 totalWeight = 0,
@@ -1105,37 +1726,53 @@
                 const itemTotal = item.price * item.quantity;
                 subtotal += itemTotal;
                 totalWeight += (item.weight || 0) * item.quantity;
-                html += `
-        <div class="cart-item">
-            <div class="cart-item-meta">
-                <div class="name">${item.name}</div>
-                <div class="unit">Rs. ${formatNumber(item.price)} × ${item.quantity}</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:5px;">
-                <div class="qty-ctrl">
-                    <button class="qty-btn" onclick="changeQty(${idx},-1)">−</button>
-                    <span class="qty-num">${item.quantity}</span>
-                    <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
-                </div>
-                <span class="cart-item-total">Rs.${formatNumber(itemTotal)}</span>
-                <button class="remove-item-btn" onclick="removeFromCart(${idx})">✕</button>
-            </div>
-        </div>`;
+                html += buildCartItemHTML(item, idx, itemTotal);
             });
             cartEl.innerHTML = html;
 
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
-            const taxAmt = subtotal * (taxRate / 100);
-            const discount = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+            const afterDiscount = subtotal - discount;
+            const taxAmt = afterDiscount * (taxRate / 100);
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
-            const total = subtotal + taxAmt + delivery - discount;
+            const total = afterDiscount + taxAmt + delivery;
 
             if (subtotalEl) subtotalEl.textContent = 'Rs. ' + formatNumber(subtotal);
             if (taxEl) taxEl.textContent = 'Rs. ' + formatNumber(taxAmt);
             if (totalEl) totalEl.textContent = 'Rs. ' + formatNumber(total);
             if (weightEl) weightEl.textContent = formatNumber(totalWeight) + ' kg';
             updateBalanceSummary();
+            updateMobileCartBar();
+            updateMobileCartOverlay();
         };
+
+        function buildCartItemHTML(item, idx, itemTotal) {
+            return `
+            <div class="cart-item">
+                <div class="cart-item-meta">
+                    <div class="name">${item.name}${item.unit ? ' <small style="color:#9ca3af">('+item.unit+')</small>' : ''}</div>
+                    <div class="unit" style="display:flex;align-items:center;gap:4px;">
+                        Rs.<input type="number" value="${item.price}" step="0.01" min="0"
+                            style="width:65px;padding:1px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;"
+                            onchange="updateItemPrice(${idx}, this.value)">
+                        x ${item.quantity}
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:5px;">
+                    <div class="qty-ctrl">
+                        <button class="qty-btn" onclick="changeQty(${idx},-1)">-</button>
+                        <input type="number" value="${item.quantity}" step="0.01" min="0.01"
+                            style="width:45px;text-align:center;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;padding:1px 2px;"
+                            onchange="setQty(${idx}, this.value)">
+                        <button class="qty-btn" onclick="changeQty(${idx},1)">+</button>
+                    </div>
+                    <span class="cart-item-total">Rs.${formatNumber(itemTotal)}</span>
+                    <button class="remove-item-btn" onclick="removeFromCart(${idx})">x</button>
+                </div>
+            </div>`;
+        }
 
         window.changeQty = function(idx, delta) {
             window.cart[idx].quantity += delta;
@@ -1146,19 +1783,35 @@
             window.cart.splice(idx, 1);
             updateCartDisplay();
         };
+        window.updateItemPrice = function(idx, newPrice) {
+            window.cart[idx].price = parseFloat(newPrice) || 0;
+            updateCartDisplay();
+        };
+        window.setQty = function(idx, newQty) {
+            const qty = parseFloat(newQty);
+            if (qty > 0) {
+                window.cart[idx].quantity = qty;
+            } else {
+                window.cart.splice(idx, 1);
+            }
+            updateCartDisplay();
+        };
         window.clearCart = function() {
             window.cart = [];
             updateCartDisplay();
         };
 
-        // ── Balance summary ────────────────────────────────────────
-        function updateBalanceSummary() {
+        // ── Balance summary (updates BOTH desktop & mobile) ──────
+        function getBalanceData() {
             const cart = window.cart || [];
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
-            const discount = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
             const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-            const total = subtotal + subtotal * (taxRate / 100) + delivery - discount;
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+            const afterDiscount = subtotal - discount;
+            const total = afterDiscount + afterDiscount * (taxRate / 100) + delivery;
 
             let prevBal = 0;
             const csel = document.getElementById('customerSelect');
@@ -1173,9 +1826,19 @@
             const change = Math.max(0, paidAmt - total);
             const newBalance = prevBal + total - paidAmt;
 
-            const summaryRows = document.getElementById('balanceSummaryRows');
-            if (summaryRows) summaryRows.style.display = (paidRaw || prevBal > 0) ? 'block' : 'none';
+            return {
+                total,
+                prevBal,
+                paidRaw,
+                paidAmt,
+                balOnOrder,
+                change,
+                newBalance
+            };
+        }
 
+        function updateBalanceSummary() {
+            const d = getBalanceData();
             const set = (id, val) => {
                 const el = document.getElementById(id);
                 if (el) el.textContent = val;
@@ -1184,38 +1847,344 @@
                 const el = document.getElementById(id);
                 if (el) el.style.display = v ? '' : 'none';
             };
+            const showFlex = (id, v) => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = v ? 'flex' : 'none';
+            };
 
-            set('summaryTotalBill', 'Rs. ' + formatNumber(total));
-            set('summaryAmountPaid', 'Rs. ' + formatNumber(paidAmt));
+            // Desktop
+            const summaryRows = document.getElementById('balanceSummaryRows');
+            if (summaryRows) summaryRows.style.display = (d.paidRaw || d.prevBal > 0) ? 'block' : 'none';
 
-            show('previousBalanceRow', prevBal > 0);
-            set('previousBalanceDisplay', 'Rs. ' + formatNumber(prevBal));
-            show('changeRow', change > 0);
-            set('changeDisplay', 'Rs. ' + formatNumber(change));
-            show('balanceRow', balOnOrder > 0);
-            set('balanceDisplay', 'Rs. ' + formatNumber(balOnOrder));
+            set('summaryTotalBill', 'Rs. ' + formatNumber(d.total));
+            set('summaryAmountPaid', 'Rs. ' + formatNumber(d.paidAmt));
+            show('previousBalanceRow', d.prevBal > 0);
+            set('previousBalanceDisplay', 'Rs. ' + formatNumber(d.prevBal));
+            show('changeRow', d.change > 0);
+            set('changeDisplay', 'Rs. ' + formatNumber(d.change));
+            show('balanceRow', d.balOnOrder > 0);
+            set('balanceDisplay', 'Rs. ' + formatNumber(d.balOnOrder));
 
+            // Desktop new balance
             const nbEl = document.getElementById('newBalanceDisplay');
             if (nbEl) {
-                if (newBalance > 0) {
-                    nbEl.textContent = 'Rs. ' + formatNumber(newBalance);
+                if (d.newBalance > 0) {
+                    nbEl.textContent = 'Rs. ' + formatNumber(d.newBalance);
                     nbEl.style.color = '#dc2626';
-                } else if (newBalance < 0) {
-                    nbEl.textContent = 'Rs. ' + formatNumber(Math.abs(newBalance)) + ' (پیشگی)';
+                } else if (d.newBalance < 0) {
+                    nbEl.textContent = 'Rs. ' + formatNumber(Math.abs(d.newBalance)) + ' (advance)';
                     nbEl.style.color = '#16a34a';
                 } else {
-                    nbEl.textContent = '✅ صاف (Settled)';
+                    nbEl.textContent = 'Settled';
                     nbEl.style.color = '#16a34a';
                 }
             }
             const lbl = document.getElementById('newBalLabel');
-            if (lbl) lbl.textContent = newBalance > 0 ? 'New Balance (Due):' : newBalance < 0 ? 'Advance Credit:' :
+            if (lbl) lbl.textContent = d.newBalance > 0 ? 'New Balance (Due):' : d.newBalance < 0 ? 'Advance Credit:' :
+                'Account Status:';
+
+            // Mobile
+            const mWrap = document.getElementById('mobileBalanceSummary');
+            if (mWrap) mWrap.style.display = (d.paidRaw || d.prevBal > 0) ? 'block' : 'none';
+
+            set('m_summaryTotalBill', 'Rs. ' + formatNumber(d.total));
+            set('m_summaryAmountPaid', 'Rs. ' + formatNumber(d.paidAmt));
+            showFlex('m_changeRow', d.change > 0);
+            set('m_changeDisplay', 'Rs. ' + formatNumber(d.change));
+            showFlex('m_balanceRow', d.balOnOrder > 0);
+            set('m_balanceDisplay', 'Rs. ' + formatNumber(d.balOnOrder));
+
+            const mNbEl = document.getElementById('m_newBalanceDisplay');
+            if (mNbEl) {
+                if (d.newBalance > 0) {
+                    mNbEl.textContent = 'Rs. ' + formatNumber(d.newBalance);
+                    mNbEl.style.color = '#dc2626';
+                } else if (d.newBalance < 0) {
+                    mNbEl.textContent = 'Rs. ' + formatNumber(Math.abs(d.newBalance)) + ' (advance)';
+                    mNbEl.style.color = '#16a34a';
+                } else {
+                    mNbEl.textContent = 'Settled';
+                    mNbEl.style.color = '#16a34a';
+                }
+            }
+            const mLbl = document.getElementById('m_newBalLabel');
+            if (mLbl) mLbl.textContent = d.newBalance > 0 ? 'New Balance (Due):' : d.newBalance < 0 ? 'Advance Credit:' :
                 'Account Status:';
         }
 
+        // ── Mobile Cart Bar + Overlay ────────────────────────────
+        function updateMobileCartBar() {
+            const countEl = document.getElementById('mobileCartCount');
+            const totalEl = document.getElementById('mobileCartTotal');
+            if (!countEl || !totalEl) return;
+
+            const itemCount = window.cart.reduce((s, i) => s + i.quantity, 0);
+            countEl.textContent = Math.round(itemCount * 100) / 100;
+
+            const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+            const afterDiscount = subtotal - discount;
+            const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const total = afterDiscount + afterDiscount * (taxRate / 100) + delivery;
+            totalEl.textContent = 'Rs. ' + formatNumber(total);
+        }
+
+        function updateMobileCartOverlay() {
+            const body = document.getElementById('mobileCartBody');
+            if (!body) return;
+
+            // Only update if overlay is open
+            const overlay = document.getElementById('mobileCartOverlay');
+            if (!overlay || !overlay.classList.contains('open')) return;
+
+            // Don't re-render if user is typing in an input inside the overlay
+            // This prevents keyboard from closing on mobile
+            const activeEl = document.activeElement;
+            if (activeEl && overlay.contains(activeEl) && (activeEl.tagName === 'INPUT' || activeEl.tagName ===
+                    'TEXTAREA' || activeEl.tagName === 'SELECT')) {
+                // Just update the totals text without rebuilding HTML
+                updateMobileCartTotalsOnly();
+                return;
+            }
+
+            renderMobileCartContent();
+        }
+
+        function updateMobileCartTotalsOnly() {
+            const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const totalWeight = window.cart.reduce((s, i) => s + (i.weight || 0) * i.quantity, 0);
+            const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+            const afterDiscount = subtotal - discount;
+            const taxAmt = afterDiscount * (taxRate / 100);
+            const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const total = afterDiscount + taxAmt + delivery;
+
+            const set = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            // Update mobile cart floating bar
+            set('mobileCartTotal', 'Rs. ' + formatNumber(total));
+            set('mobileCartCount', window.cart.reduce((s, i) => s + i.quantity, 0));
+
+            // Update mobile overlay totals (so they refresh while typing)
+            set('m_subtotal', 'Rs. ' + formatNumber(subtotal));
+            set('m_tax', 'Rs. ' + formatNumber(taxAmt));
+            set('m_weight', formatNumber(totalWeight) + ' kg');
+            set('m_total', 'Rs. ' + formatNumber(total));
+
+            // Also update balance summary
+            updateBalanceSummary();
+        }
+
+        function renderMobileCartContent() {
+            const body = document.getElementById('mobileCartBody');
+            if (!body) return;
+
+            let cartItemsHTML = '';
+            if (window.cart.length === 0) {
+                cartItemsHTML = `
+                    <div class="empty-cart-message">
+                        <i class="fas fa-shopping-cart" style="font-size:2.5rem;"></i>
+                        <p style="font-weight:600;">Cart is empty</p>
+                        <p style="font-size:11px;opacity:.7;">Tap products to add</p>
+                    </div>`;
+            } else {
+                window.cart.forEach((item, idx) => {
+                    const itemTotal = item.price * item.quantity;
+                    cartItemsHTML += buildCartItemHTML(item, idx, itemTotal);
+                });
+            }
+
+            // Calculate totals (tax applies after discount)
+            const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const totalWeight = window.cart.reduce((s, i) => s + (i.weight || 0) * i.quantity, 0);
+            const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+            const afterDiscount = subtotal - discount;
+            const taxAmt = afterDiscount * (taxRate / 100);
+            const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const total = afterDiscount + taxAmt + delivery;
+
+            // Get customer info
+            const csel = document.getElementById('customerSelect');
+            let selectedCustomerName = '';
+            let prevBal = 0;
+            if (csel?.value) {
+                const opt = csel.options[csel.selectedIndex];
+                selectedCustomerName = opt?.dataset?.name || opt?.text || '';
+                prevBal = parseFloat(opt?.dataset?.creditBalance || 0);
+            }
+
+            const paymentMethod = document.getElementById('payment_method')?.value || 'cash';
+            const dispatchMethod = document.getElementById('dispatch_method')?.value || 'Self Pickup';
+
+            body.innerHTML = `
+                <!-- Customer info (if selected) -->
+                ${selectedCustomerName ? `
+                    <div style="padding:8px 14px;background:#eff6ff;border-bottom:1px solid #e5e7eb;font-size:13px;">
+                        <strong>Customer:</strong> ${selectedCustomerName}
+                        ${prevBal > 0 ? `<span style="color:#ef4444;font-size:11px;margin-left:8px;">Due: Rs.${formatNumber(prevBal)}</span>` : ''}
+                    </div>` : ''}
+
+                <!-- Cart items -->
+                <div class="m-cart-items-wrap" style="padding:10px 12px;background:#f8fafc;min-height:60px;">
+                    ${cartItemsHTML}
+                </div>
+
+                <!-- Footer sections -->
+                <div class="m-cart-footer">
+                    <!-- Totals -->
+                    <div class="totals-block" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                        <div class="trow"><span class="lbl">Subtotal</span><span class="val" id="m_subtotal">Rs. ${formatNumber(subtotal)}</span></div>
+                        <div class="trow">
+                            <span class="lbl">Tax
+                                <input type="number" id="m_custom_tax" class="inline-num" value="${taxRate}" min="0" step="0.01"
+                                    oninput="document.getElementById('custom_tax').value=this.value;updateCartDisplay();">
+                            </span>
+                            <span class="val" id="m_tax">Rs. ${formatNumber(taxAmt)}</span>
+                        </div>
+                        <div class="trow">
+                            <span class="lbl">Discount
+                                <select id="m_discount_type" class="inline-num" style="width:50px;padding:2px 4px;font-size:11px;"
+                                    onchange="document.getElementById('discount_type').value=this.value;updateCartDisplay();">
+                                    <option value="fixed" ${discountType==='fixed'?'selected':''}>Rs.</option>
+                                    <option value="percent" ${discountType==='percent'?'selected':''}>%</option>
+                                </select>
+                            </span>
+                            <input type="number" id="m_discount" class="inline-num" value="${discountRaw}" min="0" step="0.01"
+                                oninput="document.getElementById('discount').value=this.value;updateCartDisplay();">
+                        </div>
+                        <div class="trow"><span class="lbl">Weight</span><span class="val" id="m_weight" style="color:#94a3b8;font-size:11.5px;">${formatNumber(totalWeight)} kg</span></div>
+                        <div class="trow grand"><span class="lbl">Total Bill</span><span class="val" id="m_total" style="font-size:16px;font-weight:900;color:#2563eb;">Rs. ${formatNumber(total)}</span></div>
+                    </div>
+
+                    <!-- Payment Method -->
+                    <div class="pay-section" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                        <div class="sec-label">Payment Method</div>
+                        <div class="pm-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
+                            <button class="pm-btn ${paymentMethod==='cash'?'active':''}" data-method="cash" onclick="selectPM(this)">Cash</button>
+                            <button class="pm-btn ${paymentMethod==='jazzcash'?'active':''}" data-method="jazzcash" onclick="selectPM(this)">Jazz</button>
+                            <button class="pm-btn ${paymentMethod==='easypaisa'?'active':''}" data-method="easypaisa" onclick="selectPM(this)">Easy</button>
+                            <button class="pm-btn ${paymentMethod==='bank'?'active':''}" data-method="bank" onclick="selectPM(this)">Bank</button>
+                            <button class="pm-btn ${paymentMethod==='cod'?'active':''}" data-method="cod" onclick="selectPM(this)">COD</button>
+                            <button class="pm-btn ${paymentMethod==='pending'?'active':''}" data-method="pending" onclick="selectPM(this)">Pending</button>
+                        </div>
+                    </div>
+
+                    <!-- Amount Received -->
+                    <div style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">
+                        <div class="payment-box" style="margin:0;">
+                            ${prevBal > 0 ? `
+                                <div style="background:#fff7ed;padding:5px 8px;border-radius:6px;margin-bottom:8px;display:flex;justify-content:space-between;">
+                                    <span style="color:#c2410c;font-weight:700;">Prev. Balance:</span>
+                                    <span style="color:#c2410c;font-weight:800;">Rs. ${formatNumber(prevBal)}</span>
+                                </div>` : ''}
+                            <label>Amount Received</label>
+                            <input type="number" id="m_paid_amount" class="payment-big-input" min="0" step="0.01"
+                                placeholder="0.00" value="${document.getElementById('paid_amount')?.value || ''}"
+                                oninput="document.getElementById('paid_amount').value=this.value;updateBalanceSummary();updateMobileCartBar();">
+
+                            <div id="mobileBalanceSummary" style="display:none;margin-top:8px;font-size:13px;border-top:1px solid #e5e7eb;padding-top:8px;">
+                                <div style="display:flex;justify-content:space-between;padding:3px 0;color:#6b7280;">
+                                    <span>Total Bill:</span>
+                                    <span id="m_summaryTotalBill" style="font-weight:700;">Rs. 0</span>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;padding:3px 0;color:#16a34a;">
+                                    <span>Amount Paid:</span>
+                                    <span id="m_summaryAmountPaid" style="font-weight:700;">Rs. 0</span>
+                                </div>
+                                <div id="m_changeRow" style="display:none;justify-content:space-between;padding:3px 0;color:#2563eb;">
+                                    <span>Change:</span>
+                                    <strong id="m_changeDisplay">Rs. 0</strong>
+                                </div>
+                                <div id="m_balanceRow" style="display:none;justify-content:space-between;padding:3px 0;color:#dc2626;">
+                                    <span>Remaining:</span>
+                                    <strong id="m_balanceDisplay">Rs. 0</strong>
+                                </div>
+                                <div style="display:flex;justify-content:space-between;padding:3px 0;border-top:1px solid #e5e7eb;margin-top:4px;padding-top:6px;">
+                                    <span id="m_newBalLabel" style="color:#6b7280;">New Balance:</span>
+                                    <strong id="m_newBalanceDisplay">Rs. 0</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Dispatch -->
+                    <div class="dispatch-section" style="padding:10px 14px;">
+                        <div class="sec-label">Dispatch Method</div>
+                        <select id="m_dispatch_method" class="pos-select"
+                            onchange="document.getElementById('dispatch_method').value=this.value;
+                                var nt=this.value.includes('TCS')||this.value.includes('Pak Post')||this.value.includes('PostEx');
+                                document.getElementById('m_tracking_wrap').style.display=nt?'block':'none';
+                                document.getElementById('dispatch_method').dispatchEvent(new Event('change'));">
+                            <option value="Self Pickup" ${dispatchMethod==='Self Pickup'?'selected':''}>Self Pickup</option>
+                            <option value="By Bus" ${dispatchMethod==='By Bus'?'selected':''}>By Bus</option>
+                            <option value="TCS" ${dispatchMethod==='TCS'?'selected':''}>TCS</option>
+                            <option value="Pak Post" ${dispatchMethod==='Pak Post'?'selected':''}>Pak Post</option>
+                            <option value="PostEx" ${dispatchMethod==='PostEx'?'selected':''}>PostEx</option>
+                        </select>
+                        <div id="m_tracking_wrap" style="display:${dispatchMethod.includes('TCS')||dispatchMethod.includes('Pak Post')||dispatchMethod.includes('PostEx')?'block':'none'};margin-top:6px;">
+                            <input type="text" id="m_tracking_id" class="pos-select" placeholder="Tracking ID"
+                                value="${document.getElementById('tracking_id')?.value || ''}"
+                                oninput="document.getElementById('tracking_id').value=this.value;" style="margin-bottom:5px;">
+                            <input type="number" id="m_delivery_charges" class="pos-select" placeholder="Delivery Charges (Rs.)"
+                                value="${document.getElementById('delivery_charges')?.value || 0}" min="0" step="0.01"
+                                oninput="document.getElementById('delivery_charges').value=this.value;updateCartDisplay();">
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div style="padding:0 14px 8px;">
+                        <textarea id="m_order_notes" placeholder="Notes / comments..." rows="2"
+                            style="width:100%;padding:6px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:12px;resize:vertical;background:#f9fafb;color:#1e293b;"
+                            oninput="document.getElementById('order_notes').value=this.value;">${document.getElementById('order_notes')?.value || ''}</textarea>
+                    </div>
+
+                    <!-- Actions (sticky at bottom) -->
+                    <div class="action-section">
+                        <button class="btn-process" onclick="processOrder()">
+                            Process Payment
+                        </button>
+                        <button class="btn-clear" onclick="if(confirm('Clear cart?')){window.clearCart();closeMobileCart();}">
+                            Clear Cart
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Update balance summary after rendering
+            updateBalanceSummary();
+        }
+
+        window.openMobileCart = function() {
+            const overlay = document.getElementById('mobileCartOverlay');
+            if (overlay) {
+                overlay.classList.add('open');
+                renderMobileCartContent();
+                document.body.style.overflow = 'hidden';
+            }
+        };
+
+        window.closeMobileCart = function() {
+            const overlay = document.getElementById('mobileCartOverlay');
+            if (overlay) {
+                overlay.classList.remove('open');
+                document.body.style.overflow = 'hidden';
+            }
+        };
+
+        // ── Customer search setup ────────────────────────────────
         document.addEventListener('DOMContentLoaded', function() {
-
-
             const searchInput = document.getElementById('customerSearchInput');
             const customerSelect = document.getElementById('customerSelect');
             const resultsEl = document.getElementById('customerResults');
@@ -1224,7 +2193,6 @@
             const typeEl = document.getElementById('selectedCustomerType');
             const dueBadge = document.getElementById('customerDueBadge');
 
-            // Build options list once from the hidden select
             const allOptions = Array.from(customerSelect.querySelectorAll('option')).filter(o => o.value);
 
             function escapeHtml(s) {
@@ -1251,32 +2219,26 @@
                             `<span style="color:#ef4444;font-size:10px;font-weight:700;">Due: Rs.${bal.toLocaleString('en-PK')}</span>` :
                             '';
                         return `<div class="customer-result" data-value="${escapeHtml(o.value)}"
-                    style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;font-size:13px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;"
-                    onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background=''">
-                    <div>
-                        ${name}
-                        <small style="display:block;color:#9ca3af;font-size:11px;">${[type, phone].filter(Boolean).join(' • ')}</small>
-                    </div>
-                    ${balHtml}
-                </div>`;
+                            style="padding:9px 12px;cursor:pointer;border-bottom:1px solid #f8fafc;font-size:13px;color:#1e293b;display:flex;justify-content:space-between;align-items:center;"
+                            onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background=''">
+                            <div>${name}<small style="display:block;color:#9ca3af;font-size:11px;">${[type, phone].filter(Boolean).join(' - ')}</small></div>
+                            ${balHtml}
+                        </div>`;
                     }).join('');
                 }
                 resultsEl.style.display = 'block';
             }
 
-            // Show all on focus
             searchInput.addEventListener('focus', function() {
                 showResults(allOptions);
             });
 
-            // Filter on type
             searchInput.addEventListener('input', function() {
                 const term = this.value.trim().toLowerCase();
                 if (!term) {
                     showResults(allOptions);
                     return;
                 }
-
                 const matches = allOptions.filter(o => [(o.getAttribute('data-name') || ''), (o
                             .getAttribute('data-phone') || ''),
                         (o.getAttribute('data-barcode') || ''), o.textContent
@@ -1286,31 +2248,25 @@
                 showResults(matches);
             });
 
-            // Select on click
             resultsEl.addEventListener('mousedown', function(e) {
                 const row = e.target.closest('.customer-result[data-value]');
                 if (!row) return;
-                e.preventDefault(); // prevent input blur before selection registers
-
+                e.preventDefault();
                 const value = row.dataset.value;
                 const opt = allOptions.find(o => o.value === value);
                 if (!opt) return;
-
                 customerSelect.value = value;
                 searchInput.value = opt.getAttribute('data-name') || opt.text;
                 resultsEl.style.display = 'none';
-
                 selectCustomer(opt);
             });
 
-            // Close on blur
             searchInput.addEventListener('blur', function() {
                 setTimeout(() => {
                     resultsEl.style.display = 'none';
                 }, 150);
             });
 
-            // Keyboard navigation
             searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     resultsEl.style.display = 'none';
@@ -1338,51 +2294,40 @@
                     if (balance > 0) dueBadge.textContent = 'Due: Rs. ' + balance.toLocaleString('en-PK');
                 }
 
-                // Auto price type
                 const typeSelect = document.querySelector('.customer-type-select');
                 if (typeSelect) {
                     typeSelect.value = type === 'reseller' ? 'reseller' : type === 'wholesale' ? 'wholesale' :
                         'walkin';
                     typeSelect.dispatchEvent(new Event('change'));
                 }
-
                 updateBalanceSummary();
             }
-            // ── Update prices when customer type changes ──────────────────
+
+            // Update prices when customer type changes
             const customerTypeSelect = document.querySelector('.customer-type-select');
             if (customerTypeSelect) {
                 customerTypeSelect.addEventListener('change', function() {
                     const type = this.value;
-
-                    // 1. Update price displayed on every product card
                     document.querySelectorAll('.product-item').forEach(card => {
                         let price = parseFloat(card.dataset.salePrice);
                         if (type === 'reseller') price = parseFloat(card.dataset.resalePrice) ||
                             price;
                         if (type === 'wholesale') price = parseFloat(card.dataset.wholesalePrice) ||
                             price;
-
-                        card.dataset.price = price; // keep data-price in sync
+                        card.dataset.price = price;
                         const priceEl = card.querySelector('.price-text');
                         if (priceEl) priceEl.textContent = 'Rs. ' + parseFloat(price).toFixed(2);
                     });
-
-                    // 2. Update prices of items already in cart
                     window.cart.forEach(item => {
-                        const card = document.querySelector(`.product-item[data-id="${item.id}"]`);
-                        if (!card) return;
-                        let price = parseFloat(card.dataset.salePrice);
-                        if (type === 'reseller') price = parseFloat(card.dataset.resalePrice) ||
-                            price;
-                        if (type === 'wholesale') price = parseFloat(card.dataset.wholesalePrice) ||
-                            price;
+                        let price = item.salePrice;
+                        if (type === 'reseller') price = item.resalePrice || price;
+                        if (type === 'wholesale') price = item.wholesalePrice || price;
                         item.price = price;
                     });
-
-                    // 3. Re-render cart with updated prices
                     updateCartDisplay();
                 });
             }
+
             window.clearCustomerSelection = function() {
                 customerSelect.value = '';
                 searchInput.value = '';
@@ -1391,8 +2336,114 @@
                 updateBalanceSummary();
             };
 
-            // Hook into processOrder to read customerSelect.value (already hidden select)
             customerSelect.addEventListener('change', updateBalanceSummary);
+
+            // ── Mobile customer selector ──────────────────────────
+            const mobileCustomerSearch = document.getElementById('mobileCustomerSearch');
+            const mobileCustomerDropdown = document.getElementById('mobileCustomerDropdown');
+            const mobileCustomerSelected = document.getElementById('mobileCustomerSelected');
+            const mobileCustomerName = document.getElementById('mobileCustomerName');
+
+            if (mobileCustomerSearch) {
+                const mobileCustomerOptions = Array.from(customerSelect.querySelectorAll('option')).filter(o => o
+                    .value);
+
+                mobileCustomerSearch.addEventListener('input', function() {
+                    const term = this.value.toLowerCase().trim();
+                    if (!term) {
+                        mobileCustomerDropdown.style.display = 'none';
+                        return;
+                    }
+
+                    const matches = mobileCustomerOptions.filter(o => {
+                        const name = (o.dataset.name || o.text || '').toLowerCase();
+                        const phone = (o.dataset.phone || '').toLowerCase();
+                        const barcode = (o.dataset.barcode || '').toLowerCase();
+                        return name.includes(term) || phone.includes(term) || barcode.includes(
+                        term);
+                    });
+
+                    if (matches.length === 0) {
+                        mobileCustomerDropdown.innerHTML =
+                            '<div style="padding:10px 12px;font-size:12px;color:#9ca3af;">No customers found</div>';
+                    } else {
+                        mobileCustomerDropdown.innerHTML = matches.map(o => `
+                            <div style="padding:10px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;"
+                                 data-value="${o.value}"
+                                 onmouseover="this.style.background='#f0f4ff'"
+                                 onmouseout="this.style.background=''">
+                                <span><strong>${o.dataset.name || o.text}</strong>
+                                    ${o.dataset.phone ? '<br><span style="font-size:11px;color:#6b7280;">' + o.dataset.phone + '</span>' : ''}
+                                </span>
+                                <span style="font-size:11px;color:#6b7280;">${o.dataset.type ? o.dataset.type : ''}</span>
+                            </div>
+                        `).join('');
+                    }
+                    mobileCustomerDropdown.style.display = 'block';
+
+                    // Attach click handlers
+                    mobileCustomerDropdown.querySelectorAll('[data-value]').forEach(item => {
+                        item.addEventListener('click', function() {
+                            selectMobileCustomer(this.dataset.value);
+                        });
+                    });
+                });
+
+                mobileCustomerSearch.addEventListener('focus', function() {
+                    if (this.value.trim()) this.dispatchEvent(new Event('input'));
+                });
+
+                // Close dropdown on outside click
+                document.addEventListener('click', function(e) {
+                    if (!e.target.closest('#mobileCustomerBar')) {
+                        mobileCustomerDropdown.style.display = 'none';
+                    }
+                });
+            }
+
+            window.selectMobileCustomer = function(value) {
+                // Sync with desktop customerSelect
+                customerSelect.value = value;
+                customerSelect.dispatchEvent(new Event('change'));
+
+                const opt = customerSelect.options[customerSelect.selectedIndex];
+                const name = opt?.dataset?.name || opt?.text || '';
+                const type = opt?.dataset?.type || '';
+
+                // Show selected state
+                mobileCustomerSearch.parentElement.style.display = 'none';
+                mobileCustomerSelected.style.display = 'flex';
+                mobileCustomerName.textContent = name + (type ? ' (' + type + ')' : '');
+                mobileCustomerDropdown.style.display = 'none';
+
+                // Also trigger the type-based pricing
+                const typeSelect = document.querySelector('.customer-type-select');
+                if (typeSelect && type) {
+                    typeSelect.value = type === 'reseller' ? 'reseller' : type === 'wholesale' ? 'wholesale' :
+                        'walkin';
+                    typeSelect.dispatchEvent(new Event('change'));
+                }
+
+                updateBalanceSummary();
+            };
+
+            window.clearMobileCustomer = function() {
+                customerSelect.value = '';
+                customerSelect.dispatchEvent(new Event('change'));
+
+                mobileCustomerSearch.parentElement.style.display = '';
+                mobileCustomerSelected.style.display = 'none';
+                mobileCustomerSearch.value = '';
+                mobileCustomerDropdown.style.display = 'none';
+
+                const typeSelect = document.querySelector('.customer-type-select');
+                if (typeSelect) {
+                    typeSelect.value = 'walkin';
+                    typeSelect.dispatchEvent(new Event('change'));
+                }
+
+                updateBalanceSummary();
+            };
 
             // Cart buttons
             document.querySelector('.checkout-btn')?.addEventListener('click', async e => {
@@ -1417,18 +2468,24 @@
             const paymentMethod = document.getElementById('payment_method')?.value || 'cash';
             const paidRaw = document.getElementById('paid_amount')?.value;
             const paidAmount = (paidRaw !== '' && paidRaw != null) ? parseFloat(paidRaw) : null;
-            const discount = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
+            const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const deliveryCharges = parseFloat(document.getElementById('delivery_charges')?.value || 0);
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
             const customerId = document.getElementById('customerSelect')?.value;
             const dispatchMethod = document.getElementById('dispatch_method')?.value || 'Self Pickup';
             const trackingId = document.getElementById('tracking_id')?.value || null;
+            const notes = document.getElementById('order_notes')?.value || null;
+
+            const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
 
             const orderData = {
                 customer_id: customerId ? parseInt(customerId) : null,
                 items: cart.map(i => ({
                     product_id: parseInt(i.id),
-                    quantity: parseFloat(i.quantity)
+                    quantity: parseFloat(i.quantity),
+                    unit_price: parseFloat(i.price)
                 })),
                 payment_method: paymentMethod,
                 paid_amount: paidAmount,
@@ -1437,11 +2494,15 @@
                 delivery_charges: deliveryCharges,
                 tax_rate: taxRate,
                 discount: discount,
+                notes: notes,
             };
 
-            const btn = document.querySelector('.checkout-btn');
-            btn.disabled = true;
-            btn.textContent = 'Processing...';
+            // Disable all process buttons
+            const btns = document.querySelectorAll('.btn-process, .checkout-btn');
+            btns.forEach(b => {
+                b.disabled = true;
+                b.textContent = 'Processing...';
+            });
 
             try {
                 const res = await fetch('/admin/pos', {
@@ -1457,12 +2518,12 @@
 
                 if (data.success) {
                     let msg =
-                        `✅ Order Processed!\n\nOrder #: ${data.order_number}\nTotal: Rs. ${formatNumber(data.total)}\nPaid: Rs. ${formatNumber(data.paid_amount)}`;
-                    if (data.balance_amount > 0) msg += `\nباقی: Rs. ${formatNumber(data.balance_amount)}`;
+                        `Order Processed!\n\nOrder #: ${data.order_number}\nTotal: Rs. ${formatNumber(data.total)}\nPaid: Rs. ${formatNumber(data.paid_amount)}`;
+                    if (data.balance_amount > 0) msg += `\nRemaining: Rs. ${formatNumber(data.balance_amount)}`;
                     if (data.previous_balance > 0) msg += `\nPrev Balance: Rs. ${formatNumber(data.previous_balance)}`;
-                    msg += data.new_balance > 0 ? `\n\n⚠️ Account Due: Rs. ${formatNumber(data.new_balance)}` :
-                        data.new_balance < 0 ? `\n\n✅ Advance: Rs. ${formatNumber(Math.abs(data.new_balance))}` :
-                        `\n\n✅ Account Settled`;
+                    msg += data.new_balance > 0 ? `\n\nAccount Due: Rs. ${formatNumber(data.new_balance)}` :
+                        data.new_balance < 0 ? `\n\nAdvance: Rs. ${formatNumber(Math.abs(data.new_balance))}` :
+                        `\n\nAccount Settled`;
                     alert(msg);
 
                     window.clearCart();
@@ -1471,18 +2532,24 @@
                     if (document.getElementById('delivery_charges')) document.getElementById('delivery_charges').value =
                         '0';
                     if (document.getElementById('tracking_id')) document.getElementById('tracking_id').value = '';
+                    if (document.getElementById('order_notes')) document.getElementById('order_notes').value = '';
 
                     updateBalanceSummary();
-                    if (confirm('View receipt?')) window.open(`/admin/pos/receipt/${data.order_id}`, '_blank');
+                    closeMobileCart();
 
+                    if (confirm('View receipt?')) window.open(`/admin/pos/receipt/${data.order_id}`, '_blank');
                 } else {
                     throw new Error(data.message || 'Order failed');
                 }
             } catch (err) {
-                alert('❌ Error: ' + err.message);
+                alert('Error: ' + err.message);
             } finally {
-                btn.disabled = false;
-                btn.textContent = '✅ Process Payment — رقم وصول کریں';
+                btns.forEach(b => {
+                    b.disabled = false;
+                    b.textContent = 'Process Payment';
+                });
+                const deskBtn = document.querySelector('.checkout-btn');
+                if (deskBtn) deskBtn.textContent = 'Process Payment';
             }
         }
     </script>

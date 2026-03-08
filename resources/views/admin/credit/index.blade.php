@@ -5,12 +5,12 @@
 @section('content')
     <div class="container mx-auto px-4 py-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">Credit Management</h1>
                 <p class="text-sm text-gray-600 mt-1">Manage customer credit accounts and payments</p>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.credit.payment') }}"
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -306,7 +306,7 @@
 
     <!-- Enable Credit Modal -->
     <div id="enableCreditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
-        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="relative top-20 mx-auto p-5 border max-w-sm w-full shadow-lg rounded-md bg-white">
             <div class="mt-3">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Enable Credit for Customer</h3>
                 <form id="enableCreditForm" method="POST">

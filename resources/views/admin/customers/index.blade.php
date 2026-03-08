@@ -2,12 +2,12 @@
 
 @section('content')
     <div class="p-6 bg-white rounded-lg shadow-md">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-semibold text-gray-800">Customers</h1>
                 <p class="text-sm text-gray-600 mt-1">Manage customers for your POS system</p>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
 
                 <a href="{{ route('admin.customers.create') }}"
                     class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center">
@@ -35,7 +35,7 @@
 
         <!-- Search and Filter Bar -->
         <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                     <input type="text" id="searchInput" placeholder="Search by name, email, phone, or barcode..."
                         class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value="{{ request('search') }}">
@@ -166,30 +166,6 @@
                                         </svg>
                                     </a>
 
-                                    @if ($customer->credit_enabled)
-                                        <a href="{{ route('admin.credit.statement', $customer->id) }}"
-                                            class="text-amber-600 hover:text-amber-900 flex items-center"
-                                            title="Credit Statement">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
-                                                </path>
-                                            </svg>
-                                        </a>
-
-                                        @if ($customer->current_balance > 0)
-                                            <a href="{{ route('admin.credit.payment', ['customer_id' => $customer->id]) }}"
-                                                class="text-green-600 hover:text-green-900 flex items-center"
-                                                title="Collect Payment">
-                                                <svg class="h-4 w-4" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                </svg>
-                                            </a>
-                                        @endif
-                                    @endif
-
                                     <a href="{{ route('admin.customers.khata', $customer) }}"
                                         class="text-emerald-600 hover:text-emerald-800 text-xs font-medium"
                                         title="View Khata">
@@ -254,14 +230,12 @@
         function applyFilters() {
             const search = document.getElementById('searchInput').value;
             const type = document.getElementById('typeFilter').value;
-            const credit = document.getElementById('creditFilter').value;
 
             let url = new URL(window.location.href);
             let params = new URLSearchParams();
 
             if (search) params.append('search', search);
             if (type) params.append('type', type);
-            if (credit) params.append('credit', credit);
 
             window.location.href = url.pathname + '?' + params.toString();
         }
@@ -282,16 +256,11 @@
             applyFilters();
         });
 
-        document.getElementById('creditFilter').addEventListener('change', function() {
-            applyFilters();
-        });
-
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             const urlParams = new URLSearchParams(window.location.search);
             const searchParam = urlParams.get('search');
             const typeParam = urlParams.get('type');
-            const creditParam = urlParams.get('credit');
 
             if (searchParam) {
                 document.getElementById('searchInput').value = searchParam;
@@ -299,10 +268,6 @@
 
             if (typeParam) {
                 document.getElementById('typeFilter').value = typeParam;
-            }
-
-            if (creditParam) {
-                document.getElementById('creditFilter').value = creditParam;
             }
         });
     </script>

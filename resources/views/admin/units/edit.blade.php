@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Edit Unit: {{ $unit->name }}</h1>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('units.index') }}"
                     class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">

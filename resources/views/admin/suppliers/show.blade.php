@@ -13,9 +13,9 @@
 @section('content')
     <div class="main-div max-w-3xl mx-auto">
         <div class="bg-white rounded shadow p-6">
-            <div class="flex justify-between items-start mb-6">
+            <div class="flex flex-wrap justify-between items-start gap-2 mb-6">
                 <h2 class="text-2xl font-semibold">Supplier Details</h2>
-                <div class="space-x-2">
+                <div class="flex flex-wrap gap-2">
                     <a href="{{ route('suppliers.edit', $supplier) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
                     <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete supplier?');">
                         @csrf @method('DELETE')

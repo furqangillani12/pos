@@ -173,11 +173,55 @@ class ReportController extends Controller
 
     public function show($orderId)
     {
-        // Load customer and order items
-        $order = Order::with('customer', 'items.product')->findOrFail($orderId);
+        $order = Order::with('customer', 'items.product', 'payments', 'refunds', 'user')->findOrFail($orderId);
 
         return view('admin.orders.show', compact('order'));
     }
 
+    public function productStatement(Request $request)
+    {
+        $start = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $end = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $productId = $request->input('product_id');
 
+        $products = Product::orderBy('name')->get();
+        $statement = null;
+
+        if ($productId) {
+            $product = Product::findOrFail($productId);
+
+            $items = OrderItem::with(['order.customer'])
+                ->where('product_id', $productId)
+                ->whereHas('order', function ($q) use ($start, $end) {
+                    $q->whereBetween('created_at', [$start, $end])
+                      ->where('status', '!=', 'cancelled');
+                })
+                ->get();
+
+            $totalQty = $items->sum('quantity');
+            $totalRevenue = $items->sum('total_price');
+            $totalCost = $totalQty * ($product->cost_price ?? 0);
+            $totalProfit = $totalRevenue - $totalCost;
+
+            $salesByPrice = $items->groupBy('unit_price')->map(function ($group, $price) {
+                return [
+                    'price' => $price,
+                    'quantity' => $group->sum('quantity'),
+                    'revenue' => $group->sum('total_price'),
+                ];
+            })->values();
+
+            $statement = [
+                'product' => $product,
+                'items' => $items,
+                'total_qty' => $totalQty,
+                'total_revenue' => $totalRevenue,
+                'total_cost' => $totalCost,
+                'total_profit' => $totalProfit,
+                'sales_by_price' => $salesByPrice,
+            ];
+        }
+
+        return view('admin.reports.product_statement', compact('products', 'statement', 'start', 'end', 'productId'));
+    }
 }

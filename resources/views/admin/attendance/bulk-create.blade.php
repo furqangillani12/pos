@@ -3,111 +3,175 @@
 @section('title', 'Bulk Attendance Marking')
 
 @section('content')
-    <div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <h2 class="text-xl font-semibold">🗓️ Bulk Attendance Marking</h2>
+    <div class="space-y-5">
+
+        {{-- Header --}}
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+                <a href="{{ route('admin.attendance.index') }}" class="text-sm text-blue-600 hover:underline">← Back to Attendance</a>
+                <h2 class="text-xl font-bold text-gray-800 mt-1">Bulk Attendance</h2>
+            </div>
         </div>
 
-        <div class="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        @if(session('success'))
+            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
+                <i class="fas fa-check-circle"></i> {{ session('success') }}
+            </div>
+        @endif
+        @if(session('error'))
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
+            </div>
+        @endif
+
+        {{-- Already Marked (if any) --}}
+        @if($markedEmployees->count())
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h3 class="text-sm font-semibold text-green-800 mb-2">
+                    <i class="fas fa-check-circle"></i> Already Marked ({{ $markedEmployees->count() }})
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($markedEmployees as $emp)
+                        @php $att = $emp->attendances->first(); @endphp
+                        <span class="inline-flex items-center gap-1.5 bg-white border border-green-200 rounded-full px-3 py-1 text-xs">
+                            <span class="font-medium text-gray-700">{{ $emp->user->name }}</span>
+                            <span class="px-1.5 py-0.5 rounded-full text-[10px] font-bold
+                                {{ $att && $att->status === 'present' ? 'bg-green-100 text-green-700' :
+                                   ($att && $att->status === 'late' ? 'bg-yellow-100 text-yellow-700' :
+                                   ($att && $att->status === 'on_leave' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-700')) }}">
+                                {{ $att ? ucfirst(str_replace('_', ' ', $att->status)) : '' }}
+                            </span>
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- Quick Check-In Section --}}
+        @if($employees->count())
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-5">
+                <h3 class="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
+                    <i class="fas fa-bolt text-yellow-500"></i> Quick Check-In (One Click)
+                </h3>
+                <div class="flex flex-wrap gap-2">
+                    @foreach($employees as $employee)
+                        <form method="POST" action="{{ route('admin.attendance.quick-checkin') }}" class="inline">
+                            @csrf
+                            <input type="hidden" name="employee_id" value="{{ $employee->id }}">
+                            <button type="submit"
+                                    class="bg-green-50 hover:bg-green-100 border border-green-200 text-green-700 px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                                <i class="fas fa-sign-in-alt"></i> {{ $employee->user->name }}
+                            </button>
+                        </form>
+                    @endforeach
+                </div>
+                <p class="text-xs text-gray-400 mt-2">Click to check in now ({{ now()->format('h:i A') }}). Auto-detects late arrival.</p>
+            </div>
+        @endif
+
+        {{-- Bulk Form --}}
+        @if($employees->count())
             <form method="POST" action="{{ route('admin.attendance.bulk-store') }}" class="space-y-4">
                 @csrf
+                <input type="hidden" name="date" value="{{ $date }}">
 
-                <div>
-                    <label for="date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Select Date</label>
-                    <input type="date" id="date" name="date" required
-                           value="{{ old('date', now()->format('Y-m-d')) }}"
-                           class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
+                    <div class="px-5 py-4 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-3">
+                        <h3 class="font-semibold text-gray-700">
+                            Unmarked Employees ({{ $employees->count() }})
+                        </h3>
+                        <div class="flex items-center gap-3">
+                            <label class="text-xs text-gray-500">Date:</label>
+                            <span class="text-sm font-semibold text-gray-800">{{ \Carbon\Carbon::parse($date)->format('d M Y') }}</span>
+                        </div>
+                    </div>
 
-                <div class="overflow-x-auto">
-                    <table class="min-w-full text-sm border border-gray-200 dark:border-gray-700 divide-y divide-gray-200 dark:divide-gray-700">
-                        <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200">
-                        <tr>
-                            <th class="px-4 py-2 text-left font-semibold">Employee</th>
-                            <th class="px-4 py-2 text-left font-semibold">Status</th>
-                            <th class="px-4 py-2 text-left font-semibold">Sessions</th>
-                        </tr>
-                        </thead>
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                        @foreach($employees as $employee)
-                            <tr>
-                                <td class="px-4 py-2">
-                                    {{ $employee->user->name }}
-                                    <input type="hidden" name="attendances[{{ $loop->index }}][employee_id]" value="{{ $employee->id }}">
-                                    <input type="hidden" name="attendances[{{ $loop->index }}][date]" value="{{ old('date', now()->format('Y-m-d')) }}">
-                                </td>
-                                <td class="px-4 py-2">
-                                    <select name="attendances[{{ $loop->index }}][status]"
-                                            class="w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 status-select">
+                    <div class="divide-y divide-gray-50">
+                        @foreach($employees as $i => $employee)
+                            <div class="px-5 py-4 hover:bg-gray-50/50 transition">
+                                <input type="hidden" name="attendances[{{ $i }}][employee_id]" value="{{ $employee->id }}">
+
+                                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                                    {{-- Employee Name --}}
+                                    <div class="flex items-center gap-3 sm:w-48">
+                                        <div class="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
+                                            {{ strtoupper(substr($employee->user->name, 0, 1)) }}
+                                        </div>
+                                        <span class="font-medium text-gray-800 text-sm">{{ $employee->user->name }}</span>
+                                    </div>
+
+                                    {{-- Status --}}
+                                    <select name="attendances[{{ $i }}][status]"
+                                            class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 status-select"
+                                            data-index="{{ $i }}">
                                         <option value="present">Present</option>
-                                        <option value="absent">Absent</option>
                                         <option value="late">Late</option>
-                                        <option value="on_leave">On Leave</option>
                                         <option value="half_day">Half Day</option>
+                                        <option value="on_leave">On Leave</option>
+                                        <option value="absent">Absent</option>
                                     </select>
-                                </td>
-                                <td class="px-4 py-2">
-                                    <div class="sessions-wrapper space-y-2">
-                                        <div class="flex space-x-2 session-row">
-                                            <input type="time" name="attendances[{{ $loop->index }}][sessions][0][check_in]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white" value="09:00">
-                                            <input type="time" name="attendances[{{ $loop->index }}][sessions][0][check_out]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white" value="">
+
+                                    {{-- Session Times --}}
+                                    <div class="sessions-wrapper flex flex-wrap items-center gap-2" data-index="{{ $i }}">
+                                        <div class="flex items-center gap-1 session-row">
+                                            <input type="time" name="attendances[{{ $i }}][sessions][0][check_in]"
+                                                   class="border border-gray-200 rounded-lg px-2 py-2 text-sm w-28 checkin-input"
+                                                   value="09:00">
+                                            <span class="text-gray-300">→</span>
+                                            <input type="time" name="attendances[{{ $i }}][sessions][0][check_out]"
+                                                   class="border border-gray-200 rounded-lg px-2 py-2 text-sm w-28">
                                         </div>
                                     </div>
-                                    <button type="button" class="add-session mt-2 text-blue-600 text-sm">➕ Add Session</button>
-                                </td>
-                            </tr>
-                        @endforeach
-                        </tbody>
-                    </table>
-                </div>
 
-                <div class="pt-4">
-                    <button type="submit"
-                            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-md shadow-sm">
-                        💾 Save All
-                    </button>
+                                    {{-- Notes --}}
+                                    <input type="text" name="attendances[{{ $i }}][notes]" placeholder="Notes..."
+                                           class="border border-gray-200 rounded-lg px-3 py-2 text-sm flex-1 min-w-0 focus:outline-none focus:ring-2 focus:ring-blue-200">
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="px-5 py-4 bg-gray-50 border-t">
+                        <button type="submit"
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold text-sm transition flex items-center gap-2">
+                            <i class="fas fa-save"></i> Save All Attendance
+                        </button>
+                    </div>
                 </div>
             </form>
-        </div>
+        @else
+            <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-12 text-center">
+                <div class="text-gray-400">
+                    <i class="fas fa-check-double text-4xl mb-3 text-green-400"></i>
+                    <p class="font-medium text-gray-600">All employees are marked for today!</p>
+                    <a href="{{ route('admin.attendance.index') }}" class="text-blue-600 hover:underline text-sm mt-2 inline-block">
+                        View attendance →
+                    </a>
+                </div>
+            </div>
+        @endif
     </div>
-@endsection
 
-@section('scripts')
+    @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Auto-adjust check-in time based on status
             document.querySelectorAll('.status-select').forEach(select => {
                 select.addEventListener('change', function () {
-                    const wrapper = this.closest('tr').querySelector('.sessions-wrapper');
-                    const firstSession = wrapper.querySelector('.session-row input[type="time"]');
+                    const wrapper = this.closest('.flex').querySelector('.sessions-wrapper');
+                    const checkIn = wrapper?.querySelector('.checkin-input');
+                    if (!checkIn) return;
+
                     switch (this.value) {
-                        case 'late':
-                            firstSession.value = '10:00';
-                            break;
-                        case 'half_day':
-                            firstSession.value = '12:00';
-                            break;
-                        default:
-                            firstSession.value = '09:00';
+                        case 'late':     checkIn.value = '10:00'; break;
+                        case 'half_day': checkIn.value = '13:00'; break;
+                        case 'absent':
+                        case 'on_leave': checkIn.value = ''; break;
+                        default:         checkIn.value = '09:00';
                     }
-                });
-            });
-
-            // Add session rows dynamically
-            document.querySelectorAll('.add-session').forEach(button => {
-                button.addEventListener('click', function () {
-                    const wrapper = this.closest('td').querySelector('.sessions-wrapper');
-                    const index = wrapper.closest('tr').rowIndex - 1; // employee index
-                    const sessionCount = wrapper.querySelectorAll('.session-row').length;
-
-                    const newRow = document.createElement('div');
-                    newRow.classList.add('flex', 'space-x-2', 'session-row');
-                    newRow.innerHTML = `
-                        <input type="time" name="attendances[${index}][sessions][${sessionCount}][check_in]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
-                        <input type="time" name="attendances[${index}][sessions][${sessionCount}][check_out]" class="rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-900 dark:text-white">
-                    `;
-                    wrapper.appendChild(newRow);
                 });
             });
         });
     </script>
+    @endpush
 @endsection

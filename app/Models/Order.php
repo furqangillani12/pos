@@ -74,23 +74,22 @@ class Order extends Model
      */
     public static function generateOrderNumber()
     {
-        $prefix = 'ORD-';
-        $datePart = now()->format('Ymd'); // Example: 20250929
+        $prefix = 'ASM';
 
         $latest = static::query()
-            ->where('order_number', 'like', $prefix . $datePart . '%')
+            ->where('order_number', 'like', $prefix . '%')
             ->latest('id')
             ->first();
 
-        $number = 1;
+        $number = 1272;
         if ($latest) {
-            $lastNumber = (int) substr($latest->order_number, -4);
-            $number = $lastNumber + 1;
+            $lastNumber = (int) str_replace($prefix, '', $latest->order_number);
+            if ($lastNumber >= $number) {
+                $number = $lastNumber + 1;
+            }
         }
 
-        $sequence = str_pad($number, 4, '0', STR_PAD_LEFT);
-
-        return $prefix . $datePart . $sequence;
+        return $prefix . $number;
     }
 
     /**
@@ -99,10 +98,9 @@ class Order extends Model
     public function calculateTotals()
     {
         $this->subtotal = $this->items->sum('total_price');
-        $this->tax      = $this->subtotal * ($this->tax_rate / 100);
-
-        // ✅ weight not directly included in total (but can be used later for shipping cost logic)
-        $this->total = $this->subtotal + $this->tax + $this->delivery_charges - $this->discount;
+        $afterDiscount  = $this->subtotal - $this->discount;
+        $this->tax      = $afterDiscount * ($this->tax_rate / 100);
+        $this->total    = $afterDiscount + $this->tax + $this->delivery_charges;
 
         return $this;
     }

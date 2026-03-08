@@ -400,7 +400,7 @@ class CustomerController extends Controller
                 'id'              => $order->id,
                 'reference'       => $order->order_number,
                 'amount'          => $order->total,              // debit (bill)
-                'paid'            => $order->paid_amount ?? $order->total,
+                'paid'            => ($order->paid_amount == 0 && $order->balance_amount == 0) ? $order->total : $order->paid_amount,
                 'balance_on_bill' => $order->balance_amount ?? 0,
                 'method'          => $order->payment_method,
                 'items_count'     => $order->items->count(),
@@ -462,7 +462,7 @@ class CustomerController extends Controller
 
         $summary = [
             'total_billed'         => $allOrders->sum('total'),
-            'total_paid'           => $allOrders->sum(fn($o) => $o->paid_amount ?? $o->total),
+            'total_paid'           => $allOrders->sum(fn($o) => ($o->paid_amount == 0 && $o->balance_amount == 0) ? $o->total : $o->paid_amount),
             'total_balance'        => $allOrders->sum('balance_amount'),
             'order_count'          => $allOrders->count(),
             'total_khata_payments' => $allKhataPayments->sum('amount'),

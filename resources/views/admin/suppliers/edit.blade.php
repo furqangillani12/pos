@@ -64,8 +64,8 @@
                     @enderror
                 </div>
 
-                <div class="flex justify-end space-x-3">
-                    <a href="{{ route('suppliers.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded">Cancel</a>
+                <div class="flex flex-col sm:flex-row justify-end gap-3">
+                    <a href="{{ route('suppliers.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded text-center">Cancel</a>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded">Update Supplier</button>
                 </div>
             </form>

@@ -98,7 +98,8 @@
 
         {{-- Accounts Table --}}
         <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-            <table class="w-full text-sm">
+            <div class="overflow-x-auto">
+            <table class="min-w-full text-sm">
                 <thead class="bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 uppercase text-xs">
                     <tr>
                         <th class="px-4 py-3 text-left">Code</th>
@@ -215,6 +216,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 @endsection

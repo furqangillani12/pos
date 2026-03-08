@@ -6,7 +6,7 @@
             <h1 class="text-2xl font-semibold leading-tight mb-6">Category-wise Sales Report</h1>
 
             <!-- Date Filter Form -->
-            <form method="GET" class="mb-6 flex flex-wrap items-center gap-4">
+            <form method="GET" class="mb-6 flex flex-wrap items-end gap-4">
                 <div>
                     <label for="start_date" class="block text-sm font-medium text-gray-700">Start Date</label>
                     <input type="date" name="start_date" id="start_date"
@@ -21,7 +21,7 @@
                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
                 </div>
 
-                <div class="mt-6">
+                <div class="self-end">
                     <button type="submit"
                             class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-white hover:bg-indigo-700">
                         Filter
@@ -30,7 +30,7 @@
             </form>
 
             <!-- Sales Table -->
-            <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
+            <div class="shadow overflow-x-auto border-b border-gray-200 sm:rounded-lg">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-100">
                     <tr>

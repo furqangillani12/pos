@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center mb-6 gap-3">
             <h1 class="text-2xl font-bold text-gray-800">Product Management</h1>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('products.create') }}"
                     class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
@@ -40,7 +40,7 @@
         <!-- Add Unit Filter Option -->
         <div class="bg-white rounded-lg shadow overflow-hidden mb-4">
             <div class="p-4 border-b">
-                <form method="GET" class="flex items-center space-x-2">
+                <form method="GET" class="flex flex-wrap items-center gap-2">
                     <input type="text" name="search" placeholder="Search products by name, barcode or rank..."
                         value="{{ request('search') }}"
                         class="px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow">

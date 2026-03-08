@@ -5,12 +5,12 @@
 @section('content')
     <div class="container mx-auto px-4 py-6">
         <!-- Header -->
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <div>
                 <h1 class="text-2xl font-bold text-gray-800">Credit Statement</h1>
                 <p class="text-sm text-gray-600 mt-1">Transaction history and balance summary</p>
             </div>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.credit.payment', ['customer_id' => $customer->id]) }}"
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

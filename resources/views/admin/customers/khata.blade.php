@@ -240,7 +240,7 @@
 
                 {{-- ── Unified Transaction History ── --}}
                 <div class="bg-white rounded-lg shadow overflow-hidden">
-                    <div class="px-5 py-4 border-b bg-gray-50 flex items-center justify-between">
+                    <div class="px-5 py-4 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
                         <h3 class="font-semibold text-gray-700">Transaction History (کھاتہ)</h3>
                         <div class="flex items-center gap-3 text-xs">
                             <span class="flex items-center gap-1">
