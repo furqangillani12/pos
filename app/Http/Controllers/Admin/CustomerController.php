@@ -6,15 +6,17 @@ use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\CreditLedger;
 use App\Models\CreditTransaction;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Response;
 
 class CustomerController extends Controller
 {
+    use BranchScoped;
     public function index(Request $request)
     {
-        $query = Customer::query();
+        $query = $this->scopeBranch(Customer::query());
 
         // Search filter
         if ($request->has('search') && $request->search) {
@@ -57,12 +59,13 @@ class CustomerController extends Controller
         }
 
         $customers = $query->latest()->paginate(10);
-        
-        // Calculate credit statistics
+
+        // Calculate credit statistics scoped by branch
+        $statsQuery = $this->scopeBranch(Customer::query());
         $creditStats = [
-            'enabled' => Customer::where('credit_enabled', true)->count(),
-            'total_limit' => Customer::where('credit_enabled', true)->sum('credit_limit'),
-            'outstanding' => Customer::where('credit_enabled', true)->sum('current_balance'),
+            'enabled' => (clone $statsQuery)->where('credit_enabled', true)->count(),
+            'total_limit' => (clone $statsQuery)->where('credit_enabled', true)->sum('credit_limit'),
+            'outstanding' => (clone $statsQuery)->where('credit_enabled', true)->sum('current_balance'),
             'overdue' => CreditTransaction::overdue()->sum('remaining_amount') ?? 0
         ];
 
@@ -115,8 +118,14 @@ class CustomerController extends Controller
             $validated['barcode'] = Customer::generateBarcode();
         }
 
+        // Assign to current branch
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            $validated['branch_id'] = $branchId;
+        }
+
         DB::beginTransaction();
-        
+
         try {
             $customer = Customer::create($validated);
             
@@ -295,11 +304,14 @@ class CustomerController extends Controller
     public function search(Request $request)
     {
         $search = $request->get('q');
-        
-        $customers = Customer::where('name', 'like', "%{$search}%")
-            ->orWhere('email', 'like', "%{$search}%")
-            ->orWhere('phone', 'like', "%{$search}%")
-            ->orWhere('barcode', 'like', "%{$search}%")
+
+        $query = $this->scopeBranch(Customer::query());
+        $customers = $query->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('phone', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
+            })
             ->limit(10)
             ->get()
             ->map(function($customer) {

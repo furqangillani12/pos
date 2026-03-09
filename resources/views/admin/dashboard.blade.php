@@ -7,7 +7,7 @@
         </div>
     @endif
 
-    @role('admin')
+    @hasanyrole('admin|super_admin')
     <div class="space-y-6">
 
         {{-- ══════════════════════════════════════════
@@ -382,5 +382,5 @@
         });
     </script>
     @endpush
-    @endrole
+    @endhasanyrole
 @endsection

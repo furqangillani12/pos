@@ -6,23 +6,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\AttendanceSession;
 use App\Models\Employee;
+use App\Traits\BranchScoped;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
 {
+    use BranchScoped;
+
     public function index(Request $request)
     {
         $date = $request->date ?? Carbon::today()->format('Y-m-d');
 
-        $attendances = Attendance::with(['employee.user', 'sessions'])
+        $attendances = $this->scopeBranch(Attendance::with(['employee.user', 'sessions']))
             ->whereDate('date', $date)
             ->orderBy('date', 'desc')
             ->paginate(20);
 
-        // Summary counts for the selected date
-        $allAttendances = Attendance::whereDate('date', $date)->get();
-        $totalEmployees = Employee::count();
+        $allAttendances = $this->scopeBranch(Attendance::whereDate('date', $date))->get();
+        $totalEmployees = $this->scopeBranch(Employee::query())->count();
         $summary = [
             'present'  => $allAttendances->where('status', 'present')->count(),
             'late'     => $allAttendances->where('status', 'late')->count(),
@@ -37,7 +39,7 @@ class AttendanceController extends Controller
 
     public function create()
     {
-        $employees = Employee::with('user')->get();
+        $employees = $this->scopeBranch(Employee::with('user'))->get();
         return view('admin.attendance.create', compact('employees'));
     }
 
@@ -45,15 +47,15 @@ class AttendanceController extends Controller
     {
         $date = $request->date ?? today()->format('Y-m-d');
 
-        $employees = Employee::with('user')
+        $employees = $this->scopeBranch(Employee::with('user'))
             ->whereDoesntHave('attendances', function ($query) use ($date) {
                 $query->whereDate('date', $date);
             })
             ->get();
 
-        $markedEmployees = Employee::with(['user', 'attendances' => function ($q) use ($date) {
+        $markedEmployees = $this->scopeBranch(Employee::with(['user', 'attendances' => function ($q) use ($date) {
             $q->whereDate('date', $date)->with('sessions');
-        }])
+        }]))
             ->whereHas('attendances', function ($query) use ($date) {
                 $query->whereDate('date', $date);
             })
@@ -72,7 +74,8 @@ class AttendanceController extends Controller
             'attendances.*.notes'           => 'nullable|string',
         ]);
 
-        $date = $request->date;
+        $date     = $request->date;
+        $branchId = $this->branchId();
 
         foreach ($request->attendances as $att) {
             $attendance = Attendance::firstOrCreate(
@@ -81,8 +84,9 @@ class AttendanceController extends Controller
                     'date'        => $date,
                 ],
                 [
-                    'status' => $att['status'],
-                    'notes'  => $att['notes'] ?? null,
+                    'status'    => $att['status'],
+                    'branch_id' => $branchId !== 'all' ? $branchId : null,
+                    'notes'     => $att['notes'] ?? null,
                 ]
             );
 
@@ -91,7 +95,6 @@ class AttendanceController extends Controller
                 'notes'  => $att['notes'] ?? $attendance->notes,
             ]);
 
-            // Save sessions if provided
             if (!empty($att['sessions']) && is_array($att['sessions'])) {
                 foreach ($att['sessions'] as $s) {
                     if (empty($s['check_in'])) continue;
@@ -123,14 +126,17 @@ class AttendanceController extends Controller
             'notes'       => 'nullable|string',
         ]);
 
+        $branchId = $this->branchId();
+
         $attendance = Attendance::firstOrCreate(
             [
                 'employee_id' => $basic['employee_id'],
                 'date'        => $basic['date'],
             ],
             [
-                'status' => $basic['status'],
-                'notes'  => $basic['notes'] ?? null,
+                'status'    => $basic['status'],
+                'branch_id' => $branchId !== 'all' ? $branchId : null,
+                'notes'     => $basic['notes'] ?? null,
             ]
         );
 
@@ -182,17 +188,15 @@ class AttendanceController extends Controller
         return back()->with('success', 'Check-out recorded at ' . now()->format('h:i A'));
     }
 
-    /**
-     * Quick check-in: create attendance + open session in one click
-     */
     public function quickCheckIn(Request $request)
     {
         $request->validate([
             'employee_id' => 'required|exists:employees,id',
         ]);
 
-        $date = today()->format('Y-m-d');
-        $now  = now()->format('H:i');
+        $date     = today()->format('Y-m-d');
+        $now      = now()->format('H:i');
+        $branchId = $this->branchId();
 
         $attendance = Attendance::firstOrCreate(
             [
@@ -200,11 +204,11 @@ class AttendanceController extends Controller
                 'date'        => $date,
             ],
             [
-                'status' => $now > '09:15' ? 'late' : 'present',
+                'status'    => $now > '09:15' ? 'late' : 'present',
+                'branch_id' => $branchId !== 'all' ? $branchId : null,
             ]
         );
 
-        // Check if there's already an open session
         $openSession = $attendance->sessions()->whereNull('check_out')->first();
         if ($openSession) {
             return back()->with('error', 'Already checked in with an open session.');
@@ -219,9 +223,6 @@ class AttendanceController extends Controller
         return back()->with('success', "{$employeeName} checked in at " . now()->format('h:i A'));
     }
 
-    /**
-     * Delete an attendance record
-     */
     public function destroy(Attendance $attendance)
     {
         $attendance->sessions()->delete();
@@ -234,12 +235,12 @@ class AttendanceController extends Controller
     {
         $date = $request->date ?? Carbon::today()->format('Y-m-d');
 
-        $attendances = Attendance::with('employee.user', 'sessions')
+        $attendances = $this->scopeBranch(Attendance::with('employee.user', 'sessions'))
             ->whereDate('date', $date)
             ->get()
             ->groupBy('status');
 
-        $allEmployees = Employee::count();
+        $allEmployees = $this->scopeBranch(Employee::query())->count();
 
         return view('admin.attendance.report', compact('attendances', 'date', 'allEmployees'));
     }
@@ -250,9 +251,9 @@ class AttendanceController extends Controller
         $start = Carbon::parse($month)->startOfMonth();
         $end   = Carbon::parse($month)->endOfMonth();
 
-        $employees = Employee::with(['user', 'attendances' => function ($query) use ($start, $end) {
+        $employees = $this->scopeBranch(Employee::with(['user', 'attendances' => function ($query) use ($start, $end) {
             $query->whereBetween('date', [$start, $end])->with('sessions');
-        }])->get();
+        }]))->get();
 
         $workingDays = $this->getWorkingDays($start, $end);
 
@@ -261,9 +262,9 @@ class AttendanceController extends Controller
             foreach ($employee->attendances as $attendance) {
                 $totalMinutes += $attendance->total_worked_minutes;
             }
-            $totalHours   = round($totalMinutes / 60, 2);
-            $hoursPerMonth = max($workingDays * 8, 1);
-            $hourlyRate   = $employee->salary ? ($employee->salary / $hoursPerMonth) : 0;
+            $totalHours       = round($totalMinutes / 60, 2);
+            $hoursPerMonth    = max($workingDays * 8, 1);
+            $hourlyRate       = $employee->salary ? ($employee->salary / $hoursPerMonth) : 0;
             $calculatedSalary = round($totalHours * $hourlyRate, 2);
 
             $employee->total_minutes     = $totalMinutes;
@@ -286,10 +287,10 @@ class AttendanceController extends Controller
 
             $report[$month] = [
                 'name'         => $start->format('F'),
-                'present'      => Attendance::whereBetween('date', [$start, $end])->where('status', 'present')->count(),
-                'absent'       => Attendance::whereBetween('date', [$start, $end])->where('status', 'absent')->count(),
-                'late'         => Attendance::whereBetween('date', [$start, $end])->where('status', 'late')->count(),
-                'on_leave'     => Attendance::whereBetween('date', [$start, $end])->where('status', 'on_leave')->count(),
+                'present'      => $this->scopeBranch(Attendance::whereBetween('date', [$start, $end])->where('status', 'present'))->count(),
+                'absent'       => $this->scopeBranch(Attendance::whereBetween('date', [$start, $end])->where('status', 'absent'))->count(),
+                'late'         => $this->scopeBranch(Attendance::whereBetween('date', [$start, $end])->where('status', 'late'))->count(),
+                'on_leave'     => $this->scopeBranch(Attendance::whereBetween('date', [$start, $end])->where('status', 'on_leave'))->count(),
                 'working_days' => $this->getWorkingDays($start, $end),
             ];
         }

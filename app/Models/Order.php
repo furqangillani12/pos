@@ -19,6 +19,7 @@ class Order extends Model
     'paid_amount',
     'previous_balance',
     'balance_amount',
+    'branch_id',
     ];
 
     protected $attributes = [
@@ -106,6 +107,11 @@ class Order extends Model
     }
 
     // Relationships
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);

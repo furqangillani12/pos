@@ -11,10 +11,16 @@ class Branch extends Model
 
     protected $fillable = ['name', 'code', 'address', 'phone', 'is_active'];
 
-    // Relationships
+    public function stockEntries()
+    {
+        return $this->hasMany(BranchProductStock::class);
+    }
+
     public function products()
     {
-        return $this->hasMany(Product::class);
+        return $this->belongsToMany(Product::class, 'branch_product_stock')
+            ->withPivot('stock_quantity', 'reorder_level')
+            ->withTimestamps();
     }
 
     public function orders()
@@ -25,5 +31,30 @@ class Branch extends Model
     public function employees()
     {
         return $this->hasMany(Employee::class);
+    }
+
+    public function users()
+    {
+        return $this->hasMany(User::class);
+    }
+
+    public function attendances()
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
+    public function payrolls()
+    {
+        return $this->hasMany(Payroll::class);
+    }
+
+    public function purchases()
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 }

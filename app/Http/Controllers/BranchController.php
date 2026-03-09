@@ -4,76 +4,175 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Branch;
+use App\Models\BranchProductStock;
+use App\Models\Product;
 
 class BranchController extends Controller
 {
-    // Display all branches
+    /**
+     * Check if user is locked to a specific branch
+     */
+    private function isLockedUser()
+    {
+        return auth()->user()->branch_id !== null;
+    }
+
+    /**
+     * Abort if locked user tries to access another branch
+     */
+    private function authorizeAccess(Branch $branch)
+    {
+        $user = auth()->user();
+        if ($user->branch_id && $user->branch_id !== $branch->id) {
+            abort(403, 'You can only manage your own branch.');
+        }
+    }
+
     public function index()
     {
-        $branches = Branch::latest()->paginate(10);
+        $user = auth()->user();
+
+        if ($user->branch_id) {
+            // Locked user: only show their branch
+            $branches = Branch::withCount(['orders', 'employees', 'users'])
+                ->where('id', $user->branch_id)
+                ->get();
+        } else {
+            // Admin: show all
+            $branches = Branch::withCount(['orders', 'employees', 'users'])
+                ->latest()
+                ->get();
+        }
+
         return view('admin.branch.index', compact('branches'));
     }
 
-    // Show form to create branch
     public function create()
     {
+        // Only non-locked users can create branches
+        if ($this->isLockedUser()) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', 'You cannot create new branches.');
+        }
+
         return view('admin.branch.create');
     }
 
-    // Store new branch
     public function store(Request $request)
     {
+        if ($this->isLockedUser()) {
+            return redirect()->route('admin.branches.index')
+                ->with('error', 'You cannot create new branches.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255|unique:branches,name',
-            'location' => 'nullable|string|max:255',
+            'code' => 'nullable|string|max:20|unique:branches,code',
+            'address' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
         ]);
 
-        Branch::create($request->only('name', 'location'));
+        $branch = Branch::create($request->only('name', 'code', 'address', 'phone'));
 
-        return redirect()->route('branch.index')->with('success', 'Branch created successfully.');
+        // Create stock entries for all existing products with 0 stock
+        $products = Product::all();
+        foreach ($products as $product) {
+            BranchProductStock::create([
+                'branch_id' => $branch->id,
+                'product_id' => $product->id,
+                'stock_quantity' => 0,
+                'reorder_level' => $product->reorder_level ?? 10,
+            ]);
+        }
+
+        return redirect()->route('admin.branches.index')->with('success', "Branch \"{$branch->name}\" created. Stock entries initialized for {$products->count()} products.");
     }
 
-    // Show edit form
     public function edit(Branch $branch)
     {
+        $this->authorizeAccess($branch);
         return view('admin.branch.edit', compact('branch'));
     }
 
-    // Update branch
     public function update(Request $request, Branch $branch)
     {
+        $this->authorizeAccess($branch);
+
         $request->validate([
             'name' => 'required|string|max:255|unique:branches,name,' . $branch->id,
-            'location' => 'nullable|string|max:255',
+            'code' => 'nullable|string|max:20|unique:branches,code,' . $branch->id,
+            'address' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
         ]);
 
-        $branch->update($request->only('name', 'location'));
+        $branch->update($request->only('name', 'code', 'address', 'phone'));
 
-        return redirect()->route('branch.index')->with('success', 'Branch updated successfully.');
+        return redirect()->route('admin.branches.index')->with('success', "Branch \"{$branch->name}\" updated.");
     }
 
-    // Delete branch
     public function destroy(Branch $branch)
     {
+        // Locked users cannot delete any branch
+        if ($this->isLockedUser()) {
+            return back()->with('error', 'You cannot delete branches.');
+        }
+
+        if ($branch->orders()->count() > 0) {
+            return back()->with('error', "Cannot delete branch \"{$branch->name}\" — it has {$branch->orders()->count()} orders.");
+        }
+
         $branch->delete();
-        return redirect()->route('branch.index')->with('success', 'Branch deleted successfully.');
+        return redirect()->route('admin.branches.index')->with('success', "Branch \"{$branch->name}\" deleted.");
     }
 
-    // Branch selection after login
+    public function toggleActive(Branch $branch)
+    {
+        // Locked users cannot toggle branches
+        if ($this->isLockedUser()) {
+            return back()->with('error', 'You cannot activate/deactivate branches.');
+        }
+
+        $branch->update(['is_active' => !$branch->is_active]);
+        $status = $branch->is_active ? 'activated' : 'deactivated';
+        return back()->with('success', "Branch \"{$branch->name}\" {$status}.");
+    }
+
+    // Branch selection page (no branch middleware)
     public function select()
     {
-        $branches = Branch::all();
+        $user = auth()->user();
+
+        // If user has assigned branch, auto-redirect (they can't switch)
+        if ($user->branch_id) {
+            session(['branch_id' => $user->branch_id]);
+            return redirect()->route('admin.dashboard');
+        }
+
+        $branches = Branch::where('is_active', true)->withCount(['orders', 'employees'])->get();
         return view('admin.branch.select', compact('branches'));
     }
 
-    // Store selected branch in session
+    // Store branch selection in session
     public function storeBranchSelection(Request $request)
     {
-        $request->validate([
-            'branch_id' => 'required|exists:branches,id',
-        ]);
+        $user = auth()->user();
+        $branchId = $request->input('branch_id');
 
-        session(['branch_id' => $request->branch_id]);
+        // Users with assigned branch can't switch
+        if ($user->branch_id) {
+            session(['branch_id' => $user->branch_id]);
+            return redirect()->route('admin.dashboard');
+        }
+
+        if ($branchId === 'all') {
+            if (!$user->can('view all branches')) {
+                return back()->with('error', 'You do not have permission to view all branches.');
+            }
+            session(['branch_id' => 'all']);
+        } else {
+            $branch = Branch::findOrFail($branchId);
+            session(['branch_id' => $branch->id]);
+        }
 
         return redirect()->route('admin.dashboard');
     }

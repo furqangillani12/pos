@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\Category;
 use App\Models\Unit;
+use App\Models\BranchProductStock;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,22 +17,30 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class ProductController extends Controller
 {
+    use BranchScoped;
     public function index()
     {
-        $products = Product::with(['category', 'unit'])
+        $products = $this->scopeBranch(Product::query())
+            ->with(['category', 'unit'])
             ->filter(request(['search', 'unit_id']))
-            ->orderBy('created_at', 'desc') // Newest first
+            ->orderBy('created_at', 'desc')
             ->paginate(20);
-        
+
         $units = Unit::where('is_active', true)->get();
-        
+
+        // Attach branch stock for display
+        $branchId = $this->branchId();
+        foreach ($products as $product) {
+            $product->branch_stock = $product->getStockForBranch($branchId);
+        }
+
         return view('admin.products.index', compact('products', 'units'));
     }
 
 
     public function create()
     {
-        $categories = Category::all();
+        $categories = $this->scopeBranch(Category::query())->get();
         $units = Unit::where('is_active', true)->get();
         return view('admin.products.create', compact('categories', 'units'));
     }
@@ -71,14 +81,31 @@ class ProductController extends Controller
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
 
+        // Assign to current branch
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            $validated['branch_id'] = $branchId;
+        }
+
         $product = Product::create($validated);
+
+        // Create branch stock entry
+        if ($branchId && $branchId !== 'all') {
+            BranchProductStock::create([
+                'branch_id'      => $branchId,
+                'product_id'     => $product->id,
+                'stock_quantity' => $validated['stock_quantity'],
+                'reorder_level'  => $validated['reorder_level'],
+            ]);
+        }
 
         // Log inventory change
         $product->inventoryLogs()->create([
             'action'          => 'initial',
             'quantity_change' => $validated['stock_quantity'],
+            'branch_id'       => $branchId !== 'all' ? $branchId : null,
             'notes'           => 'Initial stock entry',
-            'user_id'         => auth()->id()
+            'user_id'         => auth()->id(),
         ]);
 
         return redirect()->route('products.index')->with('success', 'Product created successfully');
@@ -86,7 +113,7 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $categories = Category::all();
+        $categories = $this->scopeBranch(Category::query())->get();
         $units = Unit::where('is_active', true)->get(); 
         return view('admin.products.edit', compact('product', 'categories', 'units')); 
     }
@@ -131,6 +158,15 @@ class ProductController extends Controller
         }
 
         $product->update($validated);
+
+        // Sync branch stock if editing from a specific branch
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            BranchProductStock::updateOrCreate(
+                ['branch_id' => $branchId, 'product_id' => $product->id],
+                ['stock_quantity' => $validated['stock_quantity'], 'reorder_level' => $validated['reorder_level']]
+            );
+        }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }

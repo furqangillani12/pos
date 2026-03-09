@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Customer extends Model
 {
     protected $fillable = [
+        'branch_id',
         'name',
         'email',
         'phone',
@@ -21,6 +22,11 @@ class Customer extends Model
         'credit_due_days',
         'credit_start_date'
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     public static function generateBarcode()
     {

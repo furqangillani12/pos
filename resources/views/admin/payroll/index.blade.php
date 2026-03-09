@@ -10,7 +10,7 @@
             <div>
                 <h2 class="text-xl font-bold text-gray-800">Payroll</h2>
                 <p class="text-sm text-gray-500">
-                    {{ \Carbon\Carbon::create()->month($month)->format('F') }} {{ $year }}
+                    {{ \Carbon\Carbon::create(null, (int)$month)->format('F') }} {{ $year }}
                     — {{ $workingDays }} working days ({{ $workingDays * 8 }} hrs expected)
                 </p>
             </div>
@@ -51,7 +51,7 @@
 
                 {{-- Generate Button --}}
                 <form method="POST" action="{{ route('admin.payroll.generate') }}" class="flex items-end"
-                      onsubmit="return confirm('Generate/Regenerate payroll for {{ \Carbon\Carbon::create()->month($month)->format('F') }} {{ $year }}? This will recalculate all salaries.')">
+                      onsubmit="return confirm('Generate/Regenerate payroll for {{ \Carbon\Carbon::create(null, (int)$month)->format('F') }} {{ $year }}? This will recalculate all salaries.')">
                     @csrf
                     <input type="hidden" name="month" value="{{ $month }}">
                     <input type="hidden" name="year" value="{{ $year }}">

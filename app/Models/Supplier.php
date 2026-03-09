@@ -8,8 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Supplier extends Model
 {
     protected $fillable = [
-        'name', 'email', 'phone', 'address', 'company_name'
+        'branch_id', 'name', 'email', 'phone', 'address', 'company_name'
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     // Relationship with Purchases
     public function purchases()

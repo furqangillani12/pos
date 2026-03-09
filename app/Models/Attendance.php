@@ -10,7 +10,7 @@ use Carbon\Carbon;
 class Attendance extends Model
 {
     protected $fillable = [
-        'employee_id', 'date', 'status', 'notes'
+        'employee_id', 'branch_id', 'date', 'status', 'notes'
         // check_in/check_out are handled in sessions now
     ];
 
@@ -24,6 +24,11 @@ class Attendance extends Model
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function sessions(): HasMany

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt #{{ $order->order_number }}</title>
+    <style>
+        /* ── Thermal Receipt: 80mm (302px) or 58mm (219px) ── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            color: #000;
+            background: #fff;
+            width: 302px; /* 80mm thermal */
+            margin: 0 auto;
+            padding: 8px;
+        }
+
+        .center { text-align: center; }
+        .right { text-align: right; }
+        .bold { font-weight: bold; }
+        .small { font-size: 10px; }
+        .large { font-size: 16px; }
+
+        .divider {
+            border: none;
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+
+        .double-divider {
+            border: none;
+            border-top: 2px solid #000;
+            margin: 6px 0;
+        }
+
+        /* ── Header ── */
+        .header {
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .header .shop-name {
+            font-size: 16px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+
+        .header .shop-info {
+            font-size: 10px;
+            color: #333;
+        }
+
+        /* ── Info rows ── */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            line-height: 1.6;
+        }
+
+        /* ── Items ── */
+        .items-header {
+            display: flex;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            margin-bottom: 2px;
+        }
+
+        .items-header .col-name { flex: 1; }
+        .items-header .col-qty { width: 35px; text-align: center; }
+        .items-header .col-price { width: 55px; text-align: right; }
+        .items-header .col-total { width: 60px; text-align: right; }
+
+        .item-row {
+            display: flex;
+            line-height: 1.5;
+        }
+
+        .item-row .col-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .item-row .col-qty { width: 35px; text-align: center; }
+        .item-row .col-price { width: 55px; text-align: right; font-size: 11px; }
+        .item-row .col-total { width: 60px; text-align: right; font-weight: bold; }
+
+        /* ── Totals ── */
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            line-height: 1.6;
+        }
+
+        .total-row.grand {
+            font-size: 15px;
+            font-weight: bold;
+            margin: 4px 0;
+        }
+
+        .total-row.highlight {
+            font-weight: bold;
+        }
+
+        /* ── Footer ── */
+        .footer {
+            text-align: center;
+            margin-top: 8px;
+            font-size: 10px;
+            color: #333;
+        }
+
+        /* ── Print controls (hidden in print) ── */
+        .no-print {
+            width: 302px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .no-print button {
+            padding: 10px 30px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: 2px solid #000;
+            background: #fff;
+            margin: 4px;
+        }
+
+        .no-print button:hover { background: #f0f0f0; }
+
+        .no-print .btn-print { background: #2563eb; color: #fff; border-color: #2563eb; }
+        .no-print .btn-back { background: #e5e7eb; color: #374151; border-color: #d1d5db; }
+
+        /* ── Auto print on load ── */
+        @media print {
+            body {
+                width: 100%;
+                padding: 0;
+                margin: 0;
+            }
+            .no-print { display: none !important; }
+
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
+        }
+
+        /* ── 58mm mode ── */
+        body.thermal-58mm {
+            width: 219px;
+        }
+
+        body.thermal-58mm .item-row .col-price { display: none; }
+        body.thermal-58mm .items-header .col-price { display: none; }
+        body.thermal-58mm .header .shop-name { font-size: 14px; }
+        body.thermal-58mm .large { font-size: 14px; }
+    </style>
+</head>
+<body id="receipt-body">
+
+    {{-- ── Header ── --}}
+    <div class="header">
+        <div class="shop-name">ALMUFEED SAQAFTI MARKAZ</div>
+        <div class="shop-info">www.almufeed.com.pk</div>
+        <div class="shop-info">Ph: 03007951919</div>
+    </div>
+
+    <hr class="double-divider">
+
+    {{-- ── Order Info ── --}}
+    <div class="info-row">
+        <span>Receipt#:</span>
+        <span class="bold">{{ $order->order_number }}</span>
+    </div>
+    <div class="info-row">
+        <span>Date:</span>
+        <span>{{ $order->created_at?->format('d/m/Y h:i A') }}</span>
+    </div>
+    @if($order->customer)
+        <div class="info-row">
+            <span>Customer:</span>
+            <span>{{ $order->customer->name }}</span>
+        </div>
+    @endif
+    <div class="info-row">
+        <span>Cashier:</span>
+        <span>{{ $order->user->name ?? 'N/A' }}</span>
+    </div>
+
+    <hr class="divider">
+
+    {{-- ── Items ── --}}
+    <div class="items-header">
+        <span class="col-name">Item</span>
+        <span class="col-qty">Qty</span>
+        <span class="col-price">Rate</span>
+        <span class="col-total">Amt</span>
+    </div>
+
+    @foreach($order->items as $item)
+        <div class="item-row">
+            <span class="col-name">{{ $item->product?->name ?? 'Deleted' }}</span>
+            <span class="col-qty">{{ $item->quantity }}</span>
+            <span class="col-price">{{ number_format($item->unit_price, 0) }}</span>
+            <span class="col-total">{{ number_format($item->total_price, 0) }}</span>
+        </div>
+    @endforeach
+
+    <hr class="divider">
+
+    {{-- ── Totals ── --}}
+    <div class="total-row">
+        <span>Subtotal</span>
+        <span>{{ number_format($order->subtotal, 0) }}</span>
+    </div>
+
+    @if(($order->tax ?? 0) > 0)
+        <div class="total-row">
+            <span>Tax ({{ $order->tax_rate }}%)</span>
+            <span>{{ number_format($order->tax, 0) }}</span>
+        </div>
+    @endif
+
+    @if(($order->delivery_charges ?? 0) > 0)
+        <div class="total-row">
+            <span>Delivery</span>
+            <span>{{ number_format($order->delivery_charges, 0) }}</span>
+        </div>
+    @endif
+
+    @if(($order->discount ?? 0) > 0)
+        <div class="total-row">
+            <span>Discount</span>
+            <span>-{{ number_format($order->discount, 0) }}</span>
+        </div>
+    @endif
+
+    <hr class="double-divider">
+
+    <div class="total-row grand">
+        <span>TOTAL</span>
+        <span>Rs.{{ number_format($order->total, 0) }}</span>
+    </div>
+
+    {{-- ── Payment / Balance ── --}}
+    @php
+        $paidAmount = $order->paid_amount ?? $order->total;
+        $balanceOnBill = $order->balance_amount ?? 0;
+        $prevBalance = $order->previous_balance ?? 0;
+        $currentBalance = $prevBalance + ($balanceOnBill ?: ($order->total - $paidAmount));
+        $hasKhata = $balanceOnBill > 0 || $prevBalance > 0 || $paidAmount < $order->total;
+    @endphp
+
+    @if($hasKhata)
+        <hr class="divider">
+        <div class="total-row highlight">
+            <span>Paid</span>
+            <span>Rs.{{ number_format($paidAmount, 0) }}</span>
+        </div>
+        @if($balanceOnBill > 0)
+            <div class="total-row">
+                <span>Bill Balance</span>
+                <span>Rs.{{ number_format($balanceOnBill, 0) }}</span>
+            </div>
+        @endif
+        @if($prevBalance > 0)
+            <div class="total-row small">
+                <span>Prev Balance</span>
+                <span>Rs.{{ number_format($prevBalance, 0) }}</span>
+            </div>
+        @endif
+        @if($currentBalance > 0)
+            <div class="total-row grand">
+                <span>BALANCE DUE</span>
+                <span>Rs.{{ number_format($currentBalance, 0) }}</span>
+            </div>
+        @elseif($currentBalance < 0)
+            <div class="total-row grand">
+                <span>ADVANCE</span>
+                <span>Rs.{{ number_format(abs($currentBalance), 0) }}</span>
+            </div>
+        @endif
+    @endif
+
+    <hr class="divider">
+
+    <div class="info-row small">
+        <span>Payment:</span>
+        <span>{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'Cash')) }}</span>
+    </div>
+
+    @if($order->dispatch_method)
+        <div class="info-row small">
+            <span>Dispatch:</span>
+            <span>{{ $order->dispatch_method }}</span>
+        </div>
+    @endif
+
+    @if($order->tracking_id)
+        <div class="info-row small">
+            <span>Tracking:</span>
+            <span>{{ $order->tracking_id }}</span>
+        </div>
+    @endif
+
+    <hr class="divider">
+
+    {{-- ── Footer ── --}}
+    <div class="footer">
+        <p class="bold">Thank you for shopping!</p>
+        <p>Returns within 7 days with receipt</p>
+        <p style="margin-top:4px;">{{ $order->receipt_url }}</p>
+        <p style="margin-top:8px;">{{ $order->items->count() }} item(s) | {{ $order->created_at?->format('d/m/Y') }}</p>
+    </div>
+
+    <br><br>
+
+    {{-- ── Print Controls (hidden in print) ── --}}
+    <div class="no-print">
+        <button class="btn-print" onclick="window.print()">
+            <i class="fas fa-print"></i> Print Receipt
+        </button>
+        <br>
+        <button class="btn-back" onclick="toggleSize()">
+            Switch 58mm / 80mm
+        </button>
+        <button class="btn-back" onclick="window.close()">
+            Close
+        </button>
+    </div>
+
+    <script>
+        // Auto-print when opened
+        window.addEventListener('load', function() {
+            // Small delay to let page render fully
+            setTimeout(function() {
+                window.print();
+            }, 300);
+        });
+
+        // Toggle between 58mm and 80mm
+        function toggleSize() {
+            document.getElementById('receipt-body').classList.toggle('thermal-58mm');
+        }
+    </script>
+</body>
+</html>

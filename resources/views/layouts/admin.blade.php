@@ -558,6 +558,62 @@
                 </button>
             </div>
 
+            {{-- Branch Switcher --}}
+            @if(isset($currentBranch) && isset($allBranches))
+                <div class="px-4 py-3 border-b border-gray-200 dark:border-gray-700" x-data="{ branchOpen: false }">
+                    @if(isset($canSwitchBranch) && $canSwitchBranch)
+                        {{-- Admin/owner: can switch between branches --}}
+                        <button @click="branchOpen = !branchOpen"
+                                class="w-full flex items-center justify-between px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-sm hover:bg-blue-100 transition">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <i class="fas fa-store text-blue-600 text-xs flex-shrink-0"></i>
+                                <span class="font-medium text-blue-800 dark:text-blue-200 truncate">
+                                    {{ $currentBranch === 'all' ? 'All Branches' : $currentBranch->name }}
+                                </span>
+                            </div>
+                            <i class="fas fa-chevron-down text-blue-400 text-[10px] transition-transform flex-shrink-0 ml-1"
+                               :class="{ 'rotate-180': branchOpen }"></i>
+                        </button>
+                        <div x-show="branchOpen" x-transition x-cloak class="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                            @foreach($allBranches as $b)
+                                @php $isSelected = ($currentBranch !== 'all' && $currentBranch->id === $b->id); @endphp
+                                <form method="POST" action="{{ route('admin.branch.store-selection') }}">
+                                    @csrf
+                                    <input type="hidden" name="branch_id" value="{{ $b->id }}">
+                                    <button type="submit"
+                                            class="block w-full text-left px-3 py-1.5 rounded-lg text-xs transition
+                                                {{ $isSelected ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                        <i class="fas fa-{{ $isSelected ? 'check-circle' : 'circle' }} mr-1 text-[10px]"></i>
+                                        {{ $b->name }}
+                                    </button>
+                                </form>
+                            @endforeach
+                            @can('view all branches')
+                                <form method="POST" action="{{ route('admin.branch.store-selection') }}">
+                                    @csrf
+                                    <input type="hidden" name="branch_id" value="all">
+                                    <button type="submit"
+                                            class="block w-full text-left px-3 py-1.5 rounded-lg text-xs transition
+                                                {{ $currentBranch === 'all' ? 'bg-blue-100 text-blue-700 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                        <i class="fas fa-{{ $currentBranch === 'all' ? 'check-circle' : 'globe' }} mr-1 text-[10px]"></i>
+                                        All Branches
+                                    </button>
+                                </form>
+                            @endcan
+                        </div>
+                    @else
+                        {{-- Staff user: locked to their branch, show label only --}}
+                        <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm">
+                            <i class="fas fa-store text-gray-500 text-xs flex-shrink-0"></i>
+                            <span class="font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {{ $currentBranch === 'all' ? 'All Branches' : $currentBranch->name }}
+                            </span>
+                            <i class="fas fa-lock text-gray-400 text-[10px] ml-auto flex-shrink-0" title="You are assigned to this branch"></i>
+                        </div>
+                    @endif
+                </div>
+            @endif
+
             <nav class="p-4 space-y-1 text-sm" x-data="{
                 attendanceOpen: false,
                 reportsOpen: false,
@@ -849,6 +905,14 @@
                     💵 Payroll Management
                 </a>
 
+                <!-- Branch Management -->
+                @can('manage branches')
+                    <a href="{{ route('admin.branches.index') }}"
+                        class="flex items-center px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
+                        <i class="fas fa-store mr-2 text-xs"></i> Branches
+                    </a>
+                @endcan
+
                 <!-- Roles & Permissions -->
                 <div x-data="{ openRoles: false }" class="relative">
                     <button @click="openRoles = !openRoles"
@@ -875,12 +939,12 @@
                                 🛡️ Manage Permissions
                             </a>
                         @endcan
-                        @can('assign roles')
+                        @hasrole('super_admin')
                             <a href="{{ route('users.assign_role.form') }}"
                                 class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
                                 🔗 Assign Roles
                             </a>
-                        @endcan
+                        @endhasrole
                     </div>
                 </div>
 

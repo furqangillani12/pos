@@ -4,16 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Supplier;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 
 class SupplierController extends Controller
 {
+    use BranchScoped;
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $suppliers = Supplier::latest()->paginate(10);
+        $suppliers = $this->scopeBranch(Supplier::query())->latest()->paginate(10);
         return view('admin.suppliers.index', compact('suppliers'));
     }
 
@@ -37,6 +39,11 @@ class SupplierController extends Controller
             'address' => 'nullable|string',
             'company_name' => 'nullable|string|max:255',
         ]);
+
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            $validated['branch_id'] = $branchId;
+        }
 
         Supplier::create($validated);
 

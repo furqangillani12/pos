@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
+        'branch_id',
         'category_id',
         'unit_id',
         'name',
@@ -60,6 +61,57 @@ class Product extends Model
     public function inventoryLogs(): HasMany
     {
         return $this->hasMany(InventoryLog::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'branch_product_stock')
+            ->withPivot('stock_quantity', 'reorder_level')
+            ->withTimestamps();
+    }
+
+    public function stockEntries()
+    {
+        return $this->hasMany(BranchProductStock::class);
+    }
+
+    public function getStockForBranch($branchId)
+    {
+        if (!$branchId || $branchId === 'all') {
+            return $this->getTotalStock();
+        }
+        $entry = $this->stockEntries()->where('branch_id', $branchId)->first();
+        return $entry ? $entry->stock_quantity : 0;
+    }
+
+    public function getTotalStock()
+    {
+        return $this->stockEntries()->sum('stock_quantity');
+    }
+
+    public function decrementBranchStock($branchId, $quantity)
+    {
+        $entry = BranchProductStock::firstOrCreate(
+            ['branch_id' => $branchId, 'product_id' => $this->id],
+            ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]
+        );
+        $entry->decrement('stock_quantity', $quantity);
+        return $entry;
+    }
+
+    public function incrementBranchStock($branchId, $quantity)
+    {
+        $entry = BranchProductStock::firstOrCreate(
+            ['branch_id' => $branchId, 'product_id' => $this->id],
+            ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]
+        );
+        $entry->increment('stock_quantity', $quantity);
+        return $entry;
     }
 
     public function scopeFilter($query, array $filters)

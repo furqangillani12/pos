@@ -4,35 +4,37 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-    public function assignRoleForm() {
-        $users = User::all();
-        $roles = Role::all();
+    public function assignRoleForm()
+    {
+        $users = User::with(['roles', 'branch'])->orderBy('name')->get();
+        $roles = Role::withCount('users')->orderBy('name')->get();
+        $branches = Branch::where('is_active', true)->orderBy('name')->get();
 
-//        foreach ($users as $user) {
-//            echo "User: " . $user->name . " - Roles: " . implode(', ', $user->getRoleNames()->toArray()) . "<br>";
-//        }
-//
-//        dd('Check complete');
-
-        return view('users.assign_role', compact('users', 'roles'));
+        return view('users.assign_role', compact('users', 'roles', 'branches'));
     }
-
 
     public function assignRole(Request $request)
     {
+        $request->validate([
+            'user_id' => 'required|exists:users,id',
+            'role' => 'required|exists:roles,name',
+            'branch_id' => 'nullable|exists:branches,id',
+        ]);
+
         $user = User::findOrFail($request->user_id);
-        $newRole = $request->role;
+        $user->syncRoles([$request->role]);
+        $user->update(['branch_id' => $request->branch_id]);
 
-        // Remove all current roles
-        $user->syncRoles([$newRole]);
+        $branchName = $request->branch_id
+            ? Branch::find($request->branch_id)->name
+            : 'All (Admin)';
 
-        return redirect()->back()->with('success', 'Role assigned successfully.');
+        return redirect()->back()->with('success', "\"{$user->name}\" assigned role \"{$request->role}\" — Branch: {$branchName}");
     }
-
-
 }

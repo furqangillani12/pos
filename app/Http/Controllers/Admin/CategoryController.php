@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    use BranchScoped;
+
     public function index()
     {
-        $categories = Category::withCount('products')->get();
+        $categories = $this->scopeBranch(Category::query())->withCount('products')->get();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -30,6 +33,11 @@ class CategoryController extends Controller
             'name' => 'required|string|max:255|unique:categories',
             'description' => 'nullable|string'
         ]);
+
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            $validated['branch_id'] = $branchId;
+        }
 
         Category::create($validated);
         return back()->with('success', 'Category created successfully');

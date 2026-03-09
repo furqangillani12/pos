@@ -13,6 +13,7 @@ use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\CreditLedger;
 use App\Models\CreditTransaction;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -20,10 +21,12 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 class PosController extends Controller
 {
+    use BranchScoped;
+
     public function index()
     {
-        $customers  = Customer::get();
-        $categories = Category::all();
+        $customers  = $this->scopeBranch(Customer::query())->get();
+        $categories = $this->scopeBranch(Category::query())->get();
 
         return view('admin.pos.index', [
             'customers'  => $customers,
@@ -34,7 +37,7 @@ class PosController extends Controller
 
     public function searchProducts(Request $request)
     {
-        $query = Product::with(['unit']);
+        $query = $this->scopeBranch(Product::query())->with(['unit']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -47,11 +50,13 @@ class PosController extends Controller
             $query->where('category_id', $categoryId);
         }
 
+        $branchId = $this->branchId();
+
         $products = $query->orderBy('created_at', 'desc')
                           ->paginate($request->input('per_page', 30));
 
         return response()->json([
-            'data' => $products->map(function ($p) {
+            'data' => $products->map(function ($p) use ($branchId) {
                 return [
                     'id'              => $p->id,
                     'name'            => $p->name,
@@ -62,7 +67,7 @@ class PosController extends Controller
                     'weight'          => $p->weight ?? 0,
                     'unit'            => $p->unit->abbreviation ?? '',
                     'category_id'     => $p->category_id,
-                    'stock_quantity'  => $p->stock_quantity,
+                    'stock_quantity'  => $p->getStockForBranch($branchId),
                     'reorder_level'   => $p->reorder_level ?? 5,
                     'rank'            => $p->rank,
                     'image'           => $p->image ? asset('storage/' . $p->image) : null,
@@ -85,13 +90,15 @@ class PosController extends Controller
                 'items.*.unit_price' => 'nullable|numeric|min:0',
                 'payment_method'     => 'required|string',
                 'notes'              => 'nullable|string|max:1000',
-                'paid_amount'        => 'nullable|numeric|min:0',   // ← NEW: partial payment
+                'paid_amount'        => 'nullable|numeric|min:0',
                 'dispatch_method'    => 'nullable|string',
                 'tracking_id'        => 'nullable|string',
                 'delivery_charges'   => 'nullable|numeric|min:0',
                 'tax_rate'           => 'nullable|numeric|min:0',
                 'discount'           => 'nullable|numeric|min:0',
             ]);
+
+            $branchId = $this->branchId();
 
             DB::beginTransaction();
 
@@ -119,8 +126,10 @@ class PosController extends Controller
                     $totalWeight += $product->weight * $item['quantity'];
                 }
 
-                if ($product->stock_quantity < $item['quantity']) {
-                    throw new \Exception("Not enough stock for {$product->name}");
+                // Check branch stock
+                $branchStock = $product->getStockForBranch($branchId);
+                if ($branchStock < $item['quantity']) {
+                    throw new \Exception("Not enough stock for {$product->name} (Available: {$branchStock})");
                 }
 
                 $orderItems[] = [
@@ -131,7 +140,7 @@ class PosController extends Controller
                 ];
             }
 
-            // ── Calculate totals ─────────────────────────────────────────────
+            // ── Calculate totals
             $taxRate         = $validated['tax_rate'] ?? config('pos.tax_rate', 0);
             $discount        = $validated['discount'] ?? 0;
             $deliveryCharges = $validated['delivery_charges'] ?? 0;
@@ -139,35 +148,27 @@ class PosController extends Controller
             $tax             = $afterDiscount * ($taxRate / 100);
             $total           = $afterDiscount + $tax + $deliveryCharges;
 
-            // ── Partial payment logic ────────────────────────────────────────
-            // paid_amount defaults to full total (fully paid)
+            // ── Partial payment logic
             $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
                 ? (float) $validated['paid_amount']
                 : $total;
 
-            // Cap paid amount — can't pay more than total on THIS bill
-            // (extra advance will be handled as negative balance = credit)
             $previousBalance = 0;
             if ($customer) {
                 $previousBalance = (float) ($customer->current_balance ?? 0);
             }
 
-            // Balance on this order = what customer still owes FOR THIS ORDER
-            $balanceOnOrder = max(0, $total - $paidAmount);
-
-            // New running balance = previous balance + this order's remaining
-            // If customer overpaid (paidAmount > total), the extra reduces their balance
+            $balanceOnOrder    = max(0, $total - $paidAmount);
             $newRunningBalance = $previousBalance + $total - $paidAmount;
+            $paymentStatus     = $balanceOnOrder <= 0 ? 'paid' : 'partial';
 
-            // ── Determine payment status ─────────────────────────────────────
-            $paymentStatus = $balanceOnOrder <= 0 ? 'paid' : 'partial';
-
-            // ── Create order ─────────────────────────────────────────────────
+            // ── Create order with branch_id
             $order = Order::create([
                 'order_number'     => Order::generateOrderNumber(),
                 'customer_id'      => $customer ? $customer->id : null,
                 'customer_type'    => $customerType,
                 'user_id'          => auth()->id(),
+                'branch_id'        => $branchId !== 'all' ? $branchId : null,
                 'order_type'       => 'pos',
                 'payment_method'   => $validated['payment_method'],
                 'status'           => 'completed',
@@ -181,13 +182,12 @@ class PosController extends Controller
                 'weight'           => $totalWeight,
                 'subtotal'         => $subtotal,
                 'total'            => $total,
-                // ── NEW FIELDS ──
                 'paid_amount'      => $paidAmount,
                 'previous_balance' => $previousBalance,
                 'balance_amount'   => $balanceOnOrder,
             ]);
 
-            // ── Create order items & update stock ─────────────────────────────
+            // ── Create order items & update BRANCH stock
             foreach ($orderItems as $itemData) {
                 $product = $itemData['product'];
 
@@ -199,12 +199,12 @@ class PosController extends Controller
                     'total_price' => $itemData['total'],
                 ]);
 
-                if ($product->track_inventory) {
-                    $product->decrement('stock_quantity', $itemData['quantity']);
+                if ($product->track_inventory && $branchId && $branchId !== 'all') {
+                    $product->decrementBranchStock($branchId, $itemData['quantity']);
                 }
             }
 
-            // ── Create payment record ─────────────────────────────────────────
+            // ── Create payment record
             if ($customer && $paidAmount > 0) {
                 Payment::create([
                     'payment_number'   => Payment::generatePaymentNumber(),
@@ -219,7 +219,7 @@ class PosController extends Controller
                 ]);
             }
 
-            // ── Update customer running balance ───────────────────────────────
+            // ── Update customer running balance
             if ($customer) {
                 $customer->current_balance = $newRunningBalance;
                 $customer->save();
@@ -251,9 +251,6 @@ class PosController extends Controller
         }
     }
 
-    /**
-     * Helper method to get price based on customer type
-     */
     private function getPriceForCustomerType($product, $customerType)
     {
         switch ($customerType) {
@@ -266,9 +263,6 @@ class PosController extends Controller
         }
     }
 
-    /**
-     * Process credit sale - called from CreditController
-     */
     public function processCreditSale(Request $request, Order $order)
     {
         try {
@@ -369,9 +363,9 @@ class PosController extends Controller
     public function editOrder(Order $order)
     {
         $order->load('items.product', 'customer');
-        $products   = Product::with(['variants', 'category', 'unit'])->orderBy('created_at', 'desc')->get();
-        $customers  = Customer::get();
-        $categories = Category::all();
+        $products   = $this->scopeBranch(Product::query())->with(['variants', 'category', 'unit'])->orderBy('created_at', 'desc')->get();
+        $customers  = $this->scopeBranch(Customer::query())->get();
+        $categories = $this->scopeBranch(Category::query())->get();
 
         return view('admin.pos.edit', [
             'order'      => $order,
@@ -401,16 +395,17 @@ class PosController extends Controller
                 'notes'              => 'nullable|string|max:1000',
             ]);
 
+            $branchId = $order->branch_id ?? $this->branchId();
+
             DB::beginTransaction();
 
-            // Restore old stock
+            // Restore old branch stock
             foreach ($order->items as $oldItem) {
-                if ($oldItem->product && $oldItem->product->track_inventory) {
-                    $oldItem->product->increment('stock_quantity', $oldItem->quantity);
+                if ($oldItem->product && $oldItem->product->track_inventory && $branchId && $branchId !== 'all') {
+                    $oldItem->product->incrementBranchStock($branchId, $oldItem->quantity);
                 }
             }
 
-            // Remove old items
             $order->items()->delete();
 
             $customer     = null;
@@ -428,7 +423,6 @@ class PosController extends Controller
                 $oldCustomer->save();
             }
 
-            // Refresh customer model so it picks up the reversed balance
             if ($customer && $oldCustomer && $customer->id === $oldCustomer->id) {
                 $customer->refresh();
             }
@@ -449,8 +443,9 @@ class PosController extends Controller
                     $totalWeight += $product->weight * $item['quantity'];
                 }
 
-                if ($product->stock_quantity < $item['quantity']) {
-                    throw new \Exception("Not enough stock for {$product->name}");
+                $branchStock = $product->getStockForBranch($branchId);
+                if ($branchStock < $item['quantity']) {
+                    throw new \Exception("Not enough stock for {$product->name} (Available: {$branchStock})");
                 }
 
                 $orderItems[] = [
@@ -510,8 +505,8 @@ class PosController extends Controller
                     'total_price' => $itemData['total'],
                 ]);
 
-                if ($product->track_inventory) {
-                    $product->decrement('stock_quantity', $itemData['quantity']);
+                if ($product->track_inventory && $branchId && $branchId !== 'all') {
+                    $product->decrementBranchStock($branchId, $itemData['quantity']);
                 }
             }
 
@@ -558,6 +553,12 @@ class PosController extends Controller
         return view('admin.pos.receipt', compact('order'));
     }
 
+    public function thermalReceipt(Order $order)
+    {
+        $order->load(['items.product', 'customer', 'user']);
+        return view('admin.pos.receipt-thermal', compact('order'));
+    }
+
     public function processRefund(Request $request, Order $order)
     {
         if (!$order->isRefundable()) {
@@ -569,7 +570,9 @@ class PosController extends Controller
             'reason' => 'required|string|max:500',
         ]);
 
-        DB::transaction(function () use ($request, $order) {
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($request, $order, $branchId) {
             Refund::create([
                 'order_id' => $order->id,
                 'user_id'  => auth()->id(),
@@ -584,7 +587,6 @@ class PosController extends Controller
                     : Order::STATUS_COMPLETED,
             ]);
 
-            // Adjust customer balance on refund
             if ($order->customer_id) {
                 $customer = Customer::find($order->customer_id);
                 if ($customer) {
@@ -595,12 +597,13 @@ class PosController extends Controller
 
             if ($request->has('return_to_inventory')) {
                 foreach ($order->items as $item) {
-                    if ($item->product && $item->product->track_inventory) {
-                        $item->product->increment('stock_quantity', $item->quantity);
+                    if ($item->product && $item->product->track_inventory && $branchId) {
+                        $item->product->incrementBranchStock($branchId, $item->quantity);
 
                         $item->product->inventoryLogs()->create([
                             'action'          => 'refund_return',
                             'quantity_change' => $item->quantity,
+                            'branch_id'       => $branchId,
                             'notes'           => 'Restocked due to refund of Order #' . $order->order_number,
                             'user_id'         => auth()->id(),
                         ]);
@@ -618,15 +621,16 @@ class PosController extends Controller
             return back()->with('error', 'Order is already cancelled.');
         }
 
-        DB::transaction(function () use ($order) {
-            // Restore stock
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($order, $branchId) {
+            // Restore branch stock
             foreach ($order->items as $item) {
-                if ($item->product) {
-                    $item->product->increment('stock_quantity', $item->quantity);
+                if ($item->product && $branchId) {
+                    $item->product->incrementBranchStock($branchId, $item->quantity);
                 }
             }
 
-            // Adjust customer balance
             if ($order->customer_id && $order->balance_amount > 0) {
                 $customer = Customer::find($order->customer_id);
                 if ($customer) {
@@ -643,17 +647,17 @@ class PosController extends Controller
 
     public function deleteOrder(Order $order)
     {
-        DB::transaction(function () use ($order) {
-            // Restore stock if order was not already cancelled
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($order, $branchId) {
             if ($order->status !== Order::STATUS_CANCELLED && $order->status !== Order::STATUS_REFUNDED) {
                 foreach ($order->items as $item) {
-                    if ($item->product) {
-                        $item->product->increment('stock_quantity', $item->quantity);
+                    if ($item->product && $branchId) {
+                        $item->product->incrementBranchStock($branchId, $item->quantity);
                     }
                 }
             }
 
-            // Adjust customer balance
             if ($order->customer_id && $order->balance_amount > 0 && $order->status !== Order::STATUS_CANCELLED) {
                 $customer = Customer::find($order->customer_id);
                 if ($customer) {
@@ -662,7 +666,6 @@ class PosController extends Controller
                 }
             }
 
-            // Delete related records
             $order->items()->delete();
             $order->payments()->delete();
             $order->delete();

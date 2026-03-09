@@ -11,16 +11,19 @@ use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Facades\Log; 
+use App\Traits\BranchScoped;
+use Illuminate\Support\Facades\Log;
 
 class CreditController extends Controller
 {
+    use BranchScoped;
     /**
      * Display customer credit dashboard
      */
     public function index(Request $request)
     {
-        $query = Customer::where('credit_enabled', true)
+        $query = $this->scopeBranch(Customer::query())
+                        ->where('credit_enabled', true)
                         ->with('creditLedger');
         
         // Search filter
@@ -46,7 +49,7 @@ class CreditController extends Controller
         // Statistics
         $totalCreditSales = CreditTransaction::where('transaction_type', 'debit')->sum('amount');
         $totalCreditPayments = CreditTransaction::where('transaction_type', 'credit')->sum('amount');
-        $totalOutstanding = Customer::where('credit_enabled', true)->sum('current_balance');
+        $totalOutstanding = $this->scopeBranch(Customer::query())->where('credit_enabled', true)->sum('current_balance');
         $overdueCount = CreditTransaction::overdue()->count();
         
         return view('admin.credit.index', compact(
@@ -114,7 +117,8 @@ class CreditController extends Controller
             }
         }
         
-        $customers = Customer::where('credit_enabled', true)
+        $customers = $this->scopeBranch(Customer::query())
+                            ->where('credit_enabled', true)
                             ->where('current_balance', '>', 0)
                             ->orderBy('name')
                             ->get();

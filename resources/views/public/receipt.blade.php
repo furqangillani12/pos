@@ -382,18 +382,271 @@
             .spinner { border-color: #374151; border-top-color: #3b82f6; }
         }
 
-        /* ── Print ── */
+        /* ── Print — Thermal Receipt Optimized (80mm) ── */
         @media print {
-            body { background: #fff; padding: 0; }
+            @page {
+                size: 80mm auto;
+                margin: 0;
+            }
 
-            .receipt-card { box-shadow: none; border-radius: 0; max-width: 100%; }
+            /* Reset everything to black on white */
+            *, *::before, *::after {
+                color: #000 !important;
+                background: #fff !important;
+                background-color: #fff !important;
+                box-shadow: none !important;
+                text-shadow: none !important;
+                border-color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
 
-            .no-print { display: none !important; }
+            body {
+                padding: 0 !important;
+                margin: 0 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 13px !important;
+                font-weight: 600 !important;
+                width: 80mm !important;
+                max-width: 80mm !important;
+                -webkit-font-smoothing: none !important;
+            }
 
-            .info-grid { grid-template-columns: 1fr 1fr; }
+            .no-print, .loading-overlay { display: none !important; }
 
-            .items-table thead th,
-            .items-table tbody td { border: 1px solid #ddd; }
+            .receipt-card {
+                border-radius: 0 !important;
+                max-width: 80mm !important;
+                width: 80mm !important;
+                overflow: hidden !important;
+                margin: 0 !important;
+                padding: 0 3px !important;
+            }
+
+            /* ── Header ── */
+            .company-header {
+                padding: 4px 0 !important;
+                border-bottom: 1px dashed #000 !important;
+            }
+
+            .company-header .logo {
+                max-height: 45px !important;
+                width: auto !important;
+            }
+
+            /* ── Invoice title ── */
+            .invoice-title {
+                padding: 4px 0 !important;
+                border-bottom: 2px solid #000 !important;
+            }
+
+            .invoice-title h1 {
+                font-size: 15px !important;
+                font-weight: 900 !important;
+                letter-spacing: 1px !important;
+            }
+
+            .invoice-title .receipt-num {
+                font-size: 12px !important;
+                font-weight: 700 !important;
+            }
+
+            /* ── Section headings ── */
+            .section-title {
+                padding: 3px 0 !important;
+                font-size: 11px !important;
+                font-weight: 900 !important;
+                background: #fff !important;
+                border-bottom: 1px dashed #000 !important;
+                margin: 0 !important;
+            }
+
+            /* ── Info grid → single column, no boxes ── */
+            .info-grid {
+                display: block !important;
+                padding: 3px 0 !important;
+            }
+
+            .info-box {
+                background: #fff !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 1px 0 !important;
+                margin: 0 !important;
+            }
+
+            .info-row {
+                display: flex !important;
+                justify-content: space-between !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                padding: 2px 0 !important;
+                line-height: 1.5 !important;
+            }
+
+            .info-row .label {
+                font-size: 12px !important;
+                font-weight: 600 !important;
+            }
+
+            .info-row .value {
+                font-size: 12px !important;
+                font-weight: 800 !important;
+            }
+
+            /* ── Items table ── */
+            .items-section {
+                padding: 0 !important;
+            }
+
+            .items-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+            }
+
+            .items-table thead th {
+                background: #fff !important;
+                border: none !important;
+                border-bottom: 2px solid #000 !important;
+                padding: 3px 2px !important;
+                font-size: 11px !important;
+                font-weight: 900 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+            }
+
+            /* Hide # column on thermal */
+            .items-table thead th:first-child,
+            .items-table tbody td:first-child {
+                display: none !important;
+            }
+
+            /* Product, Qty, Price, Total */
+            .items-table tbody td {
+                border: none !important;
+                border-bottom: 1px solid #ccc !important;
+                padding: 3px 2px !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                font-family: Arial, Helvetica, sans-serif !important;
+                line-height: 1.4 !important;
+                word-break: break-word !important;
+                white-space: normal !important;
+            }
+
+            /* Product name — allow wrapping */
+            .items-table tbody td:nth-child(2) {
+                word-break: break-word !important;
+                white-space: normal !important;
+                max-width: 120px !important;
+            }
+
+            /* Qty, Price, Total — no wrap */
+            .items-table tbody td:nth-child(3),
+            .items-table tbody td:nth-child(4),
+            .items-table tbody td:last-child {
+                white-space: nowrap !important;
+                font-weight: 700 !important;
+            }
+
+            .items-table tbody tr:nth-child(even) {
+                background: #fff !important;
+            }
+
+            .product-sku { display: none !important; }
+
+            /* ── Summary ── */
+            .summary-box {
+                margin: 0 !important;
+                background: #fff !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 3px 0 !important;
+            }
+
+            .summary-row {
+                font-size: 12px !important;
+                font-weight: 600 !important;
+                padding: 2px 0 !important;
+                background: #fff !important;
+                border: none !important;
+                border-radius: 0 !important;
+                margin: 0 !important;
+                line-height: 1.5 !important;
+            }
+
+            .summary-row .label,
+            .summary-row .value {
+                font-family: Arial, Helvetica, sans-serif !important;
+                font-size: 12px !important;
+                font-weight: 700 !important;
+            }
+
+            .summary-row.grand {
+                border-top: 2px solid #000 !important;
+                margin-top: 3px !important;
+                padding-top: 4px !important;
+            }
+
+            .summary-row.grand .label {
+                font-size: 14px !important;
+                font-weight: 900 !important;
+            }
+
+            .summary-row.grand .value {
+                font-size: 15px !important;
+                font-weight: 900 !important;
+            }
+
+            /* ── Khata/Balance rows — strip ALL inline styles ── */
+            .summary-box .summary-row[style] {
+                background: #fff !important;
+                background-color: #fff !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 2px 0 !important;
+                margin: 1px 0 !important;
+            }
+
+            .summary-box .summary-row[style] .label,
+            .summary-box .summary-row[style] .value {
+                color: #000 !important;
+                font-size: 12px !important;
+                font-weight: 700 !important;
+                background: #fff !important;
+            }
+
+            /* Balance due row — stand out with dashes */
+            .summary-box .summary-row[style*="border:1.5px"] {
+                border-top: 2px dashed #000 !important;
+                border-bottom: 2px dashed #000 !important;
+                padding: 3px 0 !important;
+                margin-top: 3px !important;
+            }
+
+            .summary-box .summary-row[style*="border:1.5px"] .label,
+            .summary-box .summary-row[style*="border:1.5px"] .value {
+                font-size: 13px !important;
+                font-weight: 900 !important;
+            }
+
+            /* ── Notes ── */
+            .notes-section {
+                padding: 2px 0 !important;
+                font-size: 12px !important;
+                font-weight: 600 !important;
+            }
+
+            /* ── Footer ── */
+            .receipt-footer {
+                padding: 4px 0 !important;
+                border-top: 1px dashed #000 !important;
+            }
+
+            .receipt-footer p {
+                margin: 2px 0 !important;
+                font-size: 11px !important;
+                font-weight: 700 !important;
+            }
         }
     </style>
 </head>

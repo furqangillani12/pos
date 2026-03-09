@@ -615,6 +615,9 @@
             <button onclick="window.print()" class="action-btn print">
                 <i class="fas fa-print"></i> Print
             </button>
+            <a href="{{ route('admin.pos.receipt.thermal', $order) }}" target="_blank" class="action-btn print" style="background:#0d9488;">
+                <i class="fas fa-receipt"></i> Thermal
+            </a>
             <a href="{{ route('admin.pos.receipt.pdf', $order) }}" class="action-btn pdf">
                 <i class="fas fa-download"></i> PDF
             </a>

@@ -5,19 +5,29 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class PermissionController extends Controller
 {
-    public function index() {
-        $permissions = Permission::all();
-        return view('permissions.index', compact('permissions'));
+    public function index()
+    {
+        $permissions = Permission::orderBy('name')->get();
+        $grouped = $permissions->groupBy(function ($p) {
+            $parts = explode(' ', $p->name);
+            return count($parts) > 1 ? $parts[0] : 'other';
+        });
+        $roles = Role::with('permissions')->get();
+
+        return view('permissions.index', compact('permissions', 'grouped', 'roles'));
     }
 
-    public function create() {
+    public function create()
+    {
         return view('permissions.create');
     }
 
-    public function store(Request $request) {
+    public function store(Request $request)
+    {
         $request->validate([
             'name' => 'required|unique:permissions,name',
         ]);
@@ -27,11 +37,13 @@ class PermissionController extends Controller
         return redirect()->route('permissions.index')->with('success', 'Permission created.');
     }
 
-    public function edit(Permission $permission) {
+    public function edit(Permission $permission)
+    {
         return view('permissions.edit', compact('permission'));
     }
 
-    public function update(Request $request, Permission $permission) {
+    public function update(Request $request, Permission $permission)
+    {
         $request->validate([
             'name' => 'required|unique:permissions,name,' . $permission->id,
         ]);

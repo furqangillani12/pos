@@ -4,7 +4,7 @@
 
 @section('content')
     @php
-        $monthName = \Carbon\Carbon::create()->month($payroll->month)->format('F');
+        $monthName = \Carbon\Carbon::create(null, (int)$payroll->month)->format('F');
         $isPaid = $payroll->status === 'paid';
         $expectedHours = $workingDays * 8;
         $hoursPct = $expectedHours > 0 ? min(100, round(($payroll->total_hours / $expectedHours) * 100)) : 0;
