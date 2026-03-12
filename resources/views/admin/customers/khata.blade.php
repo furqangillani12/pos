@@ -349,17 +349,25 @@
 
                                         <td class="px-3 py-3 text-center">
                                             @if ($isPayment)
-                                                {{-- Delete button for standalone payments only --}}
-                                                <form method="POST"
-                                                    action="{{ route('admin.customers.khata.payment.delete', [$customer, $txn['id']]) }}"
-                                                    onsubmit="return confirm('Delete this payment of Rs.{{ number_format($txn['amount'], 0) }}? This will add the amount back to the balance.')">
-                                                    @csrf @method('DELETE')
-                                                    <button type="submit"
-                                                        class="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50"
-                                                        title="Delete / Reverse Payment">
-                                                        <i class="fas fa-trash-alt"></i>
-                                                    </button>
-                                                </form>
+                                                <div class="flex items-center justify-center gap-1">
+                                                    {{-- View Voucher --}}
+                                                    <a href="{{ route('admin.customers.khata.payment.voucher', [$customer, $txn['id']]) }}"
+                                                        class="text-xs text-blue-400 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50"
+                                                        title="View Payment Voucher">
+                                                        <i class="fas fa-file-invoice"></i>
+                                                    </a>
+                                                    {{-- Delete button --}}
+                                                    <form method="POST"
+                                                        action="{{ route('admin.customers.khata.payment.delete', [$customer, $txn['id']]) }}"
+                                                        onsubmit="return confirm('Delete this payment of Rs.{{ number_format($txn['amount'], 0) }}? This will add the amount back to the balance.')">
+                                                        @csrf @method('DELETE')
+                                                        <button type="submit"
+                                                            class="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50"
+                                                            title="Delete / Reverse Payment">
+                                                            <i class="fas fa-trash-alt"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
                                             @else
                                                 <a href="{{ route('admin.pos.receipt', $txn['id']) }}" target="_blank"
                                                     class="text-blue-400 hover:text-blue-600 text-xs"
@@ -386,7 +394,7 @@
                                         <td class="px-3 py-3 text-right text-red-600">Rs.
                                             {{ number_format($summary['total_billed'], 0) }}</td>
                                         <td class="px-3 py-3 text-right text-green-600">Rs.
-                                            {{ number_format($summary['total_paid'] + $summary['total_khata_payments'], 0) }}
+                                            {{ number_format($summary['total_paid'], 0) }}
                                         </td>
                                         <td
                                             class="px-3 py-3 text-right bg-yellow-100 {{ ($customer->current_balance ?? 0) > 0 ? 'text-red-700' : 'text-green-700' }}">

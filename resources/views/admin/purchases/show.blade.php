@@ -12,6 +12,9 @@
 
             </div>
             <div class="flex space-x-2">
+                <a href="{{ route('purchases.invoice', $purchase->id) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2">
+                    <i class="fas fa-file-invoice"></i> Invoice
+                </a>
                 <a href="{{ route('purchases.index') }}" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
                     Back to Purchases
                 </a>

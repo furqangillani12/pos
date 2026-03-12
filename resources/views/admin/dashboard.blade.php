@@ -85,6 +85,17 @@
             </div>
         </div>
 
+        {{-- Quick Settings Link --}}
+        @hasanyrole('admin|super_admin')
+        <div class="flex justify-end">
+            <a href="{{ route('admin.settings.index') }}"
+               class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition shadow-sm">
+                <i class="fas fa-cog text-gray-400"></i>
+                POS Settings
+            </a>
+        </div>
+        @endhasanyrole
+
         {{-- ══════════════════════════════════════════
              ROW 2: MONTHLY OVERVIEW CARDS
         ══════════════════════════════════════════ --}}

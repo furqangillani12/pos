@@ -523,22 +523,21 @@
                 {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
                 @php
                     $paidAmount = $order->paid_amount ?? $order->total;
-                    $balanceOnBill = $order->balance_amount ?? 0;
-                    $prevBalance = $order->previous_balance ?? 0;
-                    $currentBalance = $prevBalance + ($balanceOnBill ?: ($order->total - $paidAmount));
-                    $hasKhata = $balanceOnBill > 0 || $prevBalance > 0 || $paidAmount < $order->total;
+                    $balanceOnBill = max(0, $order->total - $paidAmount);
+                    $prevBalance = $order->computePreviousBalance();
+                    $currentBalance = $prevBalance + $order->total - $paidAmount;
+                    $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
                 @endphp
 
                 @if ($hasKhata)
-                    <div class="total-row paid">
-                        <span class="label">Amount Paid</span>
-                        <span class="value">Rs. {{ number_format($paidAmount, 0) }}</span>
-                    </div>
+                    @php
+                        $advanceUsed = ($prevBalance < 0) ? min(abs($prevBalance), $balanceOnBill) : 0;
+                    @endphp
 
-                    @if ($balanceOnBill > 0)
-                        <div class="total-row balance">
-                            <span class="label">Balance on Bill</span>
-                            <span class="value">Rs. {{ number_format($balanceOnBill, 0) }}</span>
+                    @if ($paidAmount > 0)
+                        <div class="total-row paid">
+                            <span class="label">Amount Paid</span>
+                            <span class="value">Rs. {{ number_format($paidAmount, 0) }}</span>
                         </div>
                     @endif
 
@@ -546,6 +545,24 @@
                         <div class="total-row prev-balance">
                             <span class="label">Previous Balance</span>
                             <span class="value">Rs. {{ number_format($prevBalance, 0) }}</span>
+                        </div>
+                    @elseif ($prevBalance < 0)
+                        <div class="total-row prev-balance" style="background:#f0fdf4;">
+                            <span class="label" style="color:#16a34a;">Previous Advance (پچھلی واپسی)</span>
+                            <span class="value" style="color:#16a34a;">Rs. {{ number_format(abs($prevBalance), 0) }}</span>
+                        </div>
+                        @if ($advanceUsed > 0)
+                            <div class="total-row" style="background:#eff6ff;padding:5px 8px;border-radius:6px;margin-top:4px;">
+                                <span class="label" style="color:#2563eb;font-size:12px;">Adjusted from Advance</span>
+                                <span class="value" style="color:#2563eb;font-size:12px;">- Rs. {{ number_format($advanceUsed, 0) }}</span>
+                            </div>
+                        @endif
+                    @endif
+
+                    @if ($balanceOnBill > 0 && $prevBalance >= 0)
+                        <div class="total-row balance">
+                            <span class="label">Balance on Bill</span>
+                            <span class="value">Rs. {{ number_format($balanceOnBill, 0) }}</span>
                         </div>
                     @endif
 
@@ -556,8 +573,12 @@
                         </div>
                     @elseif ($currentBalance < 0)
                         <div class="total-row advance">
-                            <span class="label">Advance Credit</span>
+                            <span class="label">Change Due (واپسی)</span>
                             <span class="value">Rs. {{ number_format(abs($currentBalance), 0) }}</span>
+                        </div>
+                    @elseif ($prevBalance != 0)
+                        <div class="total-row settled">
+                            <span>✅ All Settled (حساب برابر)</span>
                         </div>
                     @endif
                 @endif
@@ -704,7 +725,7 @@
                     @if ($currentBalance > 0)
                         message += `\n*Total Balance Due*: Rs. {{ number_format($currentBalance, 0) }}\n`;
                     @elseif ($currentBalance < 0)
-                        message += `\n*Advance Credit*: Rs. {{ number_format(abs($currentBalance), 0) }}\n`;
+                        message += `\n*Change Due (واپسی)*: Rs. {{ number_format(abs($currentBalance), 0) }}\n`;
                     @endif
                 @endif
                 message += `\n*Payment Method*: {{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}\n`;

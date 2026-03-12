@@ -816,22 +816,21 @@
             {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
             @php
                 $paidAmount = $order->paid_amount ?? $order->total;
-                $balanceOnBill = $order->balance_amount ?? 0;
-                $prevBalance = $order->previous_balance ?? 0;
-                $currentBalance = $prevBalance + ($balanceOnBill ?: ($order->total - $paidAmount));
-                $hasKhata = $balanceOnBill > 0 || $prevBalance > 0 || $paidAmount < $order->total;
+                $balanceOnBill = max(0, $order->total - $paidAmount);
+                $prevBalance = $order->computePreviousBalance();
+                $currentBalance = $prevBalance + $order->total - $paidAmount;
+                $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
             @endphp
 
             @if ($hasKhata)
-                <div class="summary-row" style="background:#f0fdf4;padding:6px 8px;border-radius:6px;margin-top:6px;">
-                    <span class="label" style="color:#16a34a;font-weight:600;">Amount Paid</span>
-                    <span class="value" style="color:#16a34a;">Rs. {{ number_format($paidAmount, 0) }}</span>
-                </div>
+                @php
+                    $advanceUsed = ($prevBalance < 0) ? min(abs($prevBalance), $balanceOnBill) : 0;
+                @endphp
 
-                @if ($balanceOnBill > 0)
-                    <div class="summary-row" style="background:#fef2f2;padding:6px 8px;border-radius:6px;margin-top:4px;">
-                        <span class="label" style="color:#dc2626;font-weight:600;">Balance on Bill</span>
-                        <span class="value" style="color:#dc2626;">Rs. {{ number_format($balanceOnBill, 0) }}</span>
+                @if ($paidAmount > 0)
+                    <div class="summary-row" style="background:#f0fdf4;padding:6px 8px;border-radius:6px;margin-top:6px;">
+                        <span class="label" style="color:#16a34a;font-weight:600;">Amount Paid</span>
+                        <span class="value" style="color:#16a34a;">Rs. {{ number_format($paidAmount, 0) }}</span>
                     </div>
                 @endif
 
@@ -839,6 +838,24 @@
                     <div class="summary-row" style="background:#fff7ed;padding:5px 8px;border-radius:6px;margin-top:4px;">
                         <span class="label" style="color:#c2410c;font-size:12px;">Previous Balance</span>
                         <span class="value" style="color:#c2410c;font-size:12px;">Rs. {{ number_format($prevBalance, 0) }}</span>
+                    </div>
+                @elseif ($prevBalance < 0)
+                    <div class="summary-row" style="background:#f0fdf4;padding:5px 8px;border-radius:6px;margin-top:4px;">
+                        <span class="label" style="color:#16a34a;font-size:12px;">Previous Advance (پچھلی واپسی)</span>
+                        <span class="value" style="color:#16a34a;font-size:12px;">Rs. {{ number_format(abs($prevBalance), 0) }}</span>
+                    </div>
+                    @if ($advanceUsed > 0)
+                        <div class="summary-row" style="background:#eff6ff;padding:5px 8px;border-radius:6px;margin-top:4px;">
+                            <span class="label" style="color:#2563eb;font-size:12px;">Adjusted from Advance</span>
+                            <span class="value" style="color:#2563eb;font-size:12px;">- Rs. {{ number_format($advanceUsed, 0) }}</span>
+                        </div>
+                    @endif
+                @endif
+
+                @if ($balanceOnBill > 0 && $prevBalance >= 0)
+                    <div class="summary-row" style="background:#fef2f2;padding:6px 8px;border-radius:6px;margin-top:4px;">
+                        <span class="label" style="color:#dc2626;font-weight:600;">Balance on Bill</span>
+                        <span class="value" style="color:#dc2626;">Rs. {{ number_format($balanceOnBill, 0) }}</span>
                     </div>
                 @endif
 
@@ -849,8 +866,12 @@
                     </div>
                 @elseif ($currentBalance < 0)
                     <div class="summary-row" style="background:#f0fdf4;padding:8px;border-radius:6px;margin-top:4px;border:1.5px solid #4ade80;">
-                        <span class="label" style="color:#16a34a;font-weight:800;">Advance Credit</span>
+                        <span class="label" style="color:#16a34a;font-weight:800;">Change Due (واپسی)</span>
                         <span class="value" style="color:#16a34a;font-weight:800;">Rs. {{ number_format(abs($currentBalance), 0) }}</span>
+                    </div>
+                @elseif ($prevBalance != 0)
+                    <div class="summary-row" style="background:#f0fdf4;padding:8px;border-radius:6px;margin-top:4px;border:1.5px solid #4ade80;text-align:center;">
+                        <span style="color:#16a34a;font-weight:800;width:100%;text-align:center;">✅ All Settled (حساب برابر)</span>
                     </div>
                 @endif
             @endif

@@ -45,12 +45,13 @@
                     <td class="px-4 py-3">{{ $supplier->email ?? 'N/A' }}</td>
                     <td class="px-4 py-3">{{ $supplier->phone }}</td>
                     <td class="px-4 py-3">
-                        <div class="flex flex-wrap gap-2">
-                            <a href="{{ route('suppliers.show', $supplier) }}" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">View</a>
-                            <a href="{{ route('suppliers.edit', $supplier) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
-                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete supplier?');">
+                        <div class="flex items-center gap-1.5">
+                            <a href="{{ route('suppliers.ledger', $supplier) }}" class="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-2.5 py-1.5 rounded text-xs font-medium" title="Ledger"><i class="fas fa-book"></i> Ledger</a>
+                            <a href="{{ route('suppliers.show', $supplier) }}" class="inline-flex items-center gap-1 bg-blue-500 hover:bg-blue-600 text-white px-2.5 py-1.5 rounded text-xs font-medium"><i class="fas fa-eye"></i> View</a>
+                            <a href="{{ route('suppliers.edit', $supplier) }}" class="inline-flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-2.5 py-1.5 rounded text-xs font-medium"><i class="fas fa-edit"></i> Edit</a>
+                            <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" onsubmit="return confirm('Delete supplier?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                                <button type="submit" class="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-2.5 py-1.5 rounded text-xs font-medium"><i class="fas fa-trash"></i> Delete</button>
                             </form>
                         </div>
                     </td>

@@ -461,6 +461,9 @@ class CustomerController extends Controller
             }
             $transactions[$i]['running_balance'] = $runningBalance; // ✅ works on array
         }
+
+        // Reverse for display: newest first
+        $transactions = array_reverse($transactions);
         // ── 5. Period summary ──────────────────────────────────────────────
         $allOrders = $customer->orders()
             ->whereBetween('created_at', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
@@ -472,12 +475,17 @@ class CustomerController extends Controller
             ->whereBetween('payment_date', [$fromDate, $toDate])
             ->get();
 
+        $totalBilled = $allOrders->sum('total');
+        $totalPaidOnOrders = $allOrders->sum(fn($o) => ($o->paid_amount == 0 && $o->balance_amount == 0) ? $o->total : $o->paid_amount);
+        $totalKhataPayments = $allKhataPayments->sum('amount');
+        $totalPaid = $totalPaidOnOrders + $totalKhataPayments;
+
         $summary = [
-            'total_billed'         => $allOrders->sum('total'),
-            'total_paid'           => $allOrders->sum(fn($o) => ($o->paid_amount == 0 && $o->balance_amount == 0) ? $o->total : $o->paid_amount),
-            'total_balance'        => $allOrders->sum('balance_amount'),
+            'total_billed'         => $totalBilled,
+            'total_paid'           => $totalPaid,
+            'total_balance'        => max(0, $totalBilled - $totalPaid),
             'order_count'          => $allOrders->count(),
-            'total_khata_payments' => $allKhataPayments->sum('amount'),
+            'total_khata_payments' => $totalKhataPayments,
             'payments_count'       => $allKhataPayments->count(),
         ];
 
@@ -499,7 +507,8 @@ class CustomerController extends Controller
             $callback = function () use ($transactions, $customer, $openingBalance) {
                 $handle = fopen('php://output', 'w');
                 fputcsv($handle, ['Date', 'Type', 'Reference', 'Debit (Bill)', 'Credit (Paid)', 'Running Balance', 'Method', 'Notes']);
-                fputcsv($handle, [$transactions->first()['date'] ?? '', 'Opening Balance', '', '', '', number_format($openingBalance, 2), '', '']);
+                $firstDate = !empty($transactions) ? ($transactions[array_key_first($transactions)]['date'] ?? '') : '';
+                fputcsv($handle, [$firstDate, 'Opening Balance', '', '', '', number_format($openingBalance, 2), '', '']);
                 foreach ($transactions as $txn) {
                     fputcsv($handle, [
                         \Carbon\Carbon::parse($txn['date'])->format('d-M-Y'),
@@ -540,7 +549,7 @@ class CustomerController extends Controller
 
         DB::beginTransaction();
         try {
-            \App\Models\Payment::create([
+            $payment = \App\Models\Payment::create([
                 'payment_number'   => \App\Models\Payment::generatePaymentNumber(),
                 'payment_type'     => 'khata',
                 'order_id'         => null,
@@ -559,10 +568,8 @@ class CustomerController extends Controller
 
             DB::commit();
 
-            $msg = 'Rs. ' . number_format($amount, 0) . ' payment recorded. ';
-            $msg .= $newBalance > 0 ? 'Remaining: Rs. ' . number_format($newBalance, 0) : ($newBalance < 0 ? 'Advance credit: Rs. ' . number_format(abs($newBalance), 0) : 'Account fully settled ✅');
-
-            return redirect()->route('admin.customers.khata', $customer)->with('success', $msg);
+            return redirect()->route('admin.customers.khata.payment.voucher', [$customer, $payment])
+                ->with('success', 'Rs. ' . number_format($amount, 0) . ' payment recorded.');
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -591,6 +598,44 @@ class CustomerController extends Controller
             DB::rollBack();
             return back()->with('error', 'Failed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Show payment voucher / receipt for a khata payment
+     */
+    public function paymentVoucher(Customer $customer, \App\Models\Payment $payment)
+    {
+        if ($payment->customer_id !== $customer->id || $payment->payment_type !== 'khata') {
+            abort(404);
+        }
+
+        // Calculate balance before and after this payment
+        // All order nets before this payment
+        $orderNetBefore = (float) \App\Models\Order::where('customer_id', $customer->id)
+            ->where('status', '!=', 'cancelled')
+            ->where('created_at', '<', $payment->created_at)
+            ->selectRaw('COALESCE(SUM(
+                CASE
+                    WHEN (paid_amount = 0 OR paid_amount IS NULL)
+                         AND (balance_amount = 0 OR balance_amount IS NULL)
+                    THEN 0
+                    ELSE total - COALESCE(paid_amount, 0)
+                END
+            ), 0) as net')
+            ->value('net');
+
+        // All khata payments before this one
+        $khataPaymentsBefore = (float) \App\Models\Payment::where('customer_id', $customer->id)
+            ->where('payment_type', 'khata')
+            ->where('id', '<', $payment->id)
+            ->sum('amount');
+
+        $balanceBefore = $orderNetBefore - $khataPaymentsBefore;
+        $balanceAfter = $balanceBefore - $payment->amount;
+
+        return view('admin.customers.payment-voucher', compact(
+            'customer', 'payment', 'balanceBefore', 'balanceAfter'
+        ));
     }
 
 }

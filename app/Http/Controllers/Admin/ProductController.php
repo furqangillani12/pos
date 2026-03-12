@@ -22,11 +22,8 @@ class ProductController extends Controller
     {
         $products = $this->scopeBranch(Product::query())
             ->with(['category', 'unit'])
-            ->filter(request(['search', 'unit_id']))
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
-
-        $units = Unit::where('is_active', true)->get();
+            ->get();
 
         // Attach branch stock for display
         $branchId = $this->branchId();
@@ -34,7 +31,7 @@ class ProductController extends Controller
             $product->branch_stock = $product->getStockForBranch($branchId);
         }
 
-        return view('admin.products.index', compact('products', 'units'));
+        return view('admin.products.index', compact('products'));
     }
 
 

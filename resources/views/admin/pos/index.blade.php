@@ -8,12 +8,31 @@
             overflow: hidden !important;
         }
 
+        /* Force the main content area to not overflow */
+        main.flex-1 {
+            overflow: hidden !important;
+            min-width: 0 !important;
+            padding: 0 !important;
+        }
+
+        .main-div {
+            margin: 0 !important;
+            padding: 0 !important;
+            height: 100%;
+        }
+
+        .main-div > * {
+            margin: 0 !important;
+        }
+
         .pos-root {
             display: flex;
             height: calc(100vh - 64px);
             max-height: calc(100vh - 64px);
             background: #f0f4f8;
             overflow: hidden;
+            width: 100%;
+            max-width: 100%;
         }
 
         /* ── LEFT: Product Panel ───────────────────────────────────── */
@@ -222,7 +241,8 @@
 
         /* ── RIGHT: Cart Panel ─────────────────────────────────────── */
         .pos-cart {
-            width: 320px;
+            width: 300px;
+            min-width: 280px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
@@ -673,6 +693,92 @@
             display: none;
         }
 
+        /* ── TABLET (768px - 1024px) ────────────────────────────────── */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .pos-cart {
+                width: 260px;
+                min-width: 260px;
+            }
+
+            .pos-products {
+                padding: 8px;
+            }
+
+            .pos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                gap: 8px;
+            }
+
+            .product-item .img-area {
+                height: 80px;
+            }
+
+            .product-item .card-info {
+                padding: 6px 8px 8px;
+            }
+
+            .product-item h3 {
+                font-size: 11.5px;
+            }
+
+            .product-item .price-text {
+                font-size: 12px;
+            }
+
+            .pm-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+                gap: 4px;
+            }
+
+            .pm-btn {
+                font-size: 10.5px;
+                padding: 5px 3px;
+            }
+
+            .payment-box {
+                margin: 0 10px 8px;
+                padding: 8px 10px;
+            }
+
+            .totals-block {
+                padding: 8px 10px;
+            }
+
+            .trow {
+                font-size: 11.5px;
+            }
+
+            .cart-head {
+                padding: 10px 10px;
+            }
+
+            .cart-head h2 {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+
+            .pos-select {
+                font-size: 12px;
+                padding: 6px 8px;
+            }
+        }
+
+        /* ── SMALL TABLET (768px - 850px) ──────────────────────────── */
+        @media (min-width: 768px) and (max-width: 850px) {
+            .pos-cart {
+                width: 240px;
+                min-width: 240px;
+            }
+
+            .pos-grid {
+                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            }
+
+            .product-item .img-area {
+                height: 65px;
+            }
+        }
+
         /* ── MOBILE ─────────────────────────────────────────────────── */
         @media (max-width: 767px) {
             body {
@@ -947,9 +1053,19 @@
             }
         }
 
+        /* ── MEDIUM DESKTOP (1025px - 1279px) ── */
+        @media (min-width: 1025px) and (max-width: 1279px) {
+            .pos-cart {
+                width: 300px;
+                min-width: 280px;
+            }
+        }
+
+        /* ── LARGE DESKTOP (1280px+) ── */
         @media (min-width: 1280px) {
             .pos-cart {
-                width: 350px;
+                width: 340px;
+                min-width: 320px;
             }
 
             .pos-grid {
@@ -1363,14 +1479,11 @@
                 <div class="pay-section">
                     <div class="sec-label">Payment Method</div>
                     <div class="pm-grid">
-                        <button class="pm-btn active" data-method="cash" onclick="selectPM(this)">Cash</button>
-                        <button class="pm-btn" data-method="jazzcash" onclick="selectPM(this)">Jazz</button>
-                        <button class="pm-btn" data-method="easypaisa" onclick="selectPM(this)">Easy</button>
-                        <button class="pm-btn" data-method="bank" onclick="selectPM(this)">Bank</button>
-                        <button class="pm-btn" data-method="cod" onclick="selectPM(this)">COD</button>
-                        <button class="pm-btn" data-method="pending" onclick="selectPM(this)">Pending</button>
+                        @foreach($paymentMethods as $i => $pm)
+                            <button class="pm-btn {{ $i === 0 ? 'active' : '' }}" data-method="{{ $pm->name }}" onclick="selectPM(this)">{{ $pm->label }}</button>
+                        @endforeach
                     </div>
-                    <input type="hidden" id="payment_method" value="cash">
+                    <input type="hidden" id="payment_method" value="{{ $paymentMethods->first()->name ?? 'cash' }}">
                 </div>
 
                 {{-- Partial Payment Box --}}
@@ -1413,11 +1526,9 @@
                 <div class="dispatch-section">
                     <div class="sec-label">Dispatch Method</div>
                     <select id="dispatch_method" name="dispatch_method" class="pos-select">
-                        <option value="Self Pickup">Self Pickup</option>
-                        <option value="By Bus">By Bus</option>
-                        <option value="TCS">TCS</option>
-                        <option value="Pak Post">Pak Post</option>
-                        <option value="PostEx">PostEx</option>
+                        @foreach($dispatchMethods as $dm)
+                            <option value="{{ $dm->name }}" data-has-tracking="{{ $dm->has_tracking ? '1' : '0' }}">{{ $dm->name }}</option>
+                        @endforeach
                     </select>
                     <div id="tracking_id_field" style="display:none;margin-top:6px;">
                         <input type="text" id="tracking_id" class="pos-select" placeholder="Tracking ID"
@@ -1483,6 +1594,8 @@
         window.posConfig = {
             storeRoute: "{{ route('admin.pos.store') }}"
         };
+        window.__paymentMethods = @json($paymentMethods->map(fn($pm) => ['name' => $pm->name, 'label' => $pm->label]));
+        window.__dispatchMethods = @json($dispatchMethods->map(fn($dm) => ['name' => $dm->name, 'has_tracking' => $dm->has_tracking]));
         window.cart = window.cart || [];
 
         // ── Format number ──────────────────────────────────────────
@@ -1503,14 +1616,16 @@
         };
 
         // ── Dispatch toggle ────────────────────────────────────────
+        function dispatchNeedsTracking(val) {
+            const dm = window.__dispatchMethods.find(d => d.name === val);
+            return dm ? dm.has_tracking : false;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             function setupDispatchToggle() {
                 document.querySelectorAll('[id=dispatch_method]').forEach(sel => {
                     sel.addEventListener('change', function() {
-                        const val = this.value;
-                        const needsTracking = val.includes('TCS') || val.includes('Pak Post') || val
-                            .includes('PostEx');
-                        // Find sibling fields
+                        const needsTracking = dispatchNeedsTracking(this.value);
                         const parent = this.closest('.dispatch-section');
                         if (parent) {
                             const trackField = parent.querySelector('[id=tracking_id_field]');
@@ -1735,8 +1850,8 @@
             const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
-            const taxAmt = afterDiscount * (taxRate / 100);
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const taxAmt = (afterDiscount + delivery) * (taxRate / 100);
             const total = afterDiscount + taxAmt + delivery;
 
             if (subtotalEl) subtotalEl.textContent = 'Rs. ' + formatNumber(subtotal);
@@ -1811,7 +1926,7 @@
             const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
-            const total = afterDiscount + afterDiscount * (taxRate / 100) + delivery;
+            const total = afterDiscount + (afterDiscount + delivery) * (taxRate / 100) + delivery;
 
             let prevBal = 0;
             const csel = document.getElementById('customerSelect');
@@ -1928,7 +2043,7 @@
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
-            const total = afterDiscount + afterDiscount * (taxRate / 100) + delivery;
+            const total = afterDiscount + (afterDiscount + delivery) * (taxRate / 100) + delivery;
             totalEl.textContent = 'Rs. ' + formatNumber(total);
         }
 
@@ -1961,8 +2076,8 @@
             const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
-            const taxAmt = afterDiscount * (taxRate / 100);
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const taxAmt = (afterDiscount + delivery) * (taxRate / 100);
             const total = afterDiscount + taxAmt + delivery;
 
             const set = (id, val) => {
@@ -2003,7 +2118,7 @@
                 });
             }
 
-            // Calculate totals (tax applies after discount)
+            // Calculate totals (tax applies on subtotal - discount + delivery)
             const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
             const totalWeight = window.cart.reduce((s, i) => s + (i.weight || 0) * i.quantity, 0);
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
@@ -2011,8 +2126,8 @@
             const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
-            const taxAmt = afterDiscount * (taxRate / 100);
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
+            const taxAmt = (afterDiscount + delivery) * (taxRate / 100);
             const total = afterDiscount + taxAmt + delivery;
 
             // Get customer info
@@ -2072,12 +2187,7 @@
                     <div class="pay-section" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;">
                         <div class="sec-label">Payment Method</div>
                         <div class="pm-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;">
-                            <button class="pm-btn ${paymentMethod==='cash'?'active':''}" data-method="cash" onclick="selectPM(this)">Cash</button>
-                            <button class="pm-btn ${paymentMethod==='jazzcash'?'active':''}" data-method="jazzcash" onclick="selectPM(this)">Jazz</button>
-                            <button class="pm-btn ${paymentMethod==='easypaisa'?'active':''}" data-method="easypaisa" onclick="selectPM(this)">Easy</button>
-                            <button class="pm-btn ${paymentMethod==='bank'?'active':''}" data-method="bank" onclick="selectPM(this)">Bank</button>
-                            <button class="pm-btn ${paymentMethod==='cod'?'active':''}" data-method="cod" onclick="selectPM(this)">COD</button>
-                            <button class="pm-btn ${paymentMethod==='pending'?'active':''}" data-method="pending" onclick="selectPM(this)">Pending</button>
+                            ${window.__paymentMethods.map(pm => `<button class="pm-btn ${paymentMethod===pm.name?'active':''}" data-method="${pm.name}" onclick="selectPM(this)">${pm.label}</button>`).join('')}
                         </div>
                     </div>
 
@@ -2124,16 +2234,12 @@
                         <div class="sec-label">Dispatch Method</div>
                         <select id="m_dispatch_method" class="pos-select"
                             onchange="document.getElementById('dispatch_method').value=this.value;
-                                var nt=this.value.includes('TCS')||this.value.includes('Pak Post')||this.value.includes('PostEx');
+                                var nt=dispatchNeedsTracking(this.value);
                                 document.getElementById('m_tracking_wrap').style.display=nt?'block':'none';
                                 document.getElementById('dispatch_method').dispatchEvent(new Event('change'));">
-                            <option value="Self Pickup" ${dispatchMethod==='Self Pickup'?'selected':''}>Self Pickup</option>
-                            <option value="By Bus" ${dispatchMethod==='By Bus'?'selected':''}>By Bus</option>
-                            <option value="TCS" ${dispatchMethod==='TCS'?'selected':''}>TCS</option>
-                            <option value="Pak Post" ${dispatchMethod==='Pak Post'?'selected':''}>Pak Post</option>
-                            <option value="PostEx" ${dispatchMethod==='PostEx'?'selected':''}>PostEx</option>
+                            ${window.__dispatchMethods.map(dm => `<option value="${dm.name}" ${dispatchMethod===dm.name?'selected':''}>${dm.name}</option>`).join('')}
                         </select>
-                        <div id="m_tracking_wrap" style="display:${dispatchMethod.includes('TCS')||dispatchMethod.includes('Pak Post')||dispatchMethod.includes('PostEx')?'block':'none'};margin-top:6px;">
+                        <div id="m_tracking_wrap" style="display:${dispatchNeedsTracking(dispatchMethod)?'block':'none'};margin-top:6px;">
                             <input type="text" id="m_tracking_id" class="pos-select" placeholder="Tracking ID"
                                 value="${document.getElementById('tracking_id')?.value || ''}"
                                 oninput="document.getElementById('tracking_id').value=this.value;" style="margin-bottom:5px;">

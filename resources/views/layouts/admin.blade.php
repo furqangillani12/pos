@@ -905,6 +905,14 @@
                     💵 Payroll Management
                 </a>
 
+                <!-- POS Settings -->
+                @hasanyrole('admin|super_admin')
+                    <a href="{{ route('admin.settings.index') }}"
+                        class="block px-4 py-2 rounded-md transition hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-700 dark:hover:text-gray-300">
+                        <i class="fas fa-cog mr-2 text-xs"></i> POS Settings
+                    </a>
+                @endhasanyrole
+
                 <!-- Branch Management -->
                 @can('manage branches')
                     <a href="{{ route('admin.branches.index') }}"

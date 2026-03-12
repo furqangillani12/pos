@@ -13,6 +13,8 @@ use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\CreditLedger;
 use App\Models\CreditTransaction;
+use App\Models\PaymentMethod;
+use App\Models\DispatchMethod;
 use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -28,10 +30,15 @@ class PosController extends Controller
         $customers  = $this->scopeBranch(Customer::query())->get();
         $categories = $this->scopeBranch(Category::query())->get();
 
+        $paymentMethods  = PaymentMethod::active()->get();
+        $dispatchMethods = DispatchMethod::active()->get();
+
         return view('admin.pos.index', [
-            'customers'  => $customers,
-            'categories' => $categories,
-            'tax_rate'   => config('pos.tax_rate'),
+            'customers'       => $customers,
+            'categories'      => $categories,
+            'tax_rate'        => config('pos.tax_rate'),
+            'paymentMethods'  => $paymentMethods,
+            'dispatchMethods' => $dispatchMethods,
         ]);
     }
 
@@ -140,12 +147,13 @@ class PosController extends Controller
                 ];
             }
 
-            // ── Calculate totals
+            // ── Calculate totals (tax applies on subtotal - discount + delivery)
             $taxRate         = $validated['tax_rate'] ?? config('pos.tax_rate', 0);
             $discount        = $validated['discount'] ?? 0;
             $deliveryCharges = $validated['delivery_charges'] ?? 0;
             $afterDiscount   = $subtotal - $discount;
-            $tax             = $afterDiscount * ($taxRate / 100);
+            $taxableAmount   = $afterDiscount + $deliveryCharges;
+            $tax             = $taxableAmount * ($taxRate / 100);
             $total           = $afterDiscount + $tax + $deliveryCharges;
 
             // ── Partial payment logic
@@ -367,12 +375,17 @@ class PosController extends Controller
         $customers  = $this->scopeBranch(Customer::query())->get();
         $categories = $this->scopeBranch(Category::query())->get();
 
+        $paymentMethods  = PaymentMethod::active()->get();
+        $dispatchMethods = DispatchMethod::active()->get();
+
         return view('admin.pos.edit', [
-            'order'      => $order,
-            'products'   => $products,
-            'customers'  => $customers,
-            'categories' => $categories,
-            'tax_rate'   => config('pos.tax_rate'),
+            'order'           => $order,
+            'products'        => $products,
+            'customers'       => $customers,
+            'categories'      => $categories,
+            'tax_rate'        => config('pos.tax_rate'),
+            'paymentMethods'  => $paymentMethods,
+            'dispatchMethods' => $dispatchMethods,
         ]);
     }
 
@@ -418,8 +431,9 @@ class PosController extends Controller
 
             // Reverse old balance effect on customer
             $oldCustomer = $order->customer;
+            $oldNetEffect = ($order->total ?? 0) - ($order->paid_amount ?? 0);
             if ($oldCustomer) {
-                $oldCustomer->current_balance = $oldCustomer->current_balance - $order->total + $order->paid_amount;
+                $oldCustomer->current_balance = $oldCustomer->current_balance - $oldNetEffect;
                 $oldCustomer->save();
             }
 
@@ -460,20 +474,16 @@ class PosController extends Controller
             $discount        = $validated['discount'] ?? 0;
             $deliveryCharges = $validated['delivery_charges'] ?? 0;
             $afterDiscount   = $subtotal - $discount;
-            $tax             = $afterDiscount * ($taxRate / 100);
+            $taxableAmount   = $afterDiscount + $deliveryCharges;
+            $tax             = $taxableAmount * ($taxRate / 100);
             $total           = $afterDiscount + $tax + $deliveryCharges;
 
             $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
                 ? (float) $validated['paid_amount']
                 : $total;
 
-            $previousBalance = 0;
-            if ($customer) {
-                $previousBalance = (float) ($customer->current_balance ?? 0);
-            }
-
-            $balanceOnOrder    = max(0, $total - $paidAmount);
-            $newRunningBalance = $previousBalance + $total - $paidAmount;
+            $balanceOnOrder = max(0, $total - $paidAmount);
+            $newNetEffect   = $total - $paidAmount;
 
             $order->update([
                 'customer_id'      => $customer ? $customer->id : null,
@@ -490,8 +500,9 @@ class PosController extends Controller
                 'subtotal'         => $subtotal,
                 'total'            => $total,
                 'paid_amount'      => $paidAmount,
-                'previous_balance' => $previousBalance,
                 'balance_amount'   => $balanceOnOrder,
+                // Note: previous_balance is NOT updated — it's a historical snapshot
+                // and is now computed dynamically in receipts via computePreviousBalance()
             ]);
 
             foreach ($orderItems as $itemData) {
@@ -510,8 +521,9 @@ class PosController extends Controller
                 }
             }
 
+            // Update customer balance: add new net effect (already reversed old effect above)
             if ($customer) {
-                $customer->current_balance = $newRunningBalance;
+                $customer->current_balance = $customer->current_balance + $newNetEffect;
                 $customer->save();
             }
 

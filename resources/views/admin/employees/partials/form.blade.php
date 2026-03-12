@@ -13,12 +13,10 @@
         <input type="email" name="email" value="{{ old('email', $employee?->user->email ?? '') }}" class="{{ $inputClass }}">
     </div>
 
-    @if(!isset($employee))
-        <div>
-            <label class="block mb-1 font-medium">Password</label>
-            <input type="password" name="password" class="{{ $inputClass }}">
-        </div>
-    @endif
+    <div>
+        <label class="block mb-1 font-medium">Password @if(isset($employee)) <span class="text-gray-400 text-sm">(leave blank to keep current)</span> @endif</label>
+        <input type="password" name="password" class="{{ $inputClass }}" {{ !isset($employee) ? 'required' : '' }}>
+    </div>
 
     <div>
         <label class="block mb-1 font-medium">Role</label>

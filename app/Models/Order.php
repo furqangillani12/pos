@@ -143,6 +143,42 @@ class Order extends Model
     }
 
     /**
+     * Dynamically compute the customer's running balance BEFORE this order.
+     * This is more reliable than the stored previous_balance which can become
+     * stale when orders are edited out of sequence.
+     */
+    public function computePreviousBalance(): float
+    {
+        if (!$this->customer_id) {
+            return 0;
+        }
+
+        // Sum of unpaid amounts for all prior orders.
+        // Legacy orders (before khata system) have paid_amount=0 AND balance_amount=0
+        // which means they were fully paid — treat their net contribution as 0.
+        $priorOrdersNet = (float) static::where('customer_id', $this->customer_id)
+            ->where('id', '<', $this->id)
+            ->where('status', '!=', self::STATUS_CANCELLED)
+            ->selectRaw('COALESCE(SUM(
+                CASE
+                    WHEN (paid_amount = 0 OR paid_amount IS NULL)
+                         AND (balance_amount = 0 OR balance_amount IS NULL)
+                    THEN 0
+                    ELSE total - COALESCE(paid_amount, 0)
+                END
+            ), 0) as net')
+            ->value('net');
+
+        // Subtract any standalone khata payments made before this order
+        $priorKhataPayments = (float) Payment::where('customer_id', $this->customer_id)
+            ->where('payment_type', 'khata')
+            ->where('created_at', '<', $this->created_at)
+            ->sum('amount');
+
+        return $priorOrdersNet - $priorKhataPayments;
+    }
+
+    /**
      * Check if order is refundable
      */
     public function isRefundable()

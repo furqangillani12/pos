@@ -87,6 +87,12 @@ class PurchaseController extends Controller
         return view('admin.purchases.show', compact('purchase'));
     }
 
+    public function invoice(Purchase $purchase)
+    {
+        $purchase->load(['supplier', 'items.product']);
+        return view('admin.purchases.invoice', compact('purchase'));
+    }
+
     public function destroy(Purchase $purchase)
     {
         $branchId = $purchase->branch_id;

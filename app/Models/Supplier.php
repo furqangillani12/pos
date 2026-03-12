@@ -21,4 +21,18 @@ class Supplier extends Model
     {
         return $this->hasMany(Purchase::class);
     }
+
+    public function payments()
+    {
+        return $this->hasMany(SupplierPayment::class);
+    }
+
+    public function getTotalDueAttribute(): float
+    {
+        $totalPurchased = $this->purchases()->sum('total_amount');
+        $totalPaidOnPurchases = $this->purchases()->sum('paid_amount');
+        // Linked payments are already in purchases.paid_amount, so only add unlinked ones
+        $unlinkedPayments = $this->payments()->whereNull('purchase_id')->sum('amount');
+        return $totalPurchased - $totalPaidOnPurchases - $unlinkedPayments;
+    }
 }

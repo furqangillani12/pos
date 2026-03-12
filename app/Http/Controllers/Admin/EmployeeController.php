@@ -77,10 +77,14 @@ class EmployeeController extends Controller
         ]);
 
         $user = $employee->user;
-        $user->update([
+        $userData = [
             'name' => $request->name,
-            'email' => $request->email
-        ]);
+            'email' => $request->email,
+        ];
+        if ($request->filled('password')) {
+            $userData['password'] = bcrypt($request->password);
+        }
+        $user->update($userData);
         $user->syncRoles([$request->role]);
 
         $employee->update([

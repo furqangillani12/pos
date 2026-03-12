@@ -35,25 +35,20 @@
 
         <!-- Search and Filter Bar -->
         <div class="mb-6 bg-gray-50 p-4 rounded-lg border border-gray-200">
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                    <input type="text" id="searchInput" placeholder="Search by name, email, phone, or barcode..."
-                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value="{{ request('search') }}">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div class="sm:col-span-1">
+                    <input type="text" id="searchInput" placeholder="Search name, phone, barcode..."
+                        class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm" autofocus>
                 </div>
                 <div>
                     <select id="typeFilter" class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
                         <option value="">All Types</option>
-                        <option value="customer" {{ request('type') == 'customer' ? 'selected' : '' }}>Customer</option>
-                        <option value="reseller" {{ request('type') == 'reseller' ? 'selected' : '' }}>Reseller</option>
-                        <option value="wholesale" {{ request('type') == 'wholesale' ? 'selected' : '' }}>Wholesale</option>
+                        <option value="customer">Customer</option>
+                        <option value="reseller">Reseller</option>
+                        <option value="wholesale">Wholesale</option>
                     </select>
                 </div>
-
-                <div class="flex space-x-2">
-                    <button onclick="applyFilters()"
-                        class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm">
-                        Search
-                    </button>
+                <div>
                     <button onclick="clearFilters()"
                         class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 text-sm">
                         Clear
@@ -81,9 +76,10 @@
                         </th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody id="customerTableBody" class="bg-white divide-y divide-gray-200">
                     @forelse($customers as $customer)
-                        <tr
+                        <tr data-searchable="{{ $customer->name }} {{ $customer->phone }} {{ $customer->email }} {{ $customer->barcode }} {{ $customer->address }}"
+                            data-type="{{ $customer->customer_type }}"
                             class="hover:bg-gray-50 {{ $customer->credit_enabled && $customer->current_balance > $customer->credit_limit * 0.8 ? 'bg-red-50' : '' }}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if ($customer->barcode)
@@ -217,6 +213,11 @@
                             </td>
                         </tr>
                     @endforelse
+                    <tr id="noFilterResults" style="display:none">
+                        <td colspan="5" class="px-6 py-8 text-center text-gray-400">
+                            No customers match your search.
+                        </td>
+                    </tr>
                 </tbody>
             </table>
         </div>
@@ -227,48 +228,42 @@
     </div>
 
     <script>
-        function applyFilters() {
-            const search = document.getElementById('searchInput').value;
-            const type = document.getElementById('typeFilter').value;
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const type = document.getElementById('typeFilter').value.toLowerCase();
+            const rows = document.querySelectorAll('#customerTableBody tr[data-searchable]');
+            let visibleCount = 0;
 
-            let url = new URL(window.location.href);
-            let params = new URLSearchParams();
+            rows.forEach(row => {
+                const text = row.getAttribute('data-searchable').toLowerCase();
+                const rowType = row.getAttribute('data-type').toLowerCase();
 
-            if (search) params.append('search', search);
-            if (type) params.append('type', type);
+                const matchesSearch = !search || text.includes(search);
+                const matchesType = !type || rowType === type;
 
-            window.location.href = url.pathname + '?' + params.toString();
+                if (matchesSearch && matchesType) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show/hide no results message
+            const noResults = document.getElementById('noFilterResults');
+            if (noResults) {
+                noResults.style.display = visibleCount === 0 ? '' : 'none';
+            }
         }
 
         function clearFilters() {
-            window.location.href = '{{ route('admin.customers.index') }}';
+            document.getElementById('searchInput').value = '';
+            document.getElementById('typeFilter').value = '';
+            filterTable();
+            document.getElementById('searchInput').focus();
         }
 
-        // Auto-submit search on Enter
-        document.getElementById('searchInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                applyFilters();
-            }
-        });
-
-        // Auto-submit filters on change
-        document.getElementById('typeFilter').addEventListener('change', function() {
-            applyFilters();
-        });
-
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const searchParam = urlParams.get('search');
-            const typeParam = urlParams.get('type');
-
-            if (searchParam) {
-                document.getElementById('searchInput').value = searchParam;
-            }
-
-            if (typeParam) {
-                document.getElementById('typeFilter').value = typeParam;
-            }
-        });
+        document.getElementById('searchInput').addEventListener('input', filterTable);
+        document.getElementById('typeFilter').addEventListener('change', filterTable);
     </script>
 @endsection

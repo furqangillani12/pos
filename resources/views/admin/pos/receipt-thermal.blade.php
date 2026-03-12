@@ -252,28 +252,44 @@
     {{-- ── Payment / Balance ── --}}
     @php
         $paidAmount = $order->paid_amount ?? $order->total;
-        $balanceOnBill = $order->balance_amount ?? 0;
-        $prevBalance = $order->previous_balance ?? 0;
-        $currentBalance = $prevBalance + ($balanceOnBill ?: ($order->total - $paidAmount));
-        $hasKhata = $balanceOnBill > 0 || $prevBalance > 0 || $paidAmount < $order->total;
+        $balanceOnBill = max(0, $order->total - $paidAmount);
+        $prevBalance = $order->computePreviousBalance();
+        $currentBalance = $prevBalance + $order->total - $paidAmount;
+        $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
     @endphp
 
     @if($hasKhata)
+        @php
+            $advanceUsed = ($prevBalance < 0) ? min(abs($prevBalance), $balanceOnBill) : 0;
+        @endphp
         <hr class="divider">
-        <div class="total-row highlight">
-            <span>Paid</span>
-            <span>Rs.{{ number_format($paidAmount, 0) }}</span>
-        </div>
-        @if($balanceOnBill > 0)
-            <div class="total-row">
-                <span>Bill Balance</span>
-                <span>Rs.{{ number_format($balanceOnBill, 0) }}</span>
+        @if($paidAmount > 0)
+            <div class="total-row highlight">
+                <span>Paid</span>
+                <span>Rs.{{ number_format($paidAmount, 0) }}</span>
             </div>
         @endif
         @if($prevBalance > 0)
             <div class="total-row small">
                 <span>Prev Balance</span>
                 <span>Rs.{{ number_format($prevBalance, 0) }}</span>
+            </div>
+        @elseif($prevBalance < 0)
+            <div class="total-row small">
+                <span>Prev Advance</span>
+                <span>Rs.{{ number_format(abs($prevBalance), 0) }}</span>
+            </div>
+            @if($advanceUsed > 0)
+                <div class="total-row small">
+                    <span>Adjusted</span>
+                    <span>-Rs.{{ number_format($advanceUsed, 0) }}</span>
+                </div>
+            @endif
+        @endif
+        @if($balanceOnBill > 0 && $prevBalance >= 0)
+            <div class="total-row">
+                <span>Bill Balance</span>
+                <span>Rs.{{ number_format($balanceOnBill, 0) }}</span>
             </div>
         @endif
         @if($currentBalance > 0)
@@ -283,8 +299,12 @@
             </div>
         @elseif($currentBalance < 0)
             <div class="total-row grand">
-                <span>ADVANCE</span>
+                <span>CHANGE DUE</span>
                 <span>Rs.{{ number_format(abs($currentBalance), 0) }}</span>
+            </div>
+        @elseif($prevBalance != 0)
+            <div class="total-row grand center">
+                <span>ALL SETTLED</span>
             </div>
         @endif
     @endif
@@ -316,7 +336,7 @@
     <div class="footer">
         <p class="bold">Thank you for shopping!</p>
         <p>Returns within 7 days with receipt</p>
-        <p style="margin-top:4px;">{{ $order->receipt_url }}</p>
+        <p style="margin-top:4px; word-break:break-all; font-size:9px;">{{ $order->receipt_url }}</p>
         <p style="margin-top:8px;">{{ $order->items->count() }} item(s) | {{ $order->created_at?->format('d/m/Y') }}</p>
     </div>
 

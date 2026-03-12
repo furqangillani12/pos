@@ -25,6 +25,7 @@ use App\Http\Controllers\PublicReceiptController;
 use App\Http\Controllers\Admin\CreditController;
 use App\Http\Controllers\Admin\LedgerController;
 use App\Http\Controllers\Admin\LedgerAccountController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
@@ -112,11 +113,16 @@ Route::middleware(['auth', 'branch', 'permission:manage inventory'])->group(func
 // ── Purchases ──
 Route::middleware(['auth', 'branch', 'permission:manage purchases'])->group(function () {
     Route::resource('purchases', PurchaseController::class)->except(['edit', 'update']);
+    Route::get('purchases/{purchase}/invoice', [PurchaseController::class, 'invoice'])->name('purchases.invoice');
 });
 
 // ── Suppliers ──
 Route::middleware(['auth', 'branch', 'permission:manage suppliers'])->group(function () {
     Route::resource('suppliers', SupplierController::class);
+    Route::get('suppliers/{supplier}/ledger', [SupplierController::class, 'ledger'])->name('suppliers.ledger');
+    Route::post('suppliers/{supplier}/payment', [SupplierController::class, 'storePayment'])->name('suppliers.payment.store');
+    Route::delete('suppliers/{supplier}/payment/{payment}', [SupplierController::class, 'deletePayment'])->name('suppliers.payment.delete');
+    Route::get('suppliers/{supplier}/payment/{payment}/voucher', [SupplierController::class, 'paymentVoucher'])->name('suppliers.payment.voucher');
 });
 
 // ── POS ──
@@ -188,6 +194,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'branch'])->group(fu
     Route::get('customers/{customer}/khata', [CustomerController::class, 'khata'])->name('customers.khata');
     Route::post('customers/{customer}/khata/payment', [CustomerController::class, 'storeKhataPayment'])->name('customers.khata.payment');
     Route::delete('customers/{customer}/khata/payment/{payment}', [CustomerController::class, 'deleteKhataPayment'])->name('customers.khata.payment.delete');
+    Route::get('customers/{customer}/khata/payment/{payment}/voucher', [CustomerController::class, 'paymentVoucher'])->name('customers.khata.payment.voucher');
     Route::get('customers/generate-barcode', function () {
         return response()->json(['barcode' => \App\Models\Customer::generateBarcode()]);
     })->name('customers.generate-barcode');
@@ -233,6 +240,21 @@ Route::post('/admin/customers/{customer}/check-credit', function (Request $reque
     }
     return response()->json(['success' => true, 'available_credit' => $customer->available_credit]);
 })->middleware('auth');
+
+// ── Settings (Payment & Dispatch Methods) ──
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
+
+    Route::post('/settings/payment-methods', [SettingsController::class, 'storePaymentMethod'])->name('settings.payment-methods.store');
+    Route::put('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'updatePaymentMethod'])->name('settings.payment-methods.update');
+    Route::patch('/settings/payment-methods/{paymentMethod}/toggle', [SettingsController::class, 'togglePaymentMethod'])->name('settings.payment-methods.toggle');
+    Route::delete('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'destroyPaymentMethod'])->name('settings.payment-methods.destroy');
+
+    Route::post('/settings/dispatch-methods', [SettingsController::class, 'storeDispatchMethod'])->name('settings.dispatch-methods.store');
+    Route::put('/settings/dispatch-methods/{dispatchMethod}', [SettingsController::class, 'updateDispatchMethod'])->name('settings.dispatch-methods.update');
+    Route::patch('/settings/dispatch-methods/{dispatchMethod}/toggle', [SettingsController::class, 'toggleDispatchMethod'])->name('settings.dispatch-methods.toggle');
+    Route::delete('/settings/dispatch-methods/{dispatchMethod}', [SettingsController::class, 'destroyDispatchMethod'])->name('settings.dispatch-methods.destroy');
+});
 
 // ── Ledger ──
 Route::middleware(['auth', 'branch', 'permission:manage ledger'])->prefix('admin')->name('admin.')->group(function () {
