@@ -1,28 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Receipt #{{ $order->order_number }}</title>
     <style>
         /* ── Thermal Receipt: 80mm (302px) or 58mm (219px) ── */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
             font-family: 'Courier New', Courier, monospace;
             font-size: 12px;
             color: #000;
             background: #fff;
-            width: 302px; /* 80mm thermal */
+            width: 302px;
+            /* 80mm thermal */
             margin: 0 auto;
             padding: 8px;
         }
 
-        .center { text-align: center; }
-        .right { text-align: right; }
-        .bold { font-weight: bold; }
-        .small { font-size: 10px; }
-        .large { font-size: 16px; }
+        .center {
+            text-align: center;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .small {
+            font-size: 10px;
+        }
+
+        .large {
+            font-size: 16px;
+        }
 
         .divider {
             border: none;
@@ -69,10 +91,24 @@
             margin-bottom: 2px;
         }
 
-        .items-header .col-name { flex: 1; }
-        .items-header .col-qty { width: 35px; text-align: center; }
-        .items-header .col-price { width: 55px; text-align: right; }
-        .items-header .col-total { width: 60px; text-align: right; }
+        .items-header .col-name {
+            flex: 1;
+        }
+
+        .items-header .col-qty {
+            width: 35px;
+            text-align: center;
+        }
+
+        .items-header .col-price {
+            width: 55px;
+            text-align: right;
+        }
+
+        .items-header .col-total {
+            width: 60px;
+            text-align: right;
+        }
 
         .item-row {
             display: flex;
@@ -86,9 +122,22 @@
             white-space: nowrap;
         }
 
-        .item-row .col-qty { width: 35px; text-align: center; }
-        .item-row .col-price { width: 55px; text-align: right; font-size: 11px; }
-        .item-row .col-total { width: 60px; text-align: right; font-weight: bold; }
+        .item-row .col-qty {
+            width: 35px;
+            text-align: center;
+        }
+
+        .item-row .col-price {
+            width: 55px;
+            text-align: right;
+            font-size: 11px;
+        }
+
+        .item-row .col-total {
+            width: 60px;
+            text-align: right;
+            font-weight: bold;
+        }
 
         /* ── Totals ── */
         .total-row {
@@ -132,10 +181,21 @@
             margin: 4px;
         }
 
-        .no-print button:hover { background: #f0f0f0; }
+        .no-print button:hover {
+            background: #f0f0f0;
+        }
 
-        .no-print .btn-print { background: #2563eb; color: #fff; border-color: #2563eb; }
-        .no-print .btn-back { background: #e5e7eb; color: #374151; border-color: #d1d5db; }
+        .no-print .btn-print {
+            background: #2563eb;
+            color: #fff;
+            border-color: #2563eb;
+        }
+
+        .no-print .btn-back {
+            background: #e5e7eb;
+            color: #374151;
+            border-color: #d1d5db;
+        }
 
         /* ── Auto print on load ── */
         @media print {
@@ -144,7 +204,10 @@
                 padding: 0;
                 margin: 0;
             }
-            .no-print { display: none !important; }
+
+            .no-print {
+                display: none !important;
+            }
 
             @page {
                 size: 80mm auto;
@@ -157,12 +220,24 @@
             width: 219px;
         }
 
-        body.thermal-58mm .item-row .col-price { display: none; }
-        body.thermal-58mm .items-header .col-price { display: none; }
-        body.thermal-58mm .header .shop-name { font-size: 14px; }
-        body.thermal-58mm .large { font-size: 14px; }
+        body.thermal-58mm .item-row .col-price {
+            display: none;
+        }
+
+        body.thermal-58mm .items-header .col-price {
+            display: none;
+        }
+
+        body.thermal-58mm .header .shop-name {
+            font-size: 14px;
+        }
+
+        body.thermal-58mm .large {
+            font-size: 14px;
+        }
     </style>
 </head>
+
 <body id="receipt-body">
 
     {{-- ── Header ── --}}
@@ -183,7 +258,7 @@
         <span>Date:</span>
         <span>{{ $order->created_at?->format('d/m/Y h:i A') }}</span>
     </div>
-    @if($order->customer)
+    @if ($order->customer)
         <div class="info-row">
             <span>Customer:</span>
             <span>{{ $order->customer->name }}</span>
@@ -204,7 +279,7 @@
         <span class="col-total">Amt</span>
     </div>
 
-    @foreach($order->items as $item)
+    @foreach ($order->items as $item)
         <div class="item-row">
             <span class="col-name">{{ $item->product?->name ?? 'Deleted' }}</span>
             <span class="col-qty">{{ $item->quantity }}</span>
@@ -221,21 +296,21 @@
         <span>{{ number_format($order->subtotal, 0) }}</span>
     </div>
 
-    @if(($order->tax ?? 0) > 0)
+    @if (($order->tax ?? 0) > 0)
         <div class="total-row">
             <span>Tax ({{ $order->tax_rate }}%)</span>
             <span>{{ number_format($order->tax, 0) }}</span>
         </div>
     @endif
 
-    @if(($order->delivery_charges ?? 0) > 0)
+    @if (($order->delivery_charges ?? 0) > 0)
         <div class="total-row">
             <span>Delivery</span>
             <span>{{ number_format($order->delivery_charges, 0) }}</span>
         </div>
     @endif
 
-    @if(($order->discount ?? 0) > 0)
+    @if (($order->discount ?? 0) > 0)
         <div class="total-row">
             <span>Discount</span>
             <span>-{{ number_format($order->discount, 0) }}</span>
@@ -258,18 +333,18 @@
         $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
     @endphp
 
-    @if($hasKhata)
+    @if ($hasKhata)
         @php
-            $advanceUsed = ($prevBalance < 0) ? min(abs($prevBalance), $balanceOnBill) : 0;
+            $advanceUsed = $prevBalance < 0 ? min(abs($prevBalance), $balanceOnBill) : 0;
         @endphp
         <hr class="divider">
-        @if($paidAmount > 0)
+        @if ($paidAmount > 0)
             <div class="total-row highlight">
                 <span>Paid</span>
                 <span>Rs.{{ number_format($paidAmount, 0) }}</span>
             </div>
         @endif
-        @if($prevBalance > 0)
+        @if ($prevBalance > 0)
             <div class="total-row small">
                 <span>Prev Balance</span>
                 <span>Rs.{{ number_format($prevBalance, 0) }}</span>
@@ -279,20 +354,20 @@
                 <span>Prev Advance</span>
                 <span>Rs.{{ number_format(abs($prevBalance), 0) }}</span>
             </div>
-            @if($advanceUsed > 0)
+            @if ($advanceUsed > 0)
                 <div class="total-row small">
                     <span>Adjusted</span>
                     <span>-Rs.{{ number_format($advanceUsed, 0) }}</span>
                 </div>
             @endif
         @endif
-        @if($balanceOnBill > 0 && $prevBalance >= 0)
+        @if ($balanceOnBill > 0 && $prevBalance >= 0)
             <div class="total-row">
                 <span>Bill Balance</span>
                 <span>Rs.{{ number_format($balanceOnBill, 0) }}</span>
             </div>
         @endif
-        @if($currentBalance > 0)
+        @if ($currentBalance > 0)
             <div class="total-row grand">
                 <span>BALANCE DUE</span>
                 <span>Rs.{{ number_format($currentBalance, 0) }}</span>
@@ -316,14 +391,14 @@
         <span>{{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'Cash')) }}</span>
     </div>
 
-    @if($order->dispatch_method)
+    @if ($order->dispatch_method)
         <div class="info-row small">
             <span>Dispatch:</span>
             <span>{{ $order->dispatch_method }}</span>
         </div>
     @endif
 
-    @if($order->tracking_id)
+    @if ($order->tracking_id)
         <div class="info-row small">
             <span>Tracking:</span>
             <span>{{ $order->tracking_id }}</span>
@@ -337,7 +412,8 @@
         <p class="bold">Thank you for shopping!</p>
         <p>Returns within 7 days with receipt</p>
         <p style="margin-top:4px; word-break:break-all; font-size:9px;">{{ $order->receipt_url }}</p>
-        <p style="margin-top:8px;">{{ $order->items->count() }} item(s) | {{ $order->created_at?->format('d/m/Y') }}</p>
+        <p style="margin-top:8px;">{{ $order->items->count() }} item(s) | {{ $order->created_at?->format('d/m/Y') }}
+        </p>
     </div>
 
     <br><br>
@@ -371,4 +447,5 @@
         }
     </script>
 </body>
+
 </html>
