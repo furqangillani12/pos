@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Purchase Orders</h1>
             <a href="{{ route('purchases.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
                 Create New Purchase

@@ -28,6 +28,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        // Auto-set branch from user's assigned branch
+        $user = Auth::user();
+        if ($user->branch_id) {
+            session(['branch_id' => $user->branch_id]);
+        }
+
         return redirect()->intended(route('admin.dashboard', absolute: false));
     }
 

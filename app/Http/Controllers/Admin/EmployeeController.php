@@ -6,13 +6,15 @@ use App\Models\Employee;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
 use App\Http\Controllers\Controller;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 
 class EmployeeController extends Controller
 {
+    use BranchScoped;
     public function index()
     {
-        $employees = Employee::with('user')->paginate(10);
+        $employees = $this->scopeBranch(Employee::query())->with('user')->paginate(10);
         return view('admin.employees.index', compact('employees'));
     }
 
@@ -39,8 +41,11 @@ class EmployeeController extends Controller
 
         $user->assignRole($request->role);
 
+        $branchId = $this->branchId();
+
         Employee::create([
             'user_id' => $user->id,
+            'branch_id' => ($branchId && $branchId !== 'all') ? $branchId : null,
             'phone' => $request->phone,
             'address' => $request->address,
             'salary' => $request->salary,
