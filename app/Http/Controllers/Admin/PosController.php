@@ -9,12 +9,12 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\Refund;
 use App\Models\CreditLedger;
 use App\Models\CreditTransaction;
 use App\Models\PaymentMethod;
 use App\Models\DispatchMethod;
+use App\Models\DeliveryChargeSlab;
 use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -32,13 +32,32 @@ class PosController extends Controller
 
         $paymentMethods  = PaymentMethod::active()->get();
         $dispatchMethods = DispatchMethod::active()->get();
+        $deliverySlabs = DeliveryChargeSlab::active()->orderBy('min_weight')->get();
+
+        // Pre-format slabs grouped by dispatch_method_id for JS
+        $deliverySlabsJson = $deliverySlabs->groupBy('dispatch_method_id')->map(function ($slabs) {
+            return $slabs->map(function ($s) {
+                return ['min' => (float) $s->min_weight, 'max' => (float) $s->max_weight, 'charge' => (float) $s->charge];
+            })->values();
+        });
+
+        $paymentMethodsJson = $paymentMethods->map(function ($pm) {
+            return ['name' => $pm->name, 'label' => $pm->label];
+        })->values();
+
+        $dispatchMethodsJson = $dispatchMethods->map(function ($dm) {
+            return ['id' => $dm->id, 'name' => $dm->name, 'has_tracking' => $dm->has_tracking];
+        })->values();
 
         return view('admin.pos.index', [
-            'customers'       => $customers,
-            'categories'      => $categories,
-            'tax_rate'        => config('pos.tax_rate'),
-            'paymentMethods'  => $paymentMethods,
-            'dispatchMethods' => $dispatchMethods,
+            'customers'          => $customers,
+            'categories'         => $categories,
+            'tax_rate'           => config('pos.tax_rate'),
+            'paymentMethods'     => $paymentMethods,
+            'dispatchMethods'    => $dispatchMethods,
+            'paymentMethodsJson' => $paymentMethodsJson,
+            'dispatchMethodsJson' => $dispatchMethodsJson,
+            'deliverySlabsJson'  => $deliverySlabsJson,
         ]);
     }
 
@@ -172,7 +191,7 @@ class PosController extends Controller
 
             // ── Create order with branch_id
             $order = Order::create([
-                'order_number'     => Order::generateOrderNumber(),
+                'order_number'     => Order::generateOrderNumber($branchId),
                 'customer_id'      => $customer ? $customer->id : null,
                 'customer_type'    => $customerType,
                 'user_id'          => auth()->id(),
@@ -371,7 +390,7 @@ class PosController extends Controller
     public function editOrder(Order $order)
     {
         $order->load('items.product', 'customer');
-        $products   = $this->scopeBranch(Product::query())->with(['variants', 'category', 'unit'])->orderBy('created_at', 'desc')->get();
+        $products   = $this->scopeBranch(Product::query())->with(['category', 'unit'])->orderBy('created_at', 'desc')->get();
         $customers  = $this->scopeBranch(Customer::query())->get();
         $categories = $this->scopeBranch(Category::query())->get();
 
@@ -549,12 +568,14 @@ class PosController extends Controller
 
     public function downloadReceiptPdf(Order $order)
     {
+        $order->load('branch');
         $pdf = Pdf::loadView('admin.pos.receipt-pdf', compact('order'));
         return $pdf->download("Receipt-{$order->order_number}.pdf");
     }
 
     public function downloadReceipt(Order $order)
     {
+        $order->load('branch');
         $pdf = Pdf::loadView('admin.pos.receipt', compact('order'));
         $pdf->setPaper('a4', 'portrait');
         return $pdf->download('receipt-' . $order->order_number . '.pdf');
@@ -562,12 +583,13 @@ class PosController extends Controller
 
     public function showReceipt(Order $order)
     {
+        $order->load('branch');
         return view('admin.pos.receipt', compact('order'));
     }
 
     public function thermalReceipt(Order $order)
     {
-        $order->load(['items.product', 'customer', 'user']);
+        $order->load(['items.product', 'customer', 'user', 'branch']);
         return view('admin.pos.receipt-thermal', compact('order'));
     }
 

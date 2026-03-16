@@ -15,10 +15,10 @@ class InventoryController extends Controller
 
     public function index()
     {
+        $branchId = $this->branchId();
         $products = $this->scopeBranch(Product::query())->with('category')->filter(request(['search']))->paginate(20);
 
         // Attach branch stock info for the view
-        $branchId = $this->branchId();
         foreach ($products as $product) {
             $product->branch_stock = $product->getStockForBranch($branchId);
         }
@@ -105,7 +105,7 @@ class InventoryController extends Controller
     public function lowStock()
     {
         if ($this->isAllBranches()) {
-            $products = $this->scopeBranch(Product::query())->whereColumn('stock_quantity', '<=', 'reorder_level')->paginate(20);
+            $products = Product::whereColumn('stock_quantity', '<=', 'reorder_level')->paginate(20);
         } else {
             $branchId = $this->branchId();
             $productIds = BranchProductStock::where('branch_id', $branchId)

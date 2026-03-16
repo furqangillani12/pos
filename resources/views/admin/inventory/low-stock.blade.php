@@ -47,13 +47,13 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $product->stock_quantity }}
+                                {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $product->reorder_level }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                {{ $product->reorder_level - $product->stock_quantity }} needed
+                                {{ $product->reorder_level - ($product->branch_stock ?? $product->stock_quantity) }} needed
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button onclick="openAdjustModal({{ $product->id }}, '{{ $product->name }}')"

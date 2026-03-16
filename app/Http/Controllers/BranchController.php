@@ -70,9 +70,17 @@ class BranchController extends Controller
             'code' => 'nullable|string|max:20|unique:branches,code',
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'order_start_number' => 'nullable|integer|min:1',
         ]);
 
-        $branch = Branch::create($request->only('name', 'code', 'address', 'phone'));
+        $data = $request->only('name', 'code', 'address', 'phone', 'order_start_number');
+
+        if ($request->hasFile('logo')) {
+            $data['logo'] = $request->file('logo')->store('branch-logos', 'public');
+        }
+
+        $branch = Branch::create($data);
 
         // Create stock entries for all existing products with 0 stock
         $products = Product::all();
@@ -103,9 +111,21 @@ class BranchController extends Controller
             'code' => 'nullable|string|max:20|unique:branches,code,' . $branch->id,
             'address' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
+            'logo' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'order_start_number' => 'nullable|integer|min:1',
         ]);
 
-        $branch->update($request->only('name', 'code', 'address', 'phone'));
+        $data = $request->only('name', 'code', 'address', 'phone', 'order_start_number');
+
+        if ($request->hasFile('logo')) {
+            // Delete old logo if exists
+            if ($branch->logo && \Storage::disk('public')->exists($branch->logo)) {
+                \Storage::disk('public')->delete($branch->logo);
+            }
+            $data['logo'] = $request->file('logo')->store('branch-logos', 'public');
+        }
+
+        $branch->update($data);
 
         return redirect()->route('admin.branches.index')->with('success', "Branch \"{$branch->name}\" updated.");
     }

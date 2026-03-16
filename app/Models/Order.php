@@ -71,18 +71,24 @@ class Order extends Model
     }
 
     /**
-     * Generate order number
+     * Generate order number based on branch code and per-branch sequence.
      */
-    public static function generateOrderNumber()
+    public static function generateOrderNumber($branchId = null)
     {
-        $prefix = 'ASM';
+        $branch = null;
+        if ($branchId && $branchId !== 'all') {
+            $branch = Branch::find($branchId);
+        }
+
+        $prefix = $branch && $branch->code ? $branch->code : 'ASM';
+        $startNumber = $branch && $branch->order_start_number ? $branch->order_start_number : 1272;
 
         $latest = static::query()
             ->where('order_number', 'like', $prefix . '%')
             ->latest('id')
             ->first();
 
-        $number = 1272;
+        $number = $startNumber;
         if ($latest) {
             $lastNumber = (int) str_replace($prefix, '', $latest->order_number);
             if ($lastNumber >= $number) {

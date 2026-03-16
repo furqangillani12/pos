@@ -59,15 +59,15 @@
                             </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $product->stock_quantity }}
+                                {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $product->reorder_level }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($product->stock_quantity <= $product->reorder_level)
+                                @if(($product->branch_stock ?? $product->stock_quantity) <= $product->reorder_level)
                                     <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Low Stock</span>
-                                @elseif($product->stock_quantity == 0)
+                                @elseif(($product->branch_stock ?? $product->stock_quantity) == 0)
                                     <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Out of Stock</span>
                                 @else
                                     <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">In Stock</span>

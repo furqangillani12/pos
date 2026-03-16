@@ -14,7 +14,7 @@ class PublicReceiptController extends Controller
     public function show($token)
     {
         // Find order by receipt token
-        $order = Order::with(['customer', 'items.product'])
+        $order = Order::with(['customer', 'items.product', 'branch'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -26,7 +26,7 @@ class PublicReceiptController extends Controller
      */
     public function download($token)
     {
-        $order = Order::with(['customer', 'items.product'])
+        $order = Order::with(['customer', 'items.product', 'branch'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         

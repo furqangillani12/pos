@@ -307,7 +307,7 @@
             <div>
                 <label for="stock_quantity" class="block text-sm font-medium text-gray-700">Initial Stock *</label>
                 <input type="number" min="0" step="0.01" name="stock_quantity" id="stock_quantity"
-                    value="{{ old('stock_quantity', $product->stock_quantity ?? 0) }}" required
+                    value="{{ old('stock_quantity', (int)($product->branch_stock ?? $product->stock_quantity ?? 0)) }}" required
                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">
             </div>
 

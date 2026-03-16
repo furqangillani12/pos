@@ -9,7 +9,7 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'code', 'address', 'phone', 'is_active'];
+    protected $fillable = ['name', 'code', 'address', 'phone', 'logo', 'order_start_number', 'is_active'];
 
     public function stockEntries()
     {

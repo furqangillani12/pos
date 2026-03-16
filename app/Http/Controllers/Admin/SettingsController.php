@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
 use App\Models\DispatchMethod;
+use App\Models\DeliveryChargeSlab;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
@@ -12,9 +13,10 @@ class SettingsController extends Controller
     public function index()
     {
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
-        $dispatchMethods = DispatchMethod::orderBy('sort_order')->get();
+        $dispatchMethods = DispatchMethod::with('deliverySlabs')->orderBy('sort_order')->get();
+        $deliverySlabs = DeliveryChargeSlab::with('dispatchMethod')->orderBy('dispatch_method_id')->orderBy('min_weight')->get();
 
-        return view('admin.settings.index', compact('paymentMethods', 'dispatchMethods'));
+        return view('admin.settings.index', compact('paymentMethods', 'dispatchMethods', 'deliverySlabs'));
     }
 
     // ── Payment Methods ──
@@ -113,5 +115,48 @@ class SettingsController extends Controller
         $dispatchMethod->delete();
 
         return redirect()->route('admin.settings.index')->with('success', 'Dispatch method deleted.');
+    }
+
+    // ── Delivery Charge Slabs ──
+
+    public function storeDeliverySlab(Request $request)
+    {
+        $request->validate([
+            'dispatch_method_id' => 'required|exists:dispatch_methods,id',
+            'min_weight'         => 'required|numeric|min:0',
+            'max_weight'         => 'required|numeric|gt:min_weight',
+            'charge'             => 'required|numeric|min:0',
+        ]);
+
+        DeliveryChargeSlab::create($request->only('dispatch_method_id', 'min_weight', 'max_weight', 'charge'));
+
+        return redirect()->route('admin.settings.index')->with('success', 'Delivery charge slab added.');
+    }
+
+    public function updateDeliverySlab(Request $request, DeliveryChargeSlab $slab)
+    {
+        $request->validate([
+            'min_weight' => 'required|numeric|min:0',
+            'max_weight' => 'required|numeric|gt:min_weight',
+            'charge'     => 'required|numeric|min:0',
+        ]);
+
+        $slab->update($request->only('min_weight', 'max_weight', 'charge'));
+
+        return redirect()->route('admin.settings.index')->with('success', 'Delivery charge slab updated.');
+    }
+
+    public function toggleDeliverySlab(DeliveryChargeSlab $slab)
+    {
+        $slab->update(['is_active' => !$slab->is_active]);
+
+        return redirect()->route('admin.settings.index')->with('success', 'Delivery slab ' . ($slab->is_active ? 'enabled' : 'disabled') . '.');
+    }
+
+    public function destroyDeliverySlab(DeliveryChargeSlab $slab)
+    {
+        $slab->delete();
+
+        return redirect()->route('admin.settings.index')->with('success', 'Delivery charge slab deleted.');
     }
 }

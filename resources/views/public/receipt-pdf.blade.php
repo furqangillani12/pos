@@ -145,11 +145,11 @@
     <div class="container">
         <!-- Header -->
         <div class="header">
-            <h1>AlMufeed Saqafti Markaz</h1>
+            <h1>{{ $order->branch->name ?? 'AlMufeed Saqafti Markaz' }}</h1>
             <div class="company-info">
                 <p>Islamic Books & Cultural Items</p>
-                <p>AL MUFEED Traders PanjGirain Tehsil DaryaKhan District Bhakkar</p>
-                <p>Phone: 0300-7951919 (WhatsApp) | Email: Amt7212@gmail.com</p>
+                <p>{{ $order->branch->address ?? 'AL MUFEED Traders PanjGirain Tehsil DaryaKhan District Bhakkar' }}</p>
+                <p>Phone: {{ $order->branch->phone ?? '0300-7951919' }} (WhatsApp) | Email: Amt7212@gmail.com</p>
             </div>
         </div>
         
@@ -269,7 +269,7 @@
         <!-- Footer -->
         <div class="footer">
             <p>Thank you for your business! We appreciate your purchase.</p>
-            <p>Customer Support: 0300-7951919 | WhatsApp: Available 24/7</p>
+            <p>Customer Support: {{ $order->branch->phone ?? '0300-7951919' }} | WhatsApp: Available 24/7</p>
             <p>This is a computer generated receipt. No signature required.</p>
             <p>Generated on: {{ now()->format('d M, Y h:i A') }}</p>
             @if($order->receipt_url)

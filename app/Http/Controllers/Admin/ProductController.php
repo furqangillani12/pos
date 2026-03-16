@@ -111,8 +111,9 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $categories = $this->scopeBranch(Category::query())->get();
-        $units = Unit::where('is_active', true)->get(); 
-        return view('admin.products.edit', compact('product', 'categories', 'units')); 
+        $units = Unit::where('is_active', true)->get();
+        $product->branch_stock = $product->getStockForBranch($this->branchId());
+        return view('admin.products.edit', compact('product', 'categories', 'units'));
     }
 
     public function update(Request $request, Product $product)

@@ -43,19 +43,26 @@ class DashboardController extends Controller
             : ($todaySales > 0 ? 100 : 0);
 
         // ── Inventory (branch stock) ──
+        $branchId = $this->branchId();
         if ($this->isAllBranches()) {
-            $lowStockProducts = $this->scopeBranch(Product::query())->whereColumn('stock_quantity', '<=', 'reorder_level')->count();
-            $outOfStock       = $this->scopeBranch(Product::query())->where('stock_quantity', '<=', 0)->count();
-            $totalProducts    = $this->scopeBranch(Product::query())->count();
-            $totalStockValue  = $this->scopeBranch(Product::query())->selectRaw('SUM(stock_quantity * COALESCE(cost_price, 0)) as value')->value('value') ?? 0;
+            // All branches: use global product stock
+            $lowStockProducts = Product::whereColumn('stock_quantity', '<=', 'reorder_level')->count();
+            $outOfStock       = Product::where('stock_quantity', '<=', 0)->count();
+            $totalProducts    = Product::count();
+            $totalStockValue  = Product::selectRaw('SUM(stock_quantity * COALESCE(cost_price, 0)) as value')->value('value') ?? 0;
         } else {
-            $branchId = $this->branchId();
+            // Specific branch: only count products that belong to this branch
+            $branchProductIds = Product::where('branch_id', $branchId)->pluck('id');
+
             $lowStockProducts = BranchProductStock::where('branch_id', $branchId)
+                ->whereIn('product_id', $branchProductIds)
                 ->whereColumn('stock_quantity', '<=', 'reorder_level')->count();
             $outOfStock = BranchProductStock::where('branch_id', $branchId)
+                ->whereIn('product_id', $branchProductIds)
                 ->where('stock_quantity', '<=', 0)->count();
-            $totalProducts = BranchProductStock::where('branch_id', $branchId)->count();
+            $totalProducts = $branchProductIds->count();
             $totalStockValue = BranchProductStock::where('branch_product_stock.branch_id', $branchId)
+                ->whereIn('branch_product_stock.product_id', $branchProductIds)
                 ->join('products', 'branch_product_stock.product_id', '=', 'products.id')
                 ->selectRaw('SUM(branch_product_stock.stock_quantity * COALESCE(products.cost_price, 0)) as value')
                 ->value('value') ?? 0;

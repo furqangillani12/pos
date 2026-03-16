@@ -25,7 +25,7 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.branches.store') }}" method="POST" class="p-6 space-y-4">
+            <form action="{{ route('admin.branches.store') }}" method="POST" enctype="multipart/form-data" class="p-6 space-y-4">
                 @csrf
 
                 <div>
@@ -38,9 +38,18 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Branch Code</label>
                     <input type="text" name="code" value="{{ old('code') }}"
-                           placeholder="e.g. ASM, DTN (used in order numbers)"
+                           placeholder="e.g. ASM, AMM, AMB (used as order number prefix)"
                            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
-                    <p class="text-xs text-gray-400 mt-1">Short code for order number prefix</p>
+                    <p class="text-xs text-gray-400 mt-1">Short code used as order number prefix (e.g. ASM313, AMM313)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Order Start Number</label>
+                    <input type="number" name="order_start_number" value="{{ old('order_start_number') }}"
+                           placeholder="e.g. 313 (orders will start from this number)"
+                           min="1"
+                           class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+                    <p class="text-xs text-gray-400 mt-1">Orders for this branch will start from this number (e.g. Code AMM + Start 313 = AMM313, AMM314...)</p>
                 </div>
 
                 <div>
@@ -55,6 +64,13 @@
                     <input type="text" name="phone" value="{{ old('phone') }}"
                            placeholder="Branch phone number"
                            class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Branch Logo</label>
+                    <input type="file" name="logo" accept="image/png,image/jpeg,image/jpg,image/webp"
+                           class="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200">
+                    <p class="text-xs text-gray-400 mt-1">Upload branch logo (PNG, JPG, WEBP - max 2MB). Shown on receipts.</p>
                 </div>
 
                 <div class="flex items-center gap-3 pt-3 border-t">

@@ -222,5 +222,127 @@
             </div>
 
         </div>
+
+        {{-- ═══════════════════════════════════════
+             DELIVERY CHARGES PER DISPATCH METHOD
+        ═══════════════════════════════════════ --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mt-6">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-weight-hanging text-green-500"></i>
+                    Delivery Charges (Per Dispatch Method)
+                </h2>
+                <span class="text-xs text-gray-400">{{ $deliverySlabs->where('is_active', true)->count() }} active slabs</span>
+            </div>
+
+            <div class="p-5">
+                <p class="text-xs text-gray-500 mb-4">Set weight-based delivery charges for each dispatch method. In POS, when a dispatch method is selected, delivery charges auto-calculate based on order weight.</p>
+
+                {{-- Add New Slab --}}
+                <form action="{{ route('admin.settings.delivery-slabs.store') }}" method="POST" class="mb-5 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    @csrf
+                    <div class="text-xs font-semibold text-gray-600 uppercase mb-2">Add New Rate</div>
+                    <div class="flex flex-col sm:flex-row gap-2 sm:items-end">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Dispatch Method</label>
+                            <select name="dispatch_method_id" required
+                                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-green-500 focus:border-green-500">
+                                <option value="">Select Method</option>
+                                @foreach($dispatchMethods->where('has_tracking', true) as $dm)
+                                    <option value="{{ $dm->id }}">{{ $dm->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Min Weight (kg)</label>
+                            <input type="number" name="min_weight" step="0.001" min="0" placeholder="e.g. 0.5" required
+                                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Max Weight (kg)</label>
+                            <input type="number" name="max_weight" step="0.001" min="0" placeholder="e.g. 1.0" required
+                                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 mb-1">Charge (Rs.)</label>
+                            <input type="number" name="charge" step="0.01" min="0" placeholder="e.g. 250" required
+                                class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-green-500 focus:border-green-500">
+                        </div>
+                        <button type="submit"
+                            class="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 whitespace-nowrap">
+                            + Add
+                        </button>
+                    </div>
+                </form>
+
+                {{-- List Slabs Grouped by Dispatch Method --}}
+                @php $trackingMethods = $dispatchMethods->where('has_tracking', true); @endphp
+                @foreach($trackingMethods as $dm)
+                    @php $methodSlabs = $deliverySlabs->where('dispatch_method_id', $dm->id); @endphp
+                    <div class="mb-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-sm font-bold text-gray-800">{{ $dm->name }}</span>
+                            <span class="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">{{ $methodSlabs->count() }} rates</span>
+                        </div>
+
+                        @if($methodSlabs->count())
+                            <div class="space-y-1.5 pl-3 border-l-2 border-green-200">
+                                @foreach($methodSlabs as $slab)
+                                    <div x-data="{ editing: false }" class="flex flex-col sm:flex-row sm:items-center gap-2 p-2.5 rounded-lg border {{ $slab->is_active ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60' }}">
+                                        <div class="flex-1 min-w-0">
+                                            <div x-show="!editing" class="flex items-center gap-3 flex-wrap">
+                                                <span class="text-sm text-gray-700">
+                                                    {{ rtrim(rtrim(number_format($slab->min_weight, 3), '0'), '.') }} kg
+                                                    —
+                                                    {{ rtrim(rtrim(number_format($slab->max_weight, 3), '0'), '.') }} kg
+                                                </span>
+                                                <span class="text-sm font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded">
+                                                    Rs. {{ number_format($slab->charge, 0) }}
+                                                </span>
+                                            </div>
+                                            <form x-show="editing" x-cloak
+                                                action="{{ route('admin.settings.delivery-slabs.update', $slab) }}" method="POST"
+                                                class="flex flex-wrap gap-2 items-center">
+                                                @csrf @method('PUT')
+                                                <input type="number" name="min_weight" value="{{ $slab->min_weight }}" step="0.001" min="0"
+                                                    class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+                                                <span class="text-xs text-gray-400">to</span>
+                                                <input type="number" name="max_weight" value="{{ $slab->max_weight }}" step="0.001" min="0"
+                                                    class="w-20 border border-gray-300 rounded px-2 py-1 text-xs">
+                                                <span class="text-xs text-gray-400">kg =</span>
+                                                <input type="number" name="charge" value="{{ $slab->charge }}" step="0.01" min="0"
+                                                    class="w-20 border border-gray-300 rounded px-2 py-1 text-xs" placeholder="Rs.">
+                                                <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
+                                                <button type="button" @click="editing = false" class="text-gray-400 text-xs">Cancel</button>
+                                            </form>
+                                        </div>
+                                        <div class="flex items-center gap-1.5 flex-shrink-0">
+                                            <button @click="editing = !editing" class="text-blue-500 hover:text-blue-700"><i class="fas fa-edit text-xs"></i></button>
+                                            <form action="{{ route('admin.settings.delivery-slabs.toggle', $slab) }}" method="POST" class="inline">
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="{{ $slab->is_active ? 'text-green-500' : 'text-gray-400' }}">
+                                                    <i class="fas fa-{{ $slab->is_active ? 'check-circle' : 'times-circle' }} text-xs"></i>
+                                                </button>
+                                            </form>
+                                            <form action="{{ route('admin.settings.delivery-slabs.destroy', $slab) }}" method="POST" class="inline" onsubmit="return confirm('Delete?');">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="text-red-400 hover:text-red-600"><i class="fas fa-trash text-xs"></i></button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-xs text-gray-400 pl-3 py-2">No rates added for {{ $dm->name }} yet.</p>
+                        @endif
+                    </div>
+                @endforeach
+
+                @if($trackingMethods->isEmpty())
+                    <p class="text-sm text-gray-400 text-center py-4">No dispatch methods with tracking found. Add one above first.</p>
+                @endif
+            </div>
+        </div>
+
     </div>
 @endsection

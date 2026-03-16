@@ -39,12 +39,6 @@ class Product extends Model
         return $this->belongsTo(Unit::class);
     }
 
-    // Relationship with Product Variants
-    public function variants(): HasMany
-    {
-        return $this->hasMany(ProductVariant::class);
-    }
-
     // Relationship with Order Items
     public function orderItems(): HasMany
     {
@@ -145,6 +139,20 @@ class Product extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', 1);
+    }
+
+    /**
+     * Scope products to a specific branch via branch_product_stock table.
+     * This is the correct way to filter products per branch (not products.branch_id).
+     */
+    public function scopeForBranch($query, $branchId)
+    {
+        if ($branchId && $branchId !== 'all') {
+            return $query->whereHas('stockEntries', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        return $query;
     }
 
     /**

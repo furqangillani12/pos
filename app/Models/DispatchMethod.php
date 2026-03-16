@@ -17,4 +17,9 @@ class DispatchMethod extends Model
     {
         return $query->where('is_active', true)->orderBy('sort_order');
     }
+
+    public function deliverySlabs()
+    {
+        return $this->hasMany(DeliveryChargeSlab::class)->orderBy('min_weight');
+    }
 }

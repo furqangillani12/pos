@@ -359,6 +359,28 @@
         const productsData = @json($products);
         const fmt = n => parseFloat(n || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 
+        function getPriceForCustomerType(product, customerType) {
+            if (customerType === 'reseller' && product.resale_price) return product.resale_price;
+            if (customerType === 'wholesale' && product.wholesale_price) return product.wholesale_price;
+            return product.sale_price;
+        }
+
+        // Auto-update prices when customer changes
+        document.getElementById('editCustomer').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const customerType = selectedOption.dataset.type || 'walkin';
+
+            document.querySelectorAll('.item-row').forEach(row => {
+                const productId = row.querySelector('.edit-product-id')?.value;
+                if (!productId) return;
+                const product = productsData.find(p => p.id == productId);
+                if (!product) return;
+                const priceInput = row.querySelector('.edit-price');
+                priceInput.value = getPriceForCustomerType(product, customerType);
+            });
+            recalcEdit();
+        });
+
         function addEditItem() {
             const container = document.getElementById('editItems');
             const row = document.createElement('div');
@@ -421,7 +443,13 @@
 
             input.value = option.dataset.name;
             hiddenInput.value = option.dataset.id;
-            priceInput.value = option.dataset.price;
+
+            // Use customer-type-aware price
+            const customerSelect = document.getElementById('editCustomer');
+            const customerType = customerSelect.options[customerSelect.selectedIndex].dataset.type || 'walkin';
+            const product = productsData.find(p => p.id == option.dataset.id);
+            priceInput.value = product ? getPriceForCustomerType(product, customerType) : option.dataset.price;
+
             dropdown.classList.remove('show');
             recalcEdit();
         }

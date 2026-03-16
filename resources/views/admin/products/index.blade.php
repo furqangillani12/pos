@@ -131,10 +131,10 @@
                                 <td class="px-3 py-3 text-right font-mono text-xs">Rs.{{ number_format($product->wholesale_price, 0) }}</td>
 
                                 <td class="px-3 py-3 text-center">
-                                    <span class="{{ $product->stock_quantity <= ($product->reorder_level ?? 0) ? 'text-red-600 font-bold' : 'text-gray-900' }}">
-                                        {{ $product->stock_quantity }}
+                                    <span class="{{ ($product->branch_stock ?? $product->stock_quantity) <= ($product->reorder_level ?? 0) ? 'text-red-600 font-bold' : 'text-gray-900' }}">
+                                        {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                                     </span>
-                                    @if ($product->stock_quantity <= ($product->reorder_level ?? 0))
+                                    @if (($product->branch_stock ?? $product->stock_quantity) <= ($product->reorder_level ?? 0))
                                         <div class="text-xs text-red-500">Low</div>
                                     @endif
                                 </td>
@@ -232,13 +232,13 @@
                     <div class="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-gray-500">Stock:</span>
-                            <span class="text-sm font-bold {{ $product->stock_quantity <= ($product->reorder_level ?? 0) ? 'text-red-600' : 'text-gray-900' }}">
-                                {{ $product->stock_quantity }}
+                            <span class="text-sm font-bold {{ ($product->branch_stock ?? $product->stock_quantity) <= ($product->reorder_level ?? 0) ? 'text-red-600' : 'text-gray-900' }}">
+                                {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                                 @if ($product->unit)
                                     {{ $product->unit->abbreviation ?: $product->unit->name }}
                                 @endif
                             </span>
-                            @if ($product->stock_quantity <= ($product->reorder_level ?? 0))
+                            @if (($product->branch_stock ?? $product->stock_quantity) <= ($product->reorder_level ?? 0))
                                 <span class="text-xs text-red-500 font-medium">Low!</span>
                             @endif
                         </div>

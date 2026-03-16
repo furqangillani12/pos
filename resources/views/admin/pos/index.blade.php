@@ -1527,7 +1527,7 @@
                     <div class="sec-label">Dispatch Method</div>
                     <select id="dispatch_method" name="dispatch_method" class="pos-select">
                         @foreach($dispatchMethods as $dm)
-                            <option value="{{ $dm->name }}" data-has-tracking="{{ $dm->has_tracking ? '1' : '0' }}">{{ $dm->name }}</option>
+                            <option value="{{ $dm->name }}" data-id="{{ $dm->id }}" data-has-tracking="{{ $dm->has_tracking ? '1' : '0' }}">{{ $dm->name }}</option>
                         @endforeach
                     </select>
                     <div id="tracking_id_field" style="display:none;margin-top:6px;">
@@ -1594,13 +1594,44 @@
         window.posConfig = {
             storeRoute: "{{ route('admin.pos.store') }}"
         };
-        window.__paymentMethods = @json($paymentMethods->map(fn($pm) => ['name' => $pm->name, 'label' => $pm->label]));
-        window.__dispatchMethods = @json($dispatchMethods->map(fn($dm) => ['name' => $dm->name, 'has_tracking' => $dm->has_tracking]));
+        window.__paymentMethods = @json($paymentMethodsJson);
+        window.__dispatchMethods = @json($dispatchMethodsJson);
+        window.__deliverySlabs = @json($deliverySlabsJson);
+        window.__defaultTaxRate = {{ config('pos.tax_rate', 0) }};
+        window.__codTaxRate = 5;
         window.cart = window.cart || [];
 
         // ── Format number ──────────────────────────────────────────
         window.formatNumber = function(num) {
             return parseFloat(num || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+        };
+
+        // ── Get delivery charge for a specific dispatch method and weight ──
+        window.getDeliveryChargeForWeight = function(dispatchMethodId, weightKg) {
+            const slabs = window.__deliverySlabs[dispatchMethodId];
+            if (!slabs) return 0;
+            const slab = slabs.find(s => weightKg >= s.min && weightKg <= s.max);
+            return slab ? slab.charge : 0;
+        };
+
+        // ── Auto-calculate delivery charges based on cart weight + selected dispatch ──
+        window.autoCalculateDelivery = function() {
+            const sel = document.getElementById('dispatch_method');
+            if (!sel) return;
+            const opt = sel.options[sel.selectedIndex];
+            if (!opt || !dispatchNeedsTracking(sel.value)) return;
+
+            const dispatchId = opt.dataset.id;
+            let totalWeight = 0;
+            (window.cart || []).forEach(item => {
+                totalWeight += (item.weight || 0) * item.quantity;
+            });
+
+            const charge = getDeliveryChargeForWeight(dispatchId, totalWeight);
+            const delInput = document.getElementById('delivery_charges');
+            if (delInput) {
+                delInput.value = charge;
+            }
         };
 
         // ── Payment method toggle ──────────────────────────────────
@@ -1613,6 +1644,21 @@
                 el.value = btn.dataset.method;
             });
             document.getElementById('payment_method').value = btn.dataset.method;
+
+            // COD: auto-apply 5% tax; otherwise reset to default
+            const taxInput = document.getElementById('custom_tax');
+            const mTaxInput = document.getElementById('m_custom_tax');
+            if (btn.dataset.method === 'cod') {
+                if (taxInput) taxInput.value = window.__codTaxRate;
+                if (mTaxInput) mTaxInput.value = window.__codTaxRate;
+            } else {
+                if (taxInput) taxInput.value = window.__defaultTaxRate;
+                if (mTaxInput) mTaxInput.value = window.__defaultTaxRate;
+            }
+
+            // Recalculate totals
+            if (typeof updateCartDisplay === 'function') updateCartDisplay();
+            if (typeof updateBalanceSummary === 'function') updateBalanceSummary();
         };
 
         // ── Dispatch toggle ────────────────────────────────────────
@@ -1634,6 +1680,15 @@
                                 'none';
                             if (delField) delField.style.display = needsTracking ? 'block' : 'none';
                         }
+                        // Auto-calculate delivery when tracking dispatch selected
+                        if (needsTracking) {
+                            autoCalculateDelivery();
+                        } else {
+                            const delInput = document.getElementById('delivery_charges');
+                            if (delInput) delInput.value = 0;
+                        }
+                        if (typeof updateCartDisplay === 'function') updateCartDisplay();
+                        if (typeof updateBalanceSummary === 'function') updateBalanceSummary();
                     });
                 });
             }
@@ -1686,8 +1741,8 @@
                 <div class="card-info">
                     <h3>${p.name}${unitLabel}</h3>
                     ${barcodeHtml}
-                    <div class="price-text">Rs. ${parseFloat(p.sale_price).toFixed(2)}</div>
-                    <div class="stock-text ${stockClass}">Stock: ${p.stock_quantity}${p.unit ? ' ' + p.unit : ''}</div>
+                    <div class="price-text">Rs. ${Number.isInteger(parseFloat(p.sale_price)) ? parseInt(p.sale_price) : parseFloat(p.sale_price).toFixed(2)}</div>
+                    <div class="stock-text ${stockClass}">Stock: ${Math.floor(p.stock_quantity)}${p.unit ? ' ' + p.unit : ''}</div>
                 </div>`;
 
             card.addEventListener('click', function() {
@@ -1844,6 +1899,9 @@
                 html += buildCartItemHTML(item, idx, itemTotal);
             });
             cartEl.innerHTML = html;
+
+            // Auto-calculate delivery charges based on weight (if tracking dispatch)
+            autoCalculateDelivery();
 
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
             const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
@@ -2354,7 +2412,13 @@
                 showResults(matches);
             });
 
+            let isSelectingCustomer = false;
+
             resultsEl.addEventListener('mousedown', function(e) {
+                isSelectingCustomer = true;
+            });
+
+            resultsEl.addEventListener('click', function(e) {
                 const row = e.target.closest('.customer-result[data-value]');
                 if (!row) return;
                 e.preventDefault();
@@ -2364,13 +2428,22 @@
                 customerSelect.value = value;
                 searchInput.value = opt.getAttribute('data-name') || opt.text;
                 resultsEl.style.display = 'none';
+                isSelectingCustomer = false;
                 selectCustomer(opt);
+            });
+
+            // Also handle touch for mobile
+            resultsEl.addEventListener('touchstart', function(e) {
+                isSelectingCustomer = true;
             });
 
             searchInput.addEventListener('blur', function() {
                 setTimeout(() => {
-                    resultsEl.style.display = 'none';
-                }, 150);
+                    if (!isSelectingCustomer) {
+                        resultsEl.style.display = 'none';
+                    }
+                    isSelectingCustomer = false;
+                }, 250);
             });
 
             searchInput.addEventListener('keydown', function(e) {

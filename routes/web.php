@@ -8,7 +8,6 @@ use App\Http\Controllers\Admin\InventoryController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\PosController;
 use App\Http\Controllers\Admin\ProductController;
-use App\Http\Controllers\Admin\ProductVariantController;
 use App\Http\Controllers\Admin\PurchaseController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\RoleController;
@@ -92,8 +91,6 @@ Route::middleware(['auth', 'branch', 'permission:manage products'])->group(funct
     Route::get('products/import', [ProductController::class, 'showImportForm'])->name('products.import.show');
     Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
     Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
-    Route::post('products/{product}/variants', [ProductVariantController::class, 'store'])->name('variants.store');
-    Route::delete('variants/{variant}', [ProductVariantController::class, 'destroy'])->name('variants.destroy');
     Route::resource('units', UnitController::class);
 });
 
@@ -254,6 +251,12 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::put('/settings/dispatch-methods/{dispatchMethod}', [SettingsController::class, 'updateDispatchMethod'])->name('settings.dispatch-methods.update');
     Route::patch('/settings/dispatch-methods/{dispatchMethod}/toggle', [SettingsController::class, 'toggleDispatchMethod'])->name('settings.dispatch-methods.toggle');
     Route::delete('/settings/dispatch-methods/{dispatchMethod}', [SettingsController::class, 'destroyDispatchMethod'])->name('settings.dispatch-methods.destroy');
+
+    // Delivery Charge Slabs
+    Route::post('/settings/delivery-slabs', [SettingsController::class, 'storeDeliverySlab'])->name('settings.delivery-slabs.store');
+    Route::put('/settings/delivery-slabs/{slab}', [SettingsController::class, 'updateDeliverySlab'])->name('settings.delivery-slabs.update');
+    Route::patch('/settings/delivery-slabs/{slab}/toggle', [SettingsController::class, 'toggleDeliverySlab'])->name('settings.delivery-slabs.toggle');
+    Route::delete('/settings/delivery-slabs/{slab}', [SettingsController::class, 'destroyDeliverySlab'])->name('settings.delivery-slabs.destroy');
 });
 
 // ── Ledger ──

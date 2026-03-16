@@ -168,7 +168,7 @@ document.addEventListener("DOMContentLoaded", function () {
             const price = parseFloat(this.dataset.price);
 
             const existing = cart.find(
-                (i) => i.product_id == id && !i.variant_id,
+                (i) => i.product_id == id,
             );
 
             if (existing) {
@@ -183,8 +183,6 @@ document.addEventListener("DOMContentLoaded", function () {
                     unit_price: price,
                     total_price: price,
                     weight: parseFloat(this.dataset.weight) || 0,
-                    variant_id: null,
-                    variant_name: null,
                 });
             }
             updateCartDisplay();

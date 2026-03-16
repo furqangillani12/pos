@@ -615,360 +615,234 @@
             @endif
 
             <nav class="p-4 space-y-1 text-sm" x-data="{
-                attendanceOpen: false,
-                reportsOpen: false,
                 inventoryOpen: false,
-                productsOpen: false,
-                categoriesOpen: false,
-                unitsOpen: false,
-                creditOpen: false
+                reportsOpen: false,
+                attendanceOpen: false,
+                hrOpen: false,
+                settingsOpen: false
             }">
 
+                {{-- ── Dashboard ── --}}
                 <a href="{{ route('admin.dashboard') }}"
-                    class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                    🧭 Dashboard
+                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-700 font-semibold dark:bg-blue-900 dark:text-blue-300' : 'hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300' }}">
+                    <i class="fas fa-tachometer-alt mr-2 text-xs"></i> Dashboard
                 </a>
 
-                @can('manage employees')
-                    <a href="{{ route('employees.index') }}"
-                        class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                        👨‍💼 Employees
-                    </a>
-                @endcan
-
-                @can('manage suppliers')
-                    <a href="{{ route('suppliers.index') }}"
-                        class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                        🏭 Suppliers
-                    </a>
-                @endcan
-
-                {{-- Customers Section with Credit Management --}}
-                <div x-data="{ customersOpen: false }">
-                    <button @click="customersOpen = !customersOpen"
-                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300">
-                        <div class="flex items-center space-x-2">
-                            <span>👥</span>
-                            <span>Customers</span>
-                        </div>
-                        <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': customersOpen }"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <div x-show="customersOpen" x-transition class="pl-4 space-y-1 text-sm">
-                        <a href="{{ route('admin.customers.index') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300">
-                            📋 All Customers
-                        </a>
-                        <a href="{{ route('admin.customers.create') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300">
-                            ➕ Add Customer
-                        </a>
-
-
-                    </div>
-                </div>
-
+                {{-- ── POS ── --}}
                 @can('access pos')
                     <a href="{{ route('admin.pos.index') }}"
-                        class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                        💰 POS System
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.pos.*') ? 'bg-green-100 text-green-700 font-semibold dark:bg-green-900 dark:text-green-300' : 'hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300' }}">
+                        <i class="fas fa-cash-register mr-2 text-xs"></i> POS System
                     </a>
                 @endcan
 
-                <!-- Inventory Management Toggle -->
+                {{-- ── Customers ── --}}
+                <a href="{{ route('admin.customers.index') }}"
+                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.customers.*') ? 'bg-pink-100 text-pink-700 font-semibold dark:bg-pink-900 dark:text-pink-300' : 'hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300' }}">
+                    <i class="fas fa-users mr-2 text-xs"></i> Customers
+                </a>
+
+                {{-- ── Suppliers ── --}}
+                @can('manage suppliers')
+                    <a href="{{ route('suppliers.index') }}"
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('suppliers.*') ? 'bg-orange-100 text-orange-700 font-semibold dark:bg-orange-900 dark:text-orange-300' : 'hover:bg-orange-100 dark:hover:bg-orange-900 hover:text-orange-700 dark:hover:text-orange-300' }}">
+                        <i class="fas fa-truck mr-2 text-xs"></i> Suppliers
+                    </a>
+                @endcan
+
+                {{-- ── Inventory & Products ── --}}
                 <button @click="inventoryOpen = !inventoryOpen"
                     class="w-full flex justify-between items-center px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
-                    <div class="flex items-center space-x-2">
-                        <span>📦</span>
-                        <span>Inventory Management</span>
-                    </div>
+                    <span><i class="fas fa-boxes mr-2 text-xs"></i> Inventory</span>
                     <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': inventoryOpen }"
                         xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-
                 <div x-show="inventoryOpen" x-transition class="pl-4 space-y-1 text-sm">
-                    <!-- Products Section -->
                     @can('manage products')
-                        <button @click="productsOpen = !productsOpen"
-                            class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                            🛍️ Products
-                            <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': productsOpen }"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <div x-show="productsOpen" x-transition class="pl-4 space-y-1">
-                            <a href="{{ route('products.index') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                                📋 All Products
-                            </a>
-                            <a href="{{ route('products.create') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                                ➕ Add Product
-                            </a>
-                            <a href="{{ route('products.import.show') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                                📤 Import Products
-                            </a>
-                        </div>
+                        <a href="{{ route('products.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-box mr-2 text-xs"></i> Products
+                        </a>
+                        <a href="{{ route('products.create') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-plus mr-2 text-xs"></i> Add Product
+                        </a>
                     @endcan
-
-                    <!-- Units Section -->
-                    @can('manage products')
-                        <button @click="unitsOpen = !unitsOpen"
-                            class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                            📏 Units
-                            <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': unitsOpen }"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <div x-show="unitsOpen" x-transition class="pl-4 space-y-1">
-                            <a href="{{ route('units.index') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                                📋 All Units
-                            </a>
-                            <a href="{{ route('units.create') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                                ➕ Add Unit
-                            </a>
-                        </div>
-                    @endcan
-
                     @can('manage categories')
-                        <!-- Categories Section -->
-                        <button @click="categoriesOpen = !categoriesOpen"
-                            class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                            🏷️ Categories
-                            <svg class="w-4 h-4 ml-2 transform transition-transform"
-                                :class="{ 'rotate-180': categoriesOpen }" xmlns="http://www.w3.org/2000/svg"
-                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <div x-show="categoriesOpen" x-transition class="pl-4 space-y-1">
-                            <a href="{{ route('categories.index') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                📋 All Categories
-                            </a>
-                            <a href="{{ route('categories.create') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                ➕ Add Category
-                            </a>
-                        </div>
+                        <a href="{{ route('categories.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-tags mr-2 text-xs"></i> Categories
+                        </a>
                     @endcan
-
+                    @can('manage products')
+                        <a href="{{ route('units.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-ruler mr-2 text-xs"></i> Units
+                        </a>
+                    @endcan
                     @can('manage inventory')
-                        <!-- Inventory Control Section -->
                         <a href="{{ route('inventory.index') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">
-                            📊 Inventory Overview
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-warehouse mr-2 text-xs"></i> Stock Overview
                         </a>
                         <a href="{{ route('inventory.low-stock') }}"
                             class="block px-4 py-2 rounded-md transition hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-700 dark:hover:text-red-300">
-                            ⚠️ Low Stock Alerts
+                            <i class="fas fa-exclamation-triangle mr-2 text-xs"></i> Low Stock
                         </a>
                         <a href="{{ route('inventory.logs') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                            📝 Inventory Logs
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-history mr-2 text-xs"></i> Stock Logs
                         </a>
                     @endcan
-
                     @can('manage purchases')
                         <a href="{{ route('purchases.index') }}"
                             class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
-                            🛒 Purchase Orders
+                            <i class="fas fa-shopping-cart mr-2 text-xs"></i> Purchases
                         </a>
                     @endcan
                 </div>
 
-
-
-                <!-- Attendance Toggle -->
-                @can('manage attendance')
-                    <button @click="attendanceOpen = !attendanceOpen"
-                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                        📋 Attendance
-                        <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': attendanceOpen }"
+                {{-- ── Sales Reports ── --}}
+                @can('manage reports')
+                    <button @click="reportsOpen = !reportsOpen"
+                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                        <span><i class="fas fa-chart-bar mr-2 text-xs"></i> Reports</span>
+                        <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': reportsOpen }"
                             xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-
-                    <div x-show="attendanceOpen" x-transition class="pl-4 space-y-1 text-sm">
-                        <a href="{{ route('admin.attendance.index') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                            📄 View Attendance
+                    <div x-show="reportsOpen" x-transition class="pl-4 space-y-1 text-sm">
+                        <a href="{{ route('admin.reports.sales') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-receipt mr-2 text-xs"></i> Sales Report
                         </a>
-                        <a href="{{ route('admin.attendance.create') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">
-                            📝 Mark Attendance
+                        <a href="{{ route('admin.reports.top-products') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-trophy mr-2 text-xs"></i> Top Products
                         </a>
-
-                        <!-- Reports Dropdown -->
-                        <div x-data="{ open: false }" class="relative">
-                            <button @click="open = !open"
-                                class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                                📊 Reports
-                                <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': open }"
-                                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                    stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            <div x-show="open" @click.away="open = false" x-transition
-                                class="absolute z-10 mt-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md">
-                                <a href="{{ route('admin.attendance.report') }}"
-                                    class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    📅 Daily Report
-                                </a>
-                                <a href="{{ route('admin.attendance.monthly-report') }}"
-                                    class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    📆 Monthly Report
-                                </a>
-                                <a href="{{ route('admin.attendance.yearly-report') }}"
-                                    class="block px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    📈 Yearly Report
-                                </a>
-                            </div>
-                        </div>
+                        <a href="{{ route('admin.reports.profit-loss') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-balance-scale mr-2 text-xs"></i> Profit / Loss
+                        </a>
+                        <a href="{{ route('admin.reports.category-sales') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-layer-group mr-2 text-xs"></i> Category Sales
+                        </a>
+                        <a href="{{ route('admin.reports.customer-sales') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-user-tag mr-2 text-xs"></i> Customer Sales
+                        </a>
+                        <a href="{{ route('admin.reports.product-statement') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
+                            <i class="fas fa-file-alt mr-2 text-xs"></i> Product Statement
+                        </a>
                     </div>
                 @endcan
+
+                {{-- ── Ledger ── --}}
                 @can('manage ledger')
                     <a href="{{ route('admin.ledger-accounts.index') }}"
-                        class="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg {{ request()->routeIs('admin.ledger-accounts.*') ? 'bg-blue-50 text-blue-600 font-semibold' : '' }}">
-                        <span class="mr-3">📚</span>
-                        <span>Ledger Accounts</span>
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.ledger-accounts.*') ? 'bg-teal-100 text-teal-700 font-semibold dark:bg-teal-900 dark:text-teal-300' : 'hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300' }}">
+                        <i class="fas fa-book mr-2 text-xs"></i> Ledger Accounts
                     </a>
                 @endcan
 
+                {{-- ── HR: Employees, Attendance, Payroll ── --}}
+                <button @click="hrOpen = !hrOpen"
+                    class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                    <span><i class="fas fa-user-tie mr-2 text-xs"></i> HR & Payroll</span>
+                    <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': hrOpen }"
+                        xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+                <div x-show="hrOpen" x-transition class="pl-4 space-y-1 text-sm">
+                    @can('manage employees')
+                        <a href="{{ route('employees.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-id-badge mr-2 text-xs"></i> Employees
+                        </a>
+                    @endcan
+                    @can('manage attendance')
+                        <a href="{{ route('admin.attendance.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-clipboard-check mr-2 text-xs"></i> Attendance
+                        </a>
+                        <a href="{{ route('admin.attendance.create') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-user-check mr-2 text-xs"></i> Mark Attendance
+                        </a>
+                        <a href="{{ route('admin.attendance.report') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-calendar-day mr-2 text-xs"></i> Daily Report
+                        </a>
+                        <a href="{{ route('admin.attendance.monthly-report') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-calendar-alt mr-2 text-xs"></i> Monthly Report
+                        </a>
+                        <a href="{{ route('admin.attendance.yearly-report') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                            <i class="fas fa-chart-line mr-2 text-xs"></i> Yearly Report
+                        </a>
+                    @endcan
+                    <a href="{{ route('admin.payroll.index') }}"
+                        class="block px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                        <i class="fas fa-money-check-alt mr-2 text-xs"></i> Payroll
+                    </a>
+                </div>
 
-                <!-- Sales Reports Section -->
-                @can('manage reports')
-                    <div x-data="{ open: false }" class="relative">
-                        <button @click="open = !open"
-                            class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                            📊 Sales Reports
-                            <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': open }"
-                                xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-
-                        <div x-show="open" @click.away="open = false" x-transition class="pl-4 mt-2 space-y-1 text-sm">
-                            <a href="{{ route('admin.reports.sales') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                📅 Sales Reports
-                            </a>
-                            <a href="{{ route('admin.reports.top-products') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-pink-100 dark:hover:bg-pink-900 hover:text-pink-700 dark:hover:text-pink-300">
-                                🥇 Top Products
-                            </a>
-                            <a href="{{ route('admin.reports.profit-loss') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-yellow-100 dark:hover:bg-yellow-900 hover:text-yellow-700 dark:hover:text-yellow-300">
-                                💸 Profit/Loss
-                            </a>
-                            <a href="{{ route('admin.reports.category-sales') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300">
-                                🏷️ Category Sales
-                            </a>
-                            <a href="{{ route('admin.reports.customer-sales') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
-                                👥 Customer Sales
-                            </a>
-                            <a href="{{ route('admin.reports.product-statement') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300">
-                                📦 Product Statement
-                            </a>
-                        </div>
-                    </div>
-                @endcan
-
-                <!-- Payroll Management -->
-                <a href="{{ route('admin.payroll.index') }}"
-                    class="block px-4 py-2 rounded-md transition hover:bg-teal-100 dark:hover:bg-teal-900 hover:text-teal-700 dark:hover:text-teal-300">
-                    💵 Payroll Management
-                </a>
-
-                <!-- POS Settings -->
+                {{-- ── Settings & Admin ── --}}
                 @hasanyrole('admin|super_admin')
-                    <a href="{{ route('admin.settings.index') }}"
-                        class="block px-4 py-2 rounded-md transition hover:bg-gray-100 dark:hover:bg-gray-900 hover:text-gray-700 dark:hover:text-gray-300">
-                        <i class="fas fa-cog mr-2 text-xs"></i> POS Settings
-                    </a>
-                @endhasanyrole
-
-                <!-- Branch Management -->
-                @can('manage branches')
-                    <a href="{{ route('admin.branches.index') }}"
-                        class="flex items-center px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                        <i class="fas fa-store mr-2 text-xs"></i> Branches
-                    </a>
-                @endcan
-
-                <!-- Roles & Permissions -->
-                <div x-data="{ openRoles: false }" class="relative">
-                    <button @click="openRoles = !openRoles"
-                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300">
-                        🔐 Roles & Permissions
-                        <svg class="w-4 h-4 ml-2 transform transition-transform" :class="{ 'rotate-180': openRoles }"
-                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M19 9l-7 7-7-7" />
+                    <button @click="settingsOpen = !settingsOpen"
+                        class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                        <span><i class="fas fa-cog mr-2 text-xs"></i> Settings</span>
+                        <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': settingsOpen }"
+                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                         </svg>
                     </button>
-
-                    <div x-show="openRoles" x-transition class="pl-4 mt-2 space-y-1 text-sm">
+                    <div x-show="settingsOpen" x-transition class="pl-4 space-y-1 text-sm">
+                        <a href="{{ route('admin.settings.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                            <i class="fas fa-sliders-h mr-2 text-xs"></i> POS Settings
+                        </a>
+                        @can('manage branches')
+                            <a href="{{ route('admin.branches.index') }}"
+                                class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-store mr-2 text-xs"></i> Branches
+                            </a>
+                        @endcan
                         @can('manage roles')
                             <a href="{{ route('roles.index') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                👥 Manage Roles
+                                class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-user-shield mr-2 text-xs"></i> Roles
                             </a>
                         @endcan
                         @can('manage permissions')
                             <a href="{{ route('permissions.index') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                🛡️ Manage Permissions
+                                class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-key mr-2 text-xs"></i> Permissions
                             </a>
                         @endcan
                         @hasrole('super_admin')
                             <a href="{{ route('users.assign_role.form') }}"
-                                class="block px-4 py-2 rounded-md transition hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300">
-                                🔗 Assign Roles
+                                class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-user-cog mr-2 text-xs"></i> Assign Roles
                             </a>
                         @endhasrole
                     </div>
-                </div>
+                @endhasanyrole
 
-                <!-- Logout -->
+                {{-- ── Logout ── --}}
                 <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
                         <button type="submit"
                             class="w-full flex items-center px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-700 dark:hover:text-red-300 rounded-md transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20"
-                                fill="currentColor">
-                                <path fill-rule="evenodd"
-                                    d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            Logout
+                            <i class="fas fa-sign-out-alt mr-2"></i> Logout
                         </button>
                     </form>
                 </div>
