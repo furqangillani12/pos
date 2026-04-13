@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Inventory Management</h1>
             <div>
                 <a href="{{ route('inventory.low-stock') }}" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center">
@@ -16,10 +16,10 @@
 
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-4 border-b">
-                <form method="GET" class="flex items-center">
+                <form method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center">
                     <input type="text" name="search" placeholder="Search inventory..." value="{{ request('search') }}"
-                           class="px-4 py-2 border rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow">
-                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-r-lg hover:bg-blue-600">
+                           class="px-4 py-2 border rounded-lg sm:rounded-r-none sm:rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 flex-grow">
+                    <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg sm:rounded-l-none sm:rounded-r-lg hover:bg-blue-600 mt-2 sm:mt-0">
                         Search
                     </button>
                 </form>
@@ -59,15 +59,15 @@
                             </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $product->stock_quantity }}
+                                {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $product->reorder_level }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                @if($product->stock_quantity <= $product->reorder_level)
+                                @if(($product->branch_stock ?? $product->stock_quantity) <= $product->reorder_level)
                                     <span class="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Low Stock</span>
-                                @elseif($product->stock_quantity == 0)
+                                @elseif(($product->branch_stock ?? $product->stock_quantity) == 0)
                                     <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Out of Stock</span>
                                 @else
                                     <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">In Stock</span>

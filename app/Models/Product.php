@@ -8,38 +8,104 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
-        'category_id', 'name', 'barcode', 'description',
-        'price', 'cost_price', 'stock_quantity', 'reorder_level', 'image', 'is_active','track_inventory'
+        'branch_id',
+        'category_id',
+        'unit_id',
+        'name',
+        'barcode',
+        'description',
+        'price', 
+        'sale_price',
+        'resale_price',
+        'wholesale_price',
+        'cost_price',
+        'weight',
+        'stock_quantity',
+        'reorder_level',
+        'image',
+        'is_active',
+        'track_inventory',
+        'rank' // Added rank field for box placement
     ];
 
     // Relationship with Category
-    public function category()
+    public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
     }
 
-    // Relationship with Product Variants
-    public function variants()
+    public function unit(): BelongsTo
     {
-        return $this->hasMany(ProductVariant::class);
+        return $this->belongsTo(Unit::class);
     }
 
     // Relationship with Order Items
-    public function orderItems()
+    public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);
     }
 
     // Relationship with Purchase Items
-    public function purchaseItems()
+    public function purchaseItems(): HasMany
     {
         return $this->hasMany(PurchaseItem::class);
     }
 
     // Relationship with Inventory Logs
-    public function inventoryLogs()
+    public function inventoryLogs(): HasMany
     {
         return $this->hasMany(InventoryLog::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'branch_product_stock')
+            ->withPivot('stock_quantity', 'reorder_level')
+            ->withTimestamps();
+    }
+
+    public function stockEntries()
+    {
+        return $this->hasMany(BranchProductStock::class);
+    }
+
+    public function getStockForBranch($branchId)
+    {
+        if (!$branchId || $branchId === 'all') {
+            return $this->getTotalStock();
+        }
+        $entry = $this->stockEntries()->where('branch_id', $branchId)->first();
+        return $entry ? $entry->stock_quantity : 0;
+    }
+
+    public function getTotalStock()
+    {
+        return $this->stockEntries()->sum('stock_quantity');
+    }
+
+    public function decrementBranchStock($branchId, $quantity)
+    {
+        $entry = BranchProductStock::firstOrCreate(
+            ['branch_id' => $branchId, 'product_id' => $this->id],
+            ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]
+        );
+        $entry->decrement('stock_quantity', $quantity);
+        return $entry;
+    }
+
+    public function incrementBranchStock($branchId, $quantity)
+    {
+        $entry = BranchProductStock::firstOrCreate(
+            ['branch_id' => $branchId, 'product_id' => $this->id],
+            ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]
+        );
+        $entry->increment('stock_quantity', $quantity);
+        return $entry;
     }
 
     public function scopeFilter($query, array $filters)
@@ -47,15 +113,128 @@ class Product extends Model
         if (!empty($filters['search'])) {
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
-                    ->orWhere('description', 'like', '%' . $filters['search'] . '%');
+                    ->orWhere('description', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('rank', 'like', '%' . $filters['search'] . '%'); // Added rank to search
             });
+        }
+
+        if (!empty($filters['unit_id'])) {
+            $query->where('unit_id', $filters['unit_id']);
+        }
+        
+        // Optional: Add filter by rank range
+        if (!empty($filters['rank'])) {
+            $query->where('rank', $filters['rank']);
+        }
+        
+        if (!empty($filters['min_rank'])) {
+            $query->where('rank', '>=', $filters['min_rank']);
+        }
+        
+        if (!empty($filters['max_rank'])) {
+            $query->where('rank', '<=', $filters['max_rank']);
         }
     }
 
     public function scopeActive($query)
     {
-        return $query->where('status', 1);
+        return $query->where('is_active', 1);
     }
 
+    /**
+     * Scope products to a specific branch via branch_product_stock table.
+     * This is the correct way to filter products per branch (not products.branch_id).
+     */
+    public function scopeForBranch($query, $branchId)
+    {
+        if ($branchId && $branchId !== 'all') {
+            return $query->whereHas('stockEntries', function ($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        return $query;
+    }
 
+    /**
+     * Scope to order products by rank
+     */
+    public function scopeOrderByRank($query, $direction = 'asc')
+    {
+        return $query->orderBy('rank', $direction);
+    }
+
+    /**
+     * Get price based on customer type
+     */
+    public function getPriceForCustomerType($customerType)
+    {
+        switch ($customerType) {
+            case 'reseller':
+                return isset($this->resale_price) ? $this->resale_price : $this->sale_price;
+            case 'wholesaler':
+                return isset($this->wholesale_price) ? $this->wholesale_price : $this->sale_price;
+            default: // normal customer
+                return isset($this->sale_price) ? $this->sale_price : $this->price;
+        }
+    }
+
+    /**
+     * Get the box/placement information based on rank
+     */
+    public function getBoxPlacementAttribute()
+    {
+        if (empty($this->rank)) {
+            return 'Not assigned';
+        }
+        
+        return "Box/Position: {$this->rank}";
+    }
+  
+    /**
+     * Get formatted weight display
+     */
+    public function getFormattedWeightAttribute()
+    {
+        if (is_null($this->weight)) {
+            return 'N/A';
+        }
+        
+        $weightInGrams = $this->weight * 1000;
+        
+        // If weight is 1 kg or more, show in kg
+        if ($this->weight >= 1) {
+            // Remove trailing zeros
+            $kg = rtrim(rtrim(number_format($this->weight, 3, '.', ''), '0'), '.');
+            return $kg . ' kg';
+        }
+        
+        // If less than 1 kg, show in grams
+        return number_format($weightInGrams, 0) . ' g';
+    }
+
+    /**
+     * Get weight in grams
+     */
+    public function getWeightInGramsAttribute()
+    {
+        if (is_null($this->weight)) {
+            return null;
+        }
+        
+        return $this->weight * 1000;
+    }
+
+     public function getUnitDisplayAttribute()
+    {
+        if ($this->unit) {
+            return $this->unit->abbreviation ?: $this->unit->name;
+        }
+        return 'N/A';
+    }
+
+    public function getNameWithUnitAttribute()
+    {
+        $unitDisplay = $this->unit_display;
+        return $this->name . ($unitDisplay !== 'N/A' ? " ({$unitDisplay})" : '');
+    }
 }

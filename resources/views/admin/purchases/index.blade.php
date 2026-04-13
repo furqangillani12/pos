@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Purchase Orders</h1>
             <a href="{{ route('purchases.create') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
                 Create New Purchase
@@ -48,6 +48,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{{ route('purchases.invoice', $purchase->id) }}" class="text-green-500 hover:text-green-700 mr-3" title="Invoice"><i class="fas fa-file-invoice"></i></a>
                                 <a href="{{ route('purchases.show', $purchase->id) }}" class="text-blue-500 hover:text-blue-700 mr-3">View</a>
                                 <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" class="inline-block">
                                     @csrf

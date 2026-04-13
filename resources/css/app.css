@@ -13,7 +13,8 @@
     color: #212529;
 }
 
-.badge-on_leave, .badge-absent {
+.badge-on_leave,
+.badge-absent {
     background-color: #dc3545;
     color: white;
 }
@@ -29,7 +30,9 @@
 }
 /* PDF-specific styles */
 @media all {
-    .page-break { display: none; }
+    .page-break {
+        display: none;
+    }
 }
 
 @media print {
@@ -42,7 +45,8 @@
         margin: 0;
         padding: 10mm;
     }
-    .no-print, .no-print * {
+    .no-print,
+    .no-print * {
         display: none !important;
     }
     a[href]:after {

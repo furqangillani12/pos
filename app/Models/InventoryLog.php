@@ -9,8 +9,13 @@ use Illuminate\Database\Eloquent\Builder;
 class InventoryLog extends Model
 {
     protected $fillable = [
-        'product_id', 'action', 'quantity_change', 'notes', 'user_id'
+        'product_id', 'branch_id', 'action', 'quantity_change', 'notes', 'user_id'
     ];
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
 
     // Relationship with Product
     public function product()

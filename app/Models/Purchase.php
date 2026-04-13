@@ -9,13 +9,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Purchase extends Model
 {
     protected $fillable = [
-        'supplier_id', 'invoice_number', 'total_amount', 'paid_amount', 'payment_status', 'purchase_date', 'notes'
+        'supplier_id', 'branch_id', 'invoice_number', 'total_amount', 'paid_amount', 'payment_status', 'purchase_date', 'notes'
     ];
 
     // Relationship with Supplier
     public function supplier()
     {
         return $this->belongsTo(Supplier::class);
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     // Relationship with Purchase Items

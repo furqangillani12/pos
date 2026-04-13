@@ -81,6 +81,30 @@
         </div>
     </div>
 
+    <style>
+        .product-search-wrap { position: relative; }
+        .product-search-input {
+            width: 100%;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            box-sizing: border-box;
+        }
+        .product-search-input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 1px #3b82f6; }
+        .product-dropdown {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: #fff; border: 1.5px solid #3b82f6; border-top: none;
+            border-radius: 0 0 6px 6px; max-height: 220px; overflow-y: auto;
+            z-index: 100; display: none; box-shadow: 0 4px 12px rgba(0,0,0,.12);
+        }
+        .product-dropdown.show { display: block; }
+        .product-option { padding: 8px 10px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f1f5f9; }
+        .product-option:hover { background: #eff6ff; }
+        .product-option .po-name { font-weight: 600; color: #1e293b; }
+        .product-option .po-meta { font-size: 11px; color: #9ca3af; }
+    </style>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const products = @json($products);
@@ -91,12 +115,10 @@
                 itemCount++;
                 const itemHtml = `
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4 item-row">
-            <div>
-                <select name="items[${itemCount}][product_id]" required
-                    class="product-select block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                    <option value="">Select Product</option>
-                    ${products.map(p => `<option value="${p.id}" data-price="${p.cost_price}">${p.name} (${p.barcode})</option>`).join('')}
-                </select>
+            <div class="product-search-wrap">
+                <input type="hidden" name="items[${itemCount}][product_id]" class="product-id-hidden" value="" required>
+                <input type="text" class="product-search-input" placeholder="Search by name, code, barcode..." autocomplete="off">
+                <div class="product-dropdown"></div>
             </div>
             <div>
                 <input type="number" name="items[${itemCount}][quantity]" required min="1" placeholder="Qty"
@@ -117,6 +139,9 @@
         </div>`;
                 document.getElementById('purchase-items').insertAdjacentHTML('beforeend', itemHtml);
                 addItemEventListeners();
+                // Focus the new search input
+                const rows = document.querySelectorAll('.item-row');
+                rows[rows.length - 1].querySelector('.product-search-input').focus();
             });
 
             // Add first item by default
@@ -125,31 +150,76 @@
             function addItemEventListeners() {
                 // Remove item
                 document.querySelectorAll('.remove-item').forEach(btn => {
-                    btn.addEventListener('click', function() {
+                    btn.onclick = function() {
                         this.closest('.item-row').remove();
                         calculateTotal();
-                    });
+                    };
                 });
 
-                // Product select change
-                document.querySelectorAll('.product-select').forEach(select => {
-                    select.addEventListener('change', function() {
-                        const selectedOption = this.options[this.selectedIndex];
-                        const unitPriceInput = this.closest('.item-row').querySelector('.unit-price');
-                        if (selectedOption.dataset.price) {
-                            unitPriceInput.value = selectedOption.dataset.price;
-                            calculateRowTotal(this.closest('.item-row'));
-                        }
-                    });
+                // Product search
+                document.querySelectorAll('.product-search-input').forEach(input => {
+                    input.onfocus = function() { filterProducts(this); };
+                    input.oninput = function() {
+                        // Clear selected product when user types
+                        const hidden = this.closest('.product-search-wrap').querySelector('.product-id-hidden');
+                        hidden.value = '';
+                        filterProducts(this);
+                    };
                 });
 
                 // Quantity/price changes
                 document.querySelectorAll('.quantity, .unit-price').forEach(input => {
-                    input.addEventListener('input', function() {
-                        calculateRowTotal(this.closest('.item-row'));
-                    });
+                    input.oninput = function() { calculateRowTotal(this.closest('.item-row')); };
                 });
             }
+
+            function filterProducts(input) {
+                // Close all other dropdowns
+                document.querySelectorAll('.product-dropdown.show').forEach(d => d.classList.remove('show'));
+
+                const wrap = input.closest('.product-search-wrap');
+                const dropdown = wrap.querySelector('.product-dropdown');
+                const search = input.value.toLowerCase().trim();
+
+                const filtered = products.filter(p => {
+                    const name = (p.name || '').toLowerCase();
+                    const barcode = (p.barcode || '').toLowerCase();
+                    const catName = (p.category && p.category.name ? p.category.name : '').toLowerCase();
+                    return !search || name.includes(search) || barcode.includes(search) || catName.includes(search);
+                }).slice(0, 20);
+
+                if (filtered.length === 0) {
+                    dropdown.innerHTML = '<div class="product-option" style="color:#9ca3af;cursor:default;">No products found</div>';
+                } else {
+                    dropdown.innerHTML = filtered.map(p => `
+                        <div class="product-option" data-id="${p.id}" data-name="${p.name}" data-price="${p.cost_price || 0}" data-barcode="${p.barcode || ''}">
+                            <div class="po-name">${p.name}</div>
+                            <div class="po-meta">${p.barcode || 'No barcode'} · ${p.category ? p.category.name : ''} · Cost: Rs.${parseFloat(p.cost_price||0).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                }
+                dropdown.classList.add('show');
+
+                // Add click handlers to options
+                dropdown.querySelectorAll('.product-option[data-id]').forEach(opt => {
+                    opt.onclick = function() {
+                        const wrap = this.closest('.product-search-wrap');
+                        const row = this.closest('.item-row');
+                        wrap.querySelector('.product-search-input').value = this.dataset.name;
+                        wrap.querySelector('.product-id-hidden').value = this.dataset.id;
+                        row.querySelector('.unit-price').value = this.dataset.price;
+                        dropdown.classList.remove('show');
+                        calculateRowTotal(row);
+                    };
+                });
+            }
+
+            // Close dropdown on click outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.product-search-wrap')) {
+                    document.querySelectorAll('.product-dropdown.show').forEach(d => d.classList.remove('show'));
+                }
+            });
 
             function calculateRowTotal(row) {
                 const quantity = parseFloat(row.querySelector('.quantity').value) || 0;

@@ -9,125 +9,590 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
 use App\Models\Product;
-use App\Models\ProductVariant;
 use App\Models\Refund;
-use App\Services\ReceiptService;
+use App\Models\CreditLedger;
+use App\Models\CreditTransaction;
+use App\Models\PaymentMethod;
+use App\Models\DispatchMethod;
+use App\Models\DeliveryChargeSlab;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Barryvdh\DomPDF\Facade\Pdf;
-
 
 class PosController extends Controller
 {
+    use BranchScoped;
+
     public function index()
     {
-        $products = Product::with(['variants', 'category'])->get();
+        $customers  = $this->scopeBranch(Customer::query())->get();
+        $categories = $this->scopeBranch(Category::query())->get();
 
-        $customers = Customer::get();
-        $categories = Category::all(); // Add this line
+        $paymentMethods  = PaymentMethod::active()->get();
+        $dispatchMethods = DispatchMethod::active()->get();
+        $deliverySlabs = DeliveryChargeSlab::active()->orderBy('min_weight')->get();
+
+        // Pre-format slabs grouped by dispatch_method_id for JS
+        $deliverySlabsJson = $deliverySlabs->groupBy('dispatch_method_id')->map(function ($slabs) {
+            return $slabs->map(function ($s) {
+                return ['min' => (float) $s->min_weight, 'max' => (float) $s->max_weight, 'charge' => (float) $s->charge];
+            })->values();
+        });
+
+        $paymentMethodsJson = $paymentMethods->map(function ($pm) {
+            return ['name' => $pm->name, 'label' => $pm->label];
+        })->values();
+
+        $dispatchMethodsJson = $dispatchMethods->map(function ($dm) {
+            return ['id' => $dm->id, 'name' => $dm->name, 'has_tracking' => $dm->has_tracking];
+        })->values();
 
         return view('admin.pos.index', [
-            'products' => $products,
-            'customers' => $customers,
-            'categories' => $categories, // Add this line
-            'taxRate' => config('pos.tax_rate', 10)
+            'customers'          => $customers,
+            'categories'         => $categories,
+            'tax_rate'           => config('pos.tax_rate'),
+            'paymentMethods'     => $paymentMethods,
+            'dispatchMethods'    => $dispatchMethods,
+            'paymentMethodsJson' => $paymentMethodsJson,
+            'dispatchMethodsJson' => $dispatchMethodsJson,
+            'deliverySlabsJson'  => $deliverySlabsJson,
         ]);
     }
 
+    public function searchProducts(Request $request)
+    {
+        $query = $this->scopeBranch(Product::query())->with(['unit']);
+
+        if ($search = $request->input('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('barcode', 'like', "%{$search}%");
+            });
+        }
+
+        if ($categoryId = $request->input('category_id')) {
+            $query->where('category_id', $categoryId);
+        }
+
+        $branchId = $this->branchId();
+
+        $products = $query->orderBy('created_at', 'desc')
+                          ->paginate($request->input('per_page', 30));
+
+        return response()->json([
+            'data' => $products->map(function ($p) use ($branchId) {
+                return [
+                    'id'              => $p->id,
+                    'name'            => $p->name,
+                    'barcode'         => $p->barcode,
+                    'sale_price'      => $p->sale_price,
+                    'resale_price'    => $p->resale_price,
+                    'wholesale_price' => $p->wholesale_price,
+                    'weight'          => $p->weight ?? 0,
+                    'unit'            => $p->unit->abbreviation ?? '',
+                    'category_id'     => $p->category_id,
+                    'stock_quantity'  => $p->getStockForBranch($branchId),
+                    'reorder_level'   => $p->reorder_level ?? 5,
+                    'rank'            => $p->rank,
+                    'image'           => $p->image ? asset('storage/' . $p->image) : null,
+                ];
+            }),
+            'current_page' => $products->currentPage(),
+            'last_page'    => $products->lastPage(),
+            'total'        => $products->total(),
+        ]);
+    }
 
     public function storeOrder(Request $request)
     {
         try {
             $validated = $request->validate([
-                'customer_id' => 'nullable|exists:customers,id',
-                'items' => 'required|array',
+                'customer_id'        => 'nullable|exists:customers,id',
+                'items'              => 'required|array',
                 'items.*.product_id' => 'required|exists:products,id',
-                'items.*.quantity' => 'required|integer|min:1',
-                'payment_method' => 'required|in:cash,card,mobile_money,mixed',
-                'notes' => 'nullable|string'
+                'items.*.quantity'   => 'required|numeric|min:0.01',
+                'items.*.unit_price' => 'nullable|numeric|min:0',
+                'payment_method'     => 'required|string',
+                'notes'              => 'nullable|string|max:1000',
+                'paid_amount'        => 'nullable|numeric|min:0',
+                'dispatch_method'    => 'nullable|string',
+                'tracking_id'        => 'nullable|string',
+                'delivery_charges'   => 'nullable|numeric|min:0',
+                'tax_rate'           => 'nullable|numeric|min:0',
+                'tax_type'           => 'nullable|string|in:percent,fixed',
+                'discount'           => 'nullable|numeric|min:0',
             ]);
 
+            $branchId = $this->branchId();
 
-            return DB::transaction(function () use ($validated) {
-                // Create the order with default values
-                $order = Order::create([
-                    'order_number' => Order::generateOrderNumber(),
-                    'customer_id' => $validated['customer_id'],
-                    'user_id' => auth()->id(),
-                    'order_type' => 'pos',
-                    'payment_method' => $validated['payment_method'],
-                    'status' => Order::STATUS_COMPLETED,
-                    'notes' => isset($validated['notes']) ? $validated['notes'] : null,
-                    'tax_rate' => config('pos.tax_rate', 10)
-                ]);
+            DB::beginTransaction();
 
-                // Add order items
-                foreach ($validated['items'] as $item) {
-                    $product = Product::findOrFail($item['product_id']);
+            $customer     = null;
+            $customerType = 'walkin';
 
-                    OrderItem::create([
-                        'order_id' => $order->id,
-                        'product_id' => $product->id,
-                        'variant_id' => isset($item['variant_id']) ? $item['variant_id'] : null,
-                        'quantity' => $item['quantity'],
-                        'unit_price' => $product->price,
-                        'total_price' => $product->price * $item['quantity']
-                    ]);
-                    if ($product->stock_quantity < $item['quantity']) {
-                        throw new \Exception("Not enough stock for {$product->name}");
-                    }
+            if (!empty($validated['customer_id'])) {
+                $customer     = Customer::findOrFail($validated['customer_id']);
+                $customerType = $customer->customer_type ?? 'customer';
+            }
 
-                    if ($product->track_inventory) {
+            $totalWeight = 0;
+            $subtotal    = 0;
+            $orderItems  = [];
 
-                        $product->decrement('stock_quantity', $item['quantity']);
+            foreach ($validated['items'] as $item) {
+                $product   = Product::findOrFail($item['product_id']);
+                $unitPrice = !empty($item['unit_price'])
+                    ? (float) $item['unit_price']
+                    : $this->getPriceForCustomerType($product, $customerType);
+                $itemTotal = $unitPrice * $item['quantity'];
+                $subtotal += $itemTotal;
 
-                        // Log inventory deduction
-                        $product->inventoryLogs()->create([
-                            'action' => 'order_sale',
-                            'quantity_change' => -$item['quantity'],
-                            'notes' => 'Stock reduced for Order #' . $order->order_number,
-                            'user_id' => auth()->id()
-                        ]);
-                    }
-
+                if (!empty($product->weight)) {
+                    $totalWeight += $product->weight * $item['quantity'];
                 }
 
-                // Calculate and save totals
-                $order->load('items');
-                $order->calculateTotals()->save();
+                // Check branch stock
+                $branchStock = $product->getStockForBranch($branchId);
+                if ($branchStock < $item['quantity']) {
+                    throw new \Exception("Not enough stock for {$product->name} (Available: {$branchStock})");
+                }
 
-                return response()->json([
-                    'success' => true,
-                    'order_id' => $order->id,
-                    'receipt_url' => route('admin.pos.receipt', $order),
-                    'order_number' => $order->order_number,
-                    'total' => $order->total
+                $orderItems[] = [
+                    'product'    => $product,
+                    'quantity'   => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'total'      => $itemTotal,
+                ];
+            }
+
+            // ── Calculate totals (tax applies on subtotal - discount + delivery)
+            $taxRate         = $validated['tax_rate'] ?? config('pos.tax_rate', 0);
+            $taxType         = $validated['tax_type'] ?? 'percent';
+            $discount        = $validated['discount'] ?? 0;
+            $deliveryCharges = $validated['delivery_charges'] ?? 0;
+            $afterDiscount   = $subtotal - $discount;
+            $taxableAmount   = $afterDiscount + $deliveryCharges;
+            $tax             = $taxType === 'percent' ? $taxableAmount * ($taxRate / 100) : $taxRate;
+            $total           = $afterDiscount + $tax + $deliveryCharges;
+
+            // ── Partial payment logic
+            $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
+                ? (float) $validated['paid_amount']
+                : $total;
+
+            $previousBalance = 0;
+            if ($customer) {
+                $previousBalance = (float) ($customer->current_balance ?? 0);
+            }
+
+            $balanceOnOrder    = max(0, $total - $paidAmount);
+            $newRunningBalance = $previousBalance + $total - $paidAmount;
+            $paymentStatus     = $balanceOnOrder <= 0 ? 'paid' : 'partial';
+
+            // ── Create order with branch_id
+            $order = Order::create([
+                'order_number'     => Order::generateOrderNumber($branchId),
+                'customer_id'      => $customer ? $customer->id : null,
+                'customer_type'    => $customerType,
+                'user_id'          => auth()->id(),
+                'branch_id'        => $branchId !== 'all' ? $branchId : null,
+                'order_type'       => 'pos',
+                'payment_method'   => $validated['payment_method'],
+                'status'           => 'completed',
+                'notes'            => $validated['notes'] ?? null,
+                'tax_rate'         => $taxRate,
+                'tax'              => $tax,
+                'dispatch_method'  => $validated['dispatch_method'] ?? null,
+                'tracking_id'      => $validated['tracking_id'] ?? null,
+                'discount'         => $discount,
+                'delivery_charges' => $deliveryCharges,
+                'weight'           => $totalWeight,
+                'subtotal'         => $subtotal,
+                'total'            => $total,
+                'paid_amount'      => $paidAmount,
+                'previous_balance' => $previousBalance,
+                'balance_amount'   => $balanceOnOrder,
+            ]);
+
+            // ── Create order items & update BRANCH stock
+            foreach ($orderItems as $itemData) {
+                $product = $itemData['product'];
+
+                OrderItem::create([
+                    'order_id'    => $order->id,
+                    'product_id'  => $product->id,
+                    'quantity'    => $itemData['quantity'],
+                    'unit_price'  => $itemData['unit_price'],
+                    'total_price' => $itemData['total'],
                 ]);
-            });
+
+                if ($product->track_inventory && $branchId && $branchId !== 'all') {
+                    $product->decrementBranchStock($branchId, $itemData['quantity']);
+                }
+            }
+
+            // ── Create payment record
+            if ($customer && $paidAmount > 0) {
+                Payment::create([
+                    'payment_number'   => Payment::generatePaymentNumber(),
+                    'order_id'         => $order->id,
+                    'customer_id'      => $customer->id,
+                    'amount'           => $paidAmount,
+                    'payment_date'     => now(),
+                    'payment_method'   => $validated['payment_method'],
+                    'reference_number' => $validated['tracking_id'] ?? null,
+                    'status'           => 'completed',
+                    'created_by'       => auth()->id(),
+                ]);
+            }
+
+            // ── Update customer running balance
+            if ($customer) {
+                $customer->current_balance = $newRunningBalance;
+                $customer->save();
+            }
+
+            DB::commit();
+
+            $order->load('items');
+
+            return response()->json([
+                'success'          => true,
+                'message'          => 'Order created successfully',
+                'order_id'         => $order->id,
+                'order_number'     => $order->order_number,
+                'total'            => $order->total,
+                'paid_amount'      => $paidAmount,
+                'balance_amount'   => $balanceOnOrder,
+                'previous_balance' => $previousBalance,
+                'new_balance'      => $newRunningBalance,
+                'receipt_url'      => route('admin.pos.receipt', $order),
+            ]);
+
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'trace' => config('app.debug') ? $e->getTrace() : null
             ], 500);
         }
     }
 
+    private function getPriceForCustomerType($product, $customerType)
+    {
+        switch ($customerType) {
+            case 'reseller':
+                return $product->resale_price ?? $product->sale_price;
+            case 'wholesale':
+                return $product->wholesale_price ?? $product->sale_price;
+            default:
+                return $product->sale_price;
+        }
+    }
 
+    public function processCreditSale(Request $request, Order $order)
+    {
+        try {
+            DB::beginTransaction();
+
+            $customer = Customer::findOrFail($order->customer_id);
+
+            if (!$customer->credit_enabled) {
+                throw new \Exception('Credit is not enabled for this customer');
+            }
+
+            $ledger = $customer->creditLedger;
+
+            if (!$ledger) {
+                $ledger = CreditLedger::create([
+                    'ledger_number'   => CreditLedger::generateLedgerNumber(),
+                    'customer_id'     => $customer->id,
+                    'total_debit'     => 0,
+                    'total_credit'    => 0,
+                    'opening_balance' => 0,
+                    'closing_balance' => 0,
+                    'credit_limit'    => $customer->credit_limit,
+                    'status'          => 'active',
+                    'notes'           => 'Credit enabled on ' . now()->format('Y-m-d'),
+                ]);
+            }
+
+            $balanceBefore = $customer->current_balance;
+            $balanceAfter  = $balanceBefore + $order->total;
+            $dueDate       = now()->addDays($customer->credit_due_days ?? 30);
+
+            CreditTransaction::create([
+                'transaction_number' => CreditTransaction::generateTransactionNumber(),
+                'credit_ledger_id'   => $ledger->id,
+                'customer_id'        => $customer->id,
+                'order_id'           => $order->id,
+                'transaction_type'   => 'debit',
+                'amount'             => $order->total,
+                'balance_before'     => $balanceBefore,
+                'balance_after'      => $balanceAfter,
+                'reference_number'   => $order->order_number,
+                'description'        => 'Credit purchase - Order #' . $order->order_number,
+                'transaction_date'   => now(),
+                'due_date'           => $dueDate,
+                'payment_status'     => 'pending',
+                'items'              => $order->items->map(function ($item) {
+                    return [
+                        'product_id'   => $item->product_id,
+                        'product_name' => $item->product->name ?? null,
+                        'quantity'     => $item->quantity,
+                        'price'        => $item->unit_price,
+                        'total'        => $item->total_price,
+                    ];
+                }),
+                'paid_amount'      => 0,
+                'remaining_amount' => $order->total,
+                'created_by'       => auth()->id(),
+            ]);
+
+            $ledger->total_debit           += $order->total;
+            $ledger->closing_balance        = $balanceAfter;
+            $ledger->last_transaction_date  = now();
+            $ledger->save();
+
+            $customer->current_balance = $balanceAfter;
+            $customer->save();
+
+            $order->update([
+                'payment_method'           => 'credit',
+                'credit_status'            => 'pending',
+                'credit_ledger_id'         => $ledger->id,
+                'credit_due_date'          => $dueDate,
+                'credit_paid_amount'       => 0,
+                'credit_remaining_amount'  => $order->total,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success'     => true,
+                'message'     => 'Credit sale processed successfully',
+                'transaction' => $order,
+                'balance'     => $balanceAfter,
+                'due_date'    => $dueDate->format('Y-m-d'),
+                'amount'      => $order->total,
+                'receipt_url' => route('admin.pos.receipt', $order->id),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process credit sale: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function editOrder(Order $order)
+    {
+        $order->load('items.product', 'customer');
+        $products   = $this->scopeBranch(Product::query())->with(['category', 'unit'])->orderBy('created_at', 'desc')->get();
+        $customers  = $this->scopeBranch(Customer::query())->get();
+        $categories = $this->scopeBranch(Category::query())->get();
+
+        $paymentMethods  = PaymentMethod::active()->get();
+        $dispatchMethods = DispatchMethod::active()->get();
+
+        return view('admin.pos.edit', [
+            'order'           => $order,
+            'products'        => $products,
+            'customers'       => $customers,
+            'categories'      => $categories,
+            'tax_rate'        => config('pos.tax_rate'),
+            'paymentMethods'  => $paymentMethods,
+            'dispatchMethods' => $dispatchMethods,
+        ]);
+    }
+
+    public function updateOrder(Request $request, Order $order)
+    {
+        try {
+            $validated = $request->validate([
+                'customer_id'        => 'nullable|exists:customers,id',
+                'items'              => 'required|array',
+                'items.*.product_id' => 'required|exists:products,id',
+                'items.*.quantity'   => 'required|numeric|min:0.01',
+                'items.*.unit_price' => 'nullable|numeric|min:0',
+                'payment_method'     => 'required|string',
+                'paid_amount'        => 'nullable|numeric|min:0',
+                'dispatch_method'    => 'nullable|string',
+                'tracking_id'        => 'nullable|string',
+                'delivery_charges'   => 'nullable|numeric|min:0',
+                'tax_rate'           => 'nullable|numeric|min:0',
+                'discount'           => 'nullable|numeric|min:0',
+                'notes'              => 'nullable|string|max:1000',
+            ]);
+
+            $branchId = $order->branch_id ?? $this->branchId();
+
+            DB::beginTransaction();
+
+            // Restore old branch stock
+            foreach ($order->items as $oldItem) {
+                if ($oldItem->product && $oldItem->product->track_inventory && $branchId && $branchId !== 'all') {
+                    $oldItem->product->incrementBranchStock($branchId, $oldItem->quantity);
+                }
+            }
+
+            $order->items()->delete();
+
+            $customer     = null;
+            $customerType = 'walkin';
+
+            if (!empty($validated['customer_id'])) {
+                $customer     = Customer::findOrFail($validated['customer_id']);
+                $customerType = $customer->customer_type ?? 'customer';
+            }
+
+            // Reverse old balance effect on customer
+            $oldCustomer = $order->customer;
+            $oldNetEffect = ($order->total ?? 0) - ($order->paid_amount ?? 0);
+            if ($oldCustomer) {
+                $oldCustomer->current_balance = $oldCustomer->current_balance - $oldNetEffect;
+                $oldCustomer->save();
+            }
+
+            if ($customer && $oldCustomer && $customer->id === $oldCustomer->id) {
+                $customer->refresh();
+            }
+
+            $totalWeight = 0;
+            $subtotal    = 0;
+            $orderItems  = [];
+
+            foreach ($validated['items'] as $item) {
+                $product   = Product::findOrFail($item['product_id']);
+                $unitPrice = !empty($item['unit_price'])
+                    ? (float) $item['unit_price']
+                    : $this->getPriceForCustomerType($product, $customerType);
+                $itemTotal = $unitPrice * $item['quantity'];
+                $subtotal += $itemTotal;
+
+                if (!empty($product->weight)) {
+                    $totalWeight += $product->weight * $item['quantity'];
+                }
+
+                $branchStock = $product->getStockForBranch($branchId);
+                if ($branchStock < $item['quantity']) {
+                    throw new \Exception("Not enough stock for {$product->name} (Available: {$branchStock})");
+                }
+
+                $orderItems[] = [
+                    'product'    => $product,
+                    'quantity'   => $item['quantity'],
+                    'unit_price' => $unitPrice,
+                    'total'      => $itemTotal,
+                ];
+            }
+
+            $taxRate         = $validated['tax_rate'] ?? config('pos.tax_rate', 0);
+            $discount        = $validated['discount'] ?? 0;
+            $deliveryCharges = $validated['delivery_charges'] ?? 0;
+            $afterDiscount   = $subtotal - $discount;
+            $taxableAmount   = $afterDiscount + $deliveryCharges;
+            $tax             = $taxableAmount * ($taxRate / 100);
+            $total           = $afterDiscount + $tax + $deliveryCharges;
+
+            $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
+                ? (float) $validated['paid_amount']
+                : $total;
+
+            $balanceOnOrder = max(0, $total - $paidAmount);
+            $newNetEffect   = $total - $paidAmount;
+
+            $order->update([
+                'customer_id'      => $customer ? $customer->id : null,
+                'customer_type'    => $customerType,
+                'payment_method'   => $validated['payment_method'],
+                'notes'            => $validated['notes'] ?? null,
+                'tax_rate'         => $taxRate,
+                'tax'              => $tax,
+                'dispatch_method'  => $validated['dispatch_method'] ?? null,
+                'tracking_id'      => $validated['tracking_id'] ?? null,
+                'discount'         => $discount,
+                'delivery_charges' => $deliveryCharges,
+                'weight'           => $totalWeight,
+                'subtotal'         => $subtotal,
+                'total'            => $total,
+                'paid_amount'      => $paidAmount,
+                'balance_amount'   => $balanceOnOrder,
+                // Note: previous_balance is NOT updated — it's a historical snapshot
+                // and is now computed dynamically in receipts via computePreviousBalance()
+            ]);
+
+            foreach ($orderItems as $itemData) {
+                $product = $itemData['product'];
+
+                OrderItem::create([
+                    'order_id'    => $order->id,
+                    'product_id'  => $product->id,
+                    'quantity'    => $itemData['quantity'],
+                    'unit_price'  => $itemData['unit_price'],
+                    'total_price' => $itemData['total'],
+                ]);
+
+                if ($product->track_inventory && $branchId && $branchId !== 'all') {
+                    $product->decrementBranchStock($branchId, $itemData['quantity']);
+                }
+            }
+
+            // Update customer balance: add new net effect (already reversed old effect above)
+            if ($customer) {
+                $customer->current_balance = $customer->current_balance + $newNetEffect;
+                $customer->save();
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success'      => true,
+                'message'      => 'Order updated successfully',
+                'order_id'     => $order->id,
+                'order_number' => $order->order_number,
+                'total'        => $order->total,
+                'receipt_url'  => route('admin.pos.receipt', $order),
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function downloadReceiptPdf(Order $order)
+    {
+        $order->load('branch');
+        $pdf = Pdf::loadView('admin.pos.receipt-pdf', compact('order'));
+        return $pdf->download("Receipt-{$order->order_number}.pdf");
+    }
 
     public function downloadReceipt(Order $order)
     {
+        $order->load('branch');
         $pdf = Pdf::loadView('admin.pos.receipt', compact('order'));
-
-        // Set paper size (optional)
         $pdf->setPaper('a4', 'portrait');
-
-        // Download PDF with a filename
-        return $pdf->download('receipt-'.$order->order_number.'.pdf');
+        return $pdf->download('receipt-' . $order->order_number . '.pdf');
     }
+
     public function showReceipt(Order $order)
     {
+        $order->load('branch');
         return view('admin.pos.receipt', compact('order'));
+    }
+
+    public function thermalReceipt(Order $order)
+    {
+        $order->load(['items.product', 'customer', 'user', 'branch']);
+        return view('admin.pos.receipt-thermal', compact('order'));
     }
 
     public function processRefund(Request $request, Order $order)
@@ -137,44 +602,111 @@ class PosController extends Controller
         }
 
         $request->validate([
-            'amount' => 'required|numeric|min:0.01|max:'.$order->total,
-            'reason' => 'required|string|max:500'
+            'amount' => 'required|numeric|min:0.01|max:' . $order->total,
+            'reason' => 'required|string|max:500',
         ]);
 
-        DB::transaction(function () use ($request, $order) {
-            // Create refund record
-            $refund = Refund::create([
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($request, $order, $branchId) {
+            Refund::create([
                 'order_id' => $order->id,
-                'user_id' => auth()->id(),
-                'amount' => $request->amount,
-                'reason' => $request->reason,
-                'status' => 'completed'
+                'user_id'  => auth()->id(),
+                'amount'   => $request->amount,
+                'reason'   => $request->reason,
+                'status'   => 'completed',
             ]);
 
-            // Update order status
             $order->update([
-                'status' => $request->amount >= $order->total ?
-                    Order::STATUS_REFUNDED : Order::STATUS_COMPLETED
+                'status' => $request->amount >= $order->total
+                    ? Order::STATUS_REFUNDED
+                    : Order::STATUS_COMPLETED,
             ]);
 
-            // Process inventory returns if needed
+            if ($order->customer_id) {
+                $customer = Customer::find($order->customer_id);
+                if ($customer) {
+                    $customer->current_balance = max(0, $customer->current_balance - $request->amount);
+                    $customer->save();
+                }
+            }
+
             if ($request->has('return_to_inventory')) {
                 foreach ($order->items as $item) {
-                    if ($item->product->track_inventory) {
-                        $item->product->increment('stock_quantity', $item->quantity);
+                    if ($item->product && $item->product->track_inventory && $branchId) {
+                        $item->product->incrementBranchStock($branchId, $item->quantity);
 
                         $item->product->inventoryLogs()->create([
-                            'action' => 'refund_return',
+                            'action'          => 'refund_return',
                             'quantity_change' => $item->quantity,
-                            'notes' => 'Restocked due to refund of Order #' . $order->order_number,
-                            'user_id' => auth()->id()
+                            'branch_id'       => $branchId,
+                            'notes'           => 'Restocked due to refund of Order #' . $order->order_number,
+                            'user_id'         => auth()->id(),
                         ]);
                     }
                 }
-
             }
         });
 
         return back()->with('success', 'Refund processed successfully');
+    }
+
+    public function cancelOrder(Order $order)
+    {
+        if ($order->status === Order::STATUS_CANCELLED) {
+            return back()->with('error', 'Order is already cancelled.');
+        }
+
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($order, $branchId) {
+            // Restore branch stock
+            foreach ($order->items as $item) {
+                if ($item->product && $branchId) {
+                    $item->product->incrementBranchStock($branchId, $item->quantity);
+                }
+            }
+
+            if ($order->customer_id && $order->balance_amount > 0) {
+                $customer = Customer::find($order->customer_id);
+                if ($customer) {
+                    $customer->current_balance = max(0, $customer->current_balance - $order->balance_amount);
+                    $customer->save();
+                }
+            }
+
+            $order->update(['status' => Order::STATUS_CANCELLED]);
+        });
+
+        return back()->with('success', 'Order #' . $order->order_number . ' has been cancelled and stock restored.');
+    }
+
+    public function deleteOrder(Order $order)
+    {
+        $branchId = $order->branch_id;
+
+        DB::transaction(function () use ($order, $branchId) {
+            if ($order->status !== Order::STATUS_CANCELLED && $order->status !== Order::STATUS_REFUNDED) {
+                foreach ($order->items as $item) {
+                    if ($item->product && $branchId) {
+                        $item->product->incrementBranchStock($branchId, $item->quantity);
+                    }
+                }
+            }
+
+            if ($order->customer_id && $order->balance_amount > 0 && $order->status !== Order::STATUS_CANCELLED) {
+                $customer = Customer::find($order->customer_id);
+                if ($customer) {
+                    $customer->current_balance = max(0, $customer->current_balance - $order->balance_amount);
+                    $customer->save();
+                }
+            }
+
+            $order->items()->delete();
+            $order->payments()->delete();
+            $order->delete();
+        });
+
+        return redirect()->route('admin.reports.sales')->with('success', 'Order deleted successfully.');
     }
 }

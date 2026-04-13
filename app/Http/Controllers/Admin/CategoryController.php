@@ -4,13 +4,16 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Category;
+use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
 {
+    use BranchScoped;
+
     public function index()
     {
-        $categories = Category::withCount('products')->get();
+        $categories = $this->scopeBranch(Category::query())->withCount('products')->get();
         return view('admin.categories.index', compact('categories'));
     }
 
@@ -31,6 +34,11 @@ class CategoryController extends Controller
             'description' => 'nullable|string'
         ]);
 
+        $branchId = $this->branchId();
+        if ($branchId && $branchId !== 'all') {
+            $validated['branch_id'] = $branchId;
+        }
+
         Category::create($validated);
         return back()->with('success', 'Category created successfully');
     }
@@ -46,13 +54,23 @@ class CategoryController extends Controller
         return back()->with('success', 'Category updated successfully');
     }
 
-    public function destroy(Category $category)
+    public function destroy(Request $request, Category $category)
     {
         if ($category->products()->exists()) {
-            return back()->with('error', 'Cannot delete category with associated products');
+            // First attempt without confirmation → show warning
+            if (!$request->has('confirm_delete')) {
+                return back()->with('error', 'This category has products. Please confirm to delete the category and all related products.');
+            }
+
+            // If confirmed → delete related products
+            $category->products()->delete();
         }
 
+        // Delete category itself
         $category->delete();
-        return back()->with('success', 'Category deleted successfully');
+
+        return back()->with('success', 'Category and related products deleted successfully');
     }
+
+
 }

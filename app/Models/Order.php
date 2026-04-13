@@ -3,61 +3,121 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Str;
 
 class Order extends Model
 {
     protected $fillable = [
-        'order_number', 'customer_id', 'user_id', 'order_type',
-        'subtotal', 'tax', 'discount', 'total',
-        'payment_method', 'status', 'notes', 'tax_rate'
+        'order_number', 'customer_id','customer_type', 'user_id', 'order_type',
+        'subtotal', 'tax', 'discount', 'delivery_charges', 'weight', 'total',
+        'payment_method', 'status', 'notes', 'tax_rate',
+        'dispatch_method', 'tracking_id', 'receipt_token','credit_status',
+    'credit_ledger_id',
+    'credit_due_date',
+    'credit_paid_amount',
+    'credit_remaining_amount',
+    'paid_amount',
+    'previous_balance',
+    'balance_amount',
+    'branch_id',
     ];
 
     protected $attributes = [
         'subtotal' => 0,
         'tax' => 0,
         'discount' => 0,
+        'delivery_charges' => 0,
+        'weight' => 0, // ✅ ensure default value is set
         'total' => 0,
         'tax_rate' => 10
     ];
 
+    // Add this for auto-casting
+    protected $appends = ['receipt_url'];
+
     // Status constants
-    const STATUS_PENDING = 'pending';
+    const STATUS_PENDING   = 'pending';
     const STATUS_COMPLETED = 'completed';
-    const STATUS_REFUNDED = 'refunded';
+    const STATUS_REFUNDED  = 'refunded';
     const STATUS_CANCELLED = 'cancelled';
 
     // Payment methods
-    const PAYMENT_CASH = 'cash';
-    const PAYMENT_CARD = 'card';
+    const PAYMENT_CASH   = 'cash';
+    const PAYMENT_CARD   = 'card';
     const PAYMENT_MOBILE = 'mobile_money';
-    const PAYMENT_MIXED = 'mixed';
+    const PAYMENT_MIXED  = 'mixed';
 
-    public static function generateOrderNumber()
+    /**
+     * Boot method to auto-generate receipt token
+     */
+    protected static function boot()
     {
-        $prefix = 'ORD-';
-        $date = now()->format('Ymd');
+        parent::boot();
+        
+        static::creating(function ($order) {
+            if (empty($order->receipt_token)) {
+                $order->receipt_token = Str::random(32);
+            }
+        });
+    }
+    
+
+    /**
+     * Generate receipt URL attribute
+     */
+    public function getReceiptUrlAttribute()
+    {
+        return route('public.receipt.show', $this->receipt_token);
+    }
+
+    /**
+     * Generate order number based on branch code and per-branch sequence.
+     */
+    public static function generateOrderNumber($branchId = null)
+    {
+        $branch = null;
+        if ($branchId && $branchId !== 'all') {
+            $branch = Branch::find($branchId);
+        }
+
+        $prefix = $branch && $branch->code ? $branch->code : 'ASM';
+        $startNumber = $branch && $branch->order_start_number ? $branch->order_start_number : 1272;
+
         $latest = static::query()
-            ->where('order_number', 'like', $prefix.$date.'%')
+            ->where('order_number', 'like', $prefix . '%')
             ->latest('id')
             ->first();
 
-        $number = $latest ? ((int) substr($latest->order_number, -4) + 1) : 1;
+        $number = $startNumber;
+        if ($latest) {
+            $lastNumber = (int) str_replace($prefix, '', $latest->order_number);
+            if ($lastNumber >= $number) {
+                $number = $lastNumber + 1;
+            }
+        }
 
-        return $prefix . $date . str_pad($number, 4, '0', STR_PAD_LEFT);
+        return $prefix . $number;
     }
 
+    /**
+     * Calculate order totals
+     */
     public function calculateTotals()
     {
         $this->subtotal = $this->items->sum('total_price');
-        $this->tax = $this->subtotal * ($this->tax_rate / 100);
-        $this->total = $this->subtotal + $this->tax - $this->discount;
+        $afterDiscount  = $this->subtotal - $this->discount;
+        $this->tax      = $afterDiscount * ($this->tax_rate / 100);
+        $this->total    = $afterDiscount + $this->tax + $this->delivery_charges;
+
         return $this;
     }
 
     // Relationships
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);
@@ -88,6 +148,45 @@ class Order extends Model
         return $this->hasOne(Receipt::class);
     }
 
+    /**
+     * Dynamically compute the customer's running balance BEFORE this order.
+     * This is more reliable than the stored previous_balance which can become
+     * stale when orders are edited out of sequence.
+     */
+    public function computePreviousBalance(): float
+    {
+        if (!$this->customer_id) {
+            return 0;
+        }
+
+        // Sum of unpaid amounts for all prior orders.
+        // Legacy orders (before khata system) have paid_amount=0 AND balance_amount=0
+        // which means they were fully paid — treat their net contribution as 0.
+        $priorOrdersNet = (float) static::where('customer_id', $this->customer_id)
+            ->where('id', '<', $this->id)
+            ->where('status', '!=', self::STATUS_CANCELLED)
+            ->selectRaw('COALESCE(SUM(
+                CASE
+                    WHEN (paid_amount = 0 OR paid_amount IS NULL)
+                         AND (balance_amount = 0 OR balance_amount IS NULL)
+                    THEN 0
+                    ELSE total - COALESCE(paid_amount, 0)
+                END
+            ), 0) as net')
+            ->value('net');
+
+        // Subtract any standalone khata payments made before this order
+        $priorKhataPayments = (float) Payment::where('customer_id', $this->customer_id)
+            ->where('payment_type', 'khata')
+            ->where('created_at', '<', $this->created_at)
+            ->sum('amount');
+
+        return $priorOrdersNet - $priorKhataPayments;
+    }
+
+    /**
+     * Check if order is refundable
+     */
     public function isRefundable()
     {
         return $this->status === self::STATUS_COMPLETED &&

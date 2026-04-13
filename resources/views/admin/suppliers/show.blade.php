@@ -1,17 +1,26 @@
 @extends('layouts.admin')
-
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 @section('title', 'Supplier Details')
 
 @section('content')
-    <div class="max-w-3xl mx-auto">
+    <div class="main-div max-w-3xl mx-auto">
         <div class="bg-white rounded shadow p-6">
-            <div class="flex justify-between items-start mb-6">
+            <div class="flex flex-wrap justify-between items-start gap-2 mb-6">
                 <h2 class="text-2xl font-semibold">Supplier Details</h2>
-                <div class="space-x-2">
-                    <a href="{{ route('suppliers.edit', $supplier) }}" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">Edit</a>
-                    <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" class="inline-block" onsubmit="return confirm('Delete supplier?');">
+                <div class="flex items-center gap-1.5">
+                    <a href="{{ route('suppliers.ledger', $supplier) }}" class="inline-flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white px-3 py-1.5 rounded text-sm font-medium"><i class="fas fa-book"></i> Ledger</a>
+                    <a href="{{ route('suppliers.edit', $supplier) }}" class="inline-flex items-center gap-1 bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1.5 rounded text-sm font-medium"><i class="fas fa-edit"></i> Edit</a>
+                    <form action="{{ route('suppliers.destroy', $supplier) }}" method="POST" onsubmit="return confirm('Delete supplier?');">
                         @csrf @method('DELETE')
-                        <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Delete</button>
+                        <button type="submit" class="inline-flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded text-sm font-medium"><i class="fas fa-trash"></i> Delete</button>
                     </form>
                 </div>
             </div>

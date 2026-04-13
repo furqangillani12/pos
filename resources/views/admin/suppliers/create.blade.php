@@ -1,9 +1,18 @@
 @extends('layouts.admin')
+<style>
+ @media (max-width: 769px)
+  {
+    .main-div{
+        margin-top:50px;
+    }
+    
+  }
+</style>
 
 @section('title', 'Add New Supplier')
 
 @section('content')
-    <div class="max-w-2xl mx-auto">
+    <div class="main-div max-w-2xl mx-auto">
         <div class="bg-white rounded shadow p-6">
             <h2 class="text-2xl font-semibold mb-6">Add New Supplier</h2>
 
@@ -55,8 +64,8 @@
                     @enderror
                 </div>
 
-                <div class="flex justify-end space-x-3">
-                    <a href="{{ route('suppliers.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded">Cancel</a>
+                <div class="flex flex-col sm:flex-row justify-end gap-3">
+                    <a href="{{ route('suppliers.index') }}" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-medium px-4 py-2 rounded text-center">Cancel</a>
                     <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded">Save Supplier</button>
                 </div>
             </form>

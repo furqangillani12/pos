@@ -2,9 +2,9 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Low Stock Products</h1>
-            <div class="flex space-x-2">
+            <div class="flex flex-wrap gap-2">
                 <a href="{{ route('inventory.index') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
                     Back to Inventory
                 </a>
@@ -47,13 +47,13 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {{ $product->stock_quantity }}
+                                {{ (int)($product->branch_stock ?? $product->stock_quantity) }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {{ $product->reorder_level }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-red-600">
-                                {{ $product->reorder_level - $product->stock_quantity }} needed
+                                {{ $product->reorder_level - ($product->branch_stock ?? $product->stock_quantity) }} needed
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <button onclick="openAdjustModal({{ $product->id }}, '{{ $product->name }}')"

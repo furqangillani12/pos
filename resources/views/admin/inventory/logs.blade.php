@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6">
-        <div class="flex justify-between items-center mb-6">
+        <div class="flex flex-wrap justify-between items-center gap-2 mb-6">
             <h1 class="text-2xl font-bold text-gray-800">Inventory Logs</h1>
             <a href="{{ route('inventory.index') }}" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
                 Back to Inventory
@@ -11,8 +11,8 @@
 
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-4 border-b">
-                <form method="GET" class="flex items-center space-x-4">
-                    <div class="flex-1">
+                <form method="GET" class="flex flex-col sm:flex-row sm:items-end gap-4">
+                    <div class="w-full sm:flex-1">
                         <label for="product_id" class="block text-sm font-medium text-gray-700">Filter by Product</label>
                         <select name="product_id" id="product_id" onchange="this.form.submit()"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
@@ -24,7 +24,7 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="flex-1">
+                    <div class="w-full sm:flex-1">
                         <label for="action" class="block text-sm font-medium text-gray-700">Filter by Action</label>
                         <select name="action" id="action" onchange="this.form.submit()"
                                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
@@ -38,7 +38,7 @@
                         </select>
                     </div>
                     @if(request('product_id') || request('action'))
-                        <div class="flex items-center">
+                        <div class="self-end">
                             <a href="{{ route('inventory.logs') }}" class="text-gray-500 hover:text-gray-700">
                                 Clear Filters
                             </a>
