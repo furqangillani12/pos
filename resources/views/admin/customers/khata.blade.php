@@ -242,10 +242,11 @@
 
                 {{-- Print-only header --}}
                 <div id="print-header" style="display:none;">
-                    <h2 style="font-size:18px;font-weight:bold;margin-bottom:2px;">Customer Khata — {{ $customer->name }}</h2>
-                    <p style="font-size:12px;color:#666;margin-bottom:2px;">{{ $customer->phone ?? '' }}</p>
-                    <p style="font-size:11px;color:#888;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
-                    <p style="font-size:11px;color:#888;margin-bottom:10px;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
+                    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
+                    <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata — {{ $customer->name }}</h2>
+                    <p style="font-size:12px;color:#666;margin-bottom:2px;text-align:center;">{{ $customer->phone ?? '' }}</p>
+                    <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
+                    <p style="font-size:11px;color:#888;margin-bottom:10px;text-align:center;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
                     <hr style="margin-bottom:8px;">
                 </div>
 
