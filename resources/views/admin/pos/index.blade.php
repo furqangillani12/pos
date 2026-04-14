@@ -1546,6 +1546,12 @@
                     </div>
                 </div>
 
+                {{-- Order Date (optional backdate) --}}
+                <div class="dispatch-section">
+                    <div class="sec-label">Order Date (تاریخ)</div>
+                    <input type="date" id="order_date" class="pos-select" value="{{ now()->format('Y-m-d') }}">
+                </div>
+
                 {{-- Notes --}}
                 <div style="padding:0 10px 8px;">
                     <textarea id="order_notes" placeholder="Notes / comments..." rows="2"
@@ -2716,6 +2722,7 @@
                 tax_rate: taxRate,
                 tax_type: taxType,
                 discount: discount,
+                order_date: document.getElementById('order_date')?.value || null,
                 notes: notes,
             };
 

@@ -312,6 +312,11 @@
                         step="0.01" min="0" style="width:100%;">
                 </div>
                 <div>
+                    <label style="font-size:12px;color:#6b7280;">Order Date (تاریخ)</label>
+                    <input type="date" id="editOrderDate" class="item-input" value="{{ \Carbon\Carbon::parse($order->created_at)->format('Y-m-d') }}"
+                        style="width:100%;">
+                </div>
+                <div>
                     <label style="font-size:12px;color:#6b7280;">Payment Method</label>
                     <select id="editPaymentMethod" class="item-input" style="width:100%;">
                         @foreach ($paymentMethods as $pm)
@@ -573,6 +578,7 @@
                 delivery_charges: parseFloat(document.getElementById('editDelivery').value) || 0,
                 dispatch_method: document.getElementById('editDispatch').value,
                 tracking_id: document.getElementById('editTrackingId').value || null,
+                order_date: document.getElementById('editOrderDate')?.value || null,
                 notes: document.getElementById('editNotes').value,
             };
 

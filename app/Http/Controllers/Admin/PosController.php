@@ -123,6 +123,7 @@ class PosController extends Controller
                 'tax_rate'           => 'nullable|numeric|min:0',
                 'tax_type'           => 'nullable|string|in:percent,fixed',
                 'discount'           => 'nullable|numeric|min:0',
+                'order_date'         => 'nullable|date',
             ]);
 
             $branchId = $this->branchId();
@@ -216,6 +217,13 @@ class PosController extends Controller
                 'previous_balance' => $previousBalance,
                 'balance_amount'   => $balanceOnOrder,
             ]);
+
+            // Backdate the order if order_date was provided
+            if (!empty($validated['order_date'])) {
+                $time = now()->format('H:i:s');
+                $order->created_at = $validated['order_date'] . ' ' . $time;
+                $order->save();
+            }
 
             // ── Create order items & update BRANCH stock
             foreach ($orderItems as $itemData) {
@@ -427,6 +435,7 @@ class PosController extends Controller
                 'delivery_charges'   => 'nullable|numeric|min:0',
                 'tax_rate'           => 'nullable|numeric|min:0',
                 'discount'           => 'nullable|numeric|min:0',
+                'order_date'         => 'nullable|date',
                 'notes'              => 'nullable|string|max:1000',
             ]);
 
@@ -507,7 +516,7 @@ class PosController extends Controller
             $balanceOnOrder = max(0, $total - $paidAmount);
             $newNetEffect   = $total - $paidAmount;
 
-            $order->update([
+            $updateData = [
                 'customer_id'      => $customer ? $customer->id : null,
                 'customer_type'    => $customerType,
                 'payment_method'   => $validated['payment_method'],
@@ -525,7 +534,13 @@ class PosController extends Controller
                 'balance_amount'   => $balanceOnOrder,
                 // Note: previous_balance is NOT updated — it's a historical snapshot
                 // and is now computed dynamically in receipts via computePreviousBalance()
-            ]);
+            ];
+            if (!empty($validated['order_date'])) {
+                // Preserve the time portion of original created_at
+                $time = \Carbon\Carbon::parse($order->created_at)->format('H:i:s');
+                $updateData['created_at'] = $validated['order_date'] . ' ' . $time;
+            }
+            $order->update($updateData);
 
             foreach ($orderItems as $itemData) {
                 $product = $itemData['product'];
