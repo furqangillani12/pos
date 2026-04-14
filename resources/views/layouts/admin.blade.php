@@ -642,6 +642,14 @@
                     <i class="fas fa-users mr-2 text-xs"></i> Customers
                 </a>
 
+                {{-- ── Credit / Khata ── --}}
+                @can('manage credit')
+                    <a href="{{ route('admin.credit.index') }}"
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.credit.*') ? 'bg-red-100 text-red-700 font-semibold dark:bg-red-900 dark:text-red-300' : 'hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-700 dark:hover:text-red-300' }}">
+                        <i class="fas fa-hand-holding-usd mr-2 text-xs"></i> Credit / Khata
+                    </a>
+                @endcan
+
                 {{-- ── Suppliers ── --}}
                 @can('manage suppliers')
                     <a href="{{ route('suppliers.index') }}"
