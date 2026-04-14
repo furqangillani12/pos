@@ -110,39 +110,30 @@
             @endif
         </div>
 
-        {{-- Daily Summary Row --}}
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div class="bg-gradient-to-br from-sky-500 to-sky-600 text-white rounded-xl p-4 shadow">
+        {{-- Today's Profit / Purchase / Expense Row --}}
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="bg-gradient-to-br from-green-600 to-green-700 text-white rounded-xl p-4 shadow">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-sky-100 uppercase">Today's Sale</p>
-                        <p class="text-xl font-bold mt-1">Rs. {{ number_format($todaySales, 0) }}</p>
-                    </div>
-                    <i class="fas fa-cash-register text-2xl opacity-30"></i>
-                </div>
-            </div>
-            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-4 shadow">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-xs font-medium text-emerald-100 uppercase">Today's Profit</p>
+                        <p class="text-xs font-medium text-green-200 uppercase">Today's Profit</p>
                         <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayProfit ?? 0, 0) }}</p>
                     </div>
                     <i class="fas fa-coins text-2xl opacity-30"></i>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl p-4 shadow">
+            <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4 shadow">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-amber-100 uppercase">Today's Purchase</p>
+                        <p class="text-xs font-medium text-orange-100 uppercase">Today's Purchase</p>
                         <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayPurchases ?? 0, 0) }}</p>
                     </div>
                     <i class="fas fa-truck-loading text-2xl opacity-30"></i>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-xl p-4 shadow">
+            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-4 shadow">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-rose-100 uppercase">Today's Expense</p>
+                        <p class="text-xs font-medium text-red-100 uppercase">Today's Expense</p>
                         <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayExpenses, 0) }}</p>
                     </div>
                     <i class="fas fa-file-invoice-dollar text-2xl opacity-30"></i>
