@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
 // ── Dashboard ──
 Route::prefix('admin')->middleware(['auth', 'branch'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/receivables', [DashboardController::class, 'receivables'])->name('admin.receivables');
+    Route::get('/advances', [DashboardController::class, 'advances'])->name('admin.advances');
 });
 
 // ── Branch Management (CRUD) ──

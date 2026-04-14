@@ -11,12 +11,13 @@
     <div class="space-y-6">
 
         {{-- ══════════════════════════════════════════
-             ROW 1: PRIMARY STAT CARDS
+             ROW 1: PRIMARY STAT CARDS (CLICKABLE)
         ══════════════════════════════════════════ --}}
         <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
-            {{-- Today's Sales --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 relative overflow-hidden">
+            {{-- Today's Sales - clicks to today's orders --}}
+            <a href="{{ route('admin.reports.sales', ['start_date' => today()->toDateString(), 'end_date' => today()->toDateString()]) }}"
+               class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 relative overflow-hidden hover:shadow-md hover:border-blue-200 transition cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Today's Sales</p>
@@ -38,10 +39,12 @@
                         <i class="fas fa-chart-line text-blue-500 text-lg"></i>
                     </div>
                 </div>
-            </div>
+                <div class="mt-3 text-xs text-blue-500 flex items-center gap-1">View today's orders <i class="fas fa-arrow-right text-[10px]"></i></div>
+            </a>
 
             {{-- Today's Orders --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <a href="{{ route('admin.reports.sales', ['start_date' => today()->toDateString(), 'end_date' => today()->toDateString()]) }}"
+               class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-green-200 transition cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Today's Orders</p>
@@ -52,13 +55,15 @@
                         <i class="fas fa-shopping-cart text-green-500 text-lg"></i>
                     </div>
                 </div>
-            </div>
+                <div class="mt-3 text-xs text-green-500 flex items-center gap-1">View all orders <i class="fas fa-arrow-right text-[10px]"></i></div>
+            </a>
 
             {{-- Receivables --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            <a href="{{ route('admin.receivables') }}"
+               class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-red-200 transition cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Receivables (Wusooli)</p>
+                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Receivables (وصولی)</p>
                         <p class="text-2xl font-bold text-red-600 mt-1">Rs. {{ number_format($totalReceivables, 0) }}</p>
                         @if($totalAdvances > 0)
                             <p class="text-xs text-blue-500 mt-2">Advances: Rs. {{ number_format($totalAdvances, 0) }}</p>
@@ -68,19 +73,79 @@
                         <i class="fas fa-hand-holding-usd text-red-500 text-lg"></i>
                     </div>
                 </div>
-            </div>
+                <div class="mt-3 text-xs text-red-500 flex items-center gap-1">Who owes us <i class="fas fa-arrow-right text-[10px]"></i></div>
+            </a>
 
-            {{-- Stock Value --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
+            {{-- Advances - if any, otherwise stock --}}
+            @if($totalAdvances > 0)
+                <a href="{{ route('admin.advances') }}"
+                   class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-blue-200 transition cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Advances (ایڈوانس)</p>
+                            <p class="text-2xl font-bold text-blue-600 mt-1">Rs. {{ number_format($totalAdvances, 0) }}</p>
+                            <p class="text-xs text-gray-400 mt-2">Paid by customers in advance</p>
+                        </div>
+                        <div class="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-piggy-bank text-blue-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-blue-500 flex items-center gap-1">We owe <i class="fas fa-arrow-right text-[10px]"></i></div>
+                </a>
+            @else
+                <a href="{{ route('inventory.index') }}"
+                   class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md hover:border-purple-200 transition cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Stock Value</p>
+                            <p class="text-2xl font-bold text-gray-900 mt-1">Rs. {{ number_format($totalStockValue, 0) }}</p>
+                            <p class="text-xs text-gray-400 mt-2">{{ $totalProducts }} products</p>
+                        </div>
+                        <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-warehouse text-purple-500 text-lg"></i>
+                        </div>
+                    </div>
+                    <div class="mt-3 text-xs text-purple-500 flex items-center gap-1">View inventory <i class="fas fa-arrow-right text-[10px]"></i></div>
+                </a>
+            @endif
+        </div>
+
+        {{-- Daily Summary Row --}}
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gradient-to-br from-sky-500 to-sky-600 text-white rounded-xl p-4 shadow">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Stock Value</p>
-                        <p class="text-2xl font-bold text-gray-900 mt-1">Rs. {{ number_format($totalStockValue, 0) }}</p>
-                        <p class="text-xs text-gray-400 mt-2">{{ $totalProducts }} products</p>
+                        <p class="text-xs font-medium text-sky-100 uppercase">Today's Sale</p>
+                        <p class="text-xl font-bold mt-1">Rs. {{ number_format($todaySales, 0) }}</p>
                     </div>
-                    <div class="w-12 h-12 bg-purple-50 rounded-xl flex items-center justify-center">
-                        <i class="fas fa-warehouse text-purple-500 text-lg"></i>
+                    <i class="fas fa-cash-register text-2xl opacity-30"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-xl p-4 shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-emerald-100 uppercase">Today's Profit</p>
+                        <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayProfit ?? 0, 0) }}</p>
                     </div>
+                    <i class="fas fa-coins text-2xl opacity-30"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white rounded-xl p-4 shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-amber-100 uppercase">Today's Purchase</p>
+                        <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayPurchases ?? 0, 0) }}</p>
+                    </div>
+                    <i class="fas fa-truck-loading text-2xl opacity-30"></i>
+                </div>
+            </div>
+            <div class="bg-gradient-to-br from-rose-500 to-rose-600 text-white rounded-xl p-4 shadow">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-xs font-medium text-rose-100 uppercase">Today's Expense</p>
+                        <p class="text-xl font-bold mt-1">Rs. {{ number_format($todayExpenses, 0) }}</p>
+                    </div>
+                    <i class="fas fa-file-invoice-dollar text-2xl opacity-30"></i>
                 </div>
             </div>
         </div>
@@ -166,9 +231,12 @@
 
             {{-- Top Debtors --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <i class="fas fa-user-clock text-red-400"></i> Top Receivables
-                </h3>
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                        <i class="fas fa-user-clock text-red-400"></i> Top Receivables
+                    </h3>
+                    <a href="{{ route('admin.receivables') }}" class="text-xs text-blue-600 hover:underline">View All</a>
+                </div>
                 @if($topDebtors->count())
                     <div class="space-y-3">
                         @foreach($topDebtors as $debtor)
@@ -240,10 +308,12 @@
 
                 {{-- Top Products --}}
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-                    <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                        <i class="fas fa-fire text-orange-400"></i> Top Products
-                        <span class="text-xs text-gray-400 font-normal ml-auto">This Month</span>
-                    </h3>
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-semibold text-gray-800 flex items-center gap-2">
+                            <i class="fas fa-fire text-orange-400"></i> Top Products
+                        </h3>
+                        <a href="{{ route('admin.reports.top-products') }}" class="text-xs text-blue-600 hover:underline">View All</a>
+                    </div>
                     @if($topProducts->count())
                         <div class="space-y-3">
                             @foreach($topProducts as $i => $item)
@@ -265,7 +335,7 @@
                     @endif
                 </div>
 
-                {{-- Payment Methods --}}
+                {{-- Payment Methods (Clickable) --}}
                 <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
                     <h3 class="font-semibold text-gray-800 mb-4 flex items-center gap-2">
                         <i class="fas fa-wallet text-indigo-400"></i> Payment Methods
@@ -275,16 +345,29 @@
                         <div class="space-y-2">
                             @php $maxPayment = $paymentBreakdown->max('total') ?: 1; @endphp
                             @foreach($paymentBreakdown as $pm)
-                                <div>
+                                @php
+                                    $isPending = $pm->payment_method === 'pending';
+                                    $url = route('admin.reports.sales', [
+                                        'start_date' => now()->startOfMonth()->toDateString(),
+                                        'end_date' => now()->toDateString(),
+                                        'payment_method' => $pm->payment_method,
+                                    ]);
+                                @endphp
+                                <a href="{{ $url }}" class="block hover:bg-gray-50 rounded-lg p-2 -mx-2 transition">
                                     <div class="flex items-center justify-between text-sm mb-1">
-                                        <span class="text-gray-700 capitalize">{{ str_replace('_', ' ', $pm->payment_method) }}</span>
+                                        <span class="text-gray-700 capitalize flex items-center gap-1">
+                                            {{ str_replace('_', ' ', $pm->payment_method) }}
+                                            @if($isPending)
+                                                <span class="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded-full font-bold">!</span>
+                                            @endif
+                                        </span>
                                         <span class="font-semibold text-gray-800">Rs. {{ number_format($pm->total, 0) }}</span>
                                     </div>
                                     <div class="w-full bg-gray-100 rounded-full h-2">
-                                        <div class="bg-indigo-500 h-2 rounded-full" style="width: {{ ($pm->total / $maxPayment) * 100 }}%"></div>
+                                        <div class="{{ $isPending ? 'bg-orange-500' : 'bg-indigo-500' }} h-2 rounded-full" style="width: {{ ($pm->total / $maxPayment) * 100 }}%"></div>
                                     </div>
-                                    <p class="text-xs text-gray-400 mt-0.5">{{ $pm->count }} orders</p>
-                                </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ $pm->count }} orders · Click to view</p>
+                                </a>
                             @endforeach
                         </div>
                     @else

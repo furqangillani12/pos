@@ -2,10 +2,29 @@
 
 @section('content')
     <div class="p-6 bg-white rounded-lg shadow-md">
-        <h1 class="text-2xl font-semibold mb-4 text-gray-800">Sales Reports</h1>
+        <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+            <h1 class="text-2xl font-semibold text-gray-800">Sales Report</h1>
+            {{-- Active filter badges --}}
+            <div class="flex gap-2 flex-wrap">
+                @if(request('payment_method'))
+                    <span class="bg-indigo-100 text-indigo-700 text-xs px-3 py-1 rounded-full font-medium">
+                        Payment: {{ ucfirst(request('payment_method')) }}
+                        <a href="{{ route('admin.reports.sales', array_diff_key(request()->query(), ['payment_method' => ''])) }}" class="ml-1 text-indigo-500 hover:text-indigo-800">×</a>
+                    </span>
+                @endif
+                @if(request('status') === 'pending')
+                    <span class="bg-orange-100 text-orange-700 text-xs px-3 py-1 rounded-full font-medium">
+                        Pending Payment
+                        <a href="{{ route('admin.reports.sales', array_diff_key(request()->query(), ['status' => ''])) }}" class="ml-1 text-orange-500 hover:text-orange-800">×</a>
+                    </span>
+                @endif
+            </div>
+        </div>
 
         {{-- Filter Form --}}
         <form method="GET" class="flex flex-col sm:flex-row sm:items-center gap-4 mb-6">
+            <input type="hidden" name="payment_method" value="{{ request('payment_method') }}">
+            <input type="hidden" name="status" value="{{ request('status') }}">
             <div>
                 <label for="order_number" class="block text-sm font-medium text-gray-700">Order Number</label>
                 <input type="text" name="order_number" id="order_number"
@@ -49,31 +68,55 @@
             <table class="min-w-full divide-y divide-gray-200 border border-gray-200 shadow-sm rounded-lg overflow-hidden">
                 <thead class="bg-gray-50">
                 <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Paid</th>
+                    <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Balance</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                 @forelse($orders as $order)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $order->order_number }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $order->customer?->name ?? 'N/A' }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">Rs. {{ number_format($order->total, 2) }}</td>
-                        <td class="px-6 py-4 whitespace-nowrap">{{ $order->created_at->format('d M, Y') }}</td>
-                        <td class="px-6 py-4">
+                    <tr class="{{ $order->balance_amount > 0 ? 'bg-orange-50/30' : '' }}">
+                        <td class="px-4 py-3 whitespace-nowrap font-mono text-sm">{{ $order->order_number }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap">{{ $order->customer?->name ?? 'Walk-in' }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right font-semibold">Rs. {{ number_format($order->total, 0) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right text-green-600">Rs. {{ number_format($order->paid_amount, 0) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-right">
+                            @if($order->balance_amount > 0)
+                                <span class="text-red-600 font-bold">Rs. {{ number_format($order->balance_amount, 0) }}</span>
+                            @else
+                                <span class="text-gray-400">—</span>
+                            @endif
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs">
+                            <span class="px-2 py-0.5 rounded-full capitalize
+                                {{ $order->payment_method === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700' }}">
+                                {{ str_replace('_', ' ', $order->payment_method) }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs text-gray-500">{{ $order->created_at->format('d M, Y h:i A') }}</td>
+                        <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1">
+                                @if($order->balance_amount > 0 && $order->customer_id)
+                                    <a href="{{ route('admin.customers.khata', $order->customer_id) }}"
+                                       class="inline-flex items-center px-2 py-1 bg-green-600 text-white text-xs font-medium rounded hover:bg-green-700"
+                                       title="Receive Payment">
+                                        <i class="fas fa-money-bill-wave mr-1"></i> Pay
+                                    </a>
+                                @endif
                                 <a href="{{ route('admin.pos.receipt', $order) }}" target="_blank"
                                    class="inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
                                    title="Print Receipt">
-                                    <i class="fas fa-print mr-1"></i> Print
+                                    <i class="fas fa-print mr-1"></i>
                                 </a>
                                 <a href="{{ route('admin.pos.edit', $order) }}"
                                    class="inline-flex items-center px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded hover:bg-yellow-600"
                                    title="Edit Order">
-                                    <i class="fas fa-edit mr-1"></i> Edit
+                                    <i class="fas fa-edit mr-1"></i>
                                 </a>
                                 @if($order->status !== 'cancelled' && $order->status !== 'refunded')
                                     <form action="{{ route('admin.pos.cancel', $order) }}" method="POST" class="inline"
@@ -106,7 +149,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5" class="px-6 py-4 text-center text-gray-500">No orders found for selected date range.</td>
+                        <td colspan="8" class="px-6 py-4 text-center text-gray-500">No orders found for selected date range.</td>
                     </tr>
                 @endforelse
                 </tbody>

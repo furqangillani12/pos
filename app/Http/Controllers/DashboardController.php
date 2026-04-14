@@ -149,9 +149,28 @@ class DashboardController extends Controller
                 ->where('status', '!=', 'cancelled')
         )->groupBy('payment_method')->get();
 
+        // Daily stats for today
+        $todayCost = OrderItem::whereHas('order', function ($q) use ($today) {
+            $q->whereDate('created_at', $today)->where('status', '!=', 'cancelled');
+            $this->scopeBranch($q);
+        })->join('products', 'order_items.product_id', '=', 'products.id')
+          ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost')
+          ->value('cost') ?? 0;
+
+        $todayOrdersQuery = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'));
+        $todayDelivery = (clone $todayOrdersQuery)->sum('delivery_charges');
+        $todayTax = (clone $todayOrdersQuery)->sum('tax');
+        $todayDiscount = (clone $todayOrdersQuery)->sum('discount');
+        $todayProfit = $todaySales - $todayCost - $todayExpenses - $todayDelivery - $todayTax + $todayDiscount;
+
+        $todayPurchases = Purchase::whereDate('purchase_date', $today)
+            ->when(!$this->isAllBranches(), fn($q) => $q->where('branch_id', $this->branchId()))
+            ->sum('total_amount');
+
         return view('admin.dashboard', compact(
             'todaySales', 'yesterdaySales', 'salesChange',
             'todayOrders', 'todayPaid', 'todayExpenses',
+            'todayProfit', 'todayCost', 'todayPurchases',
             'weeklySales', 'monthlySales', 'monthlyOrders',
             'monthlyExpenses', 'monthlyProfit', 'monthlyCost',
             'lowStockProducts', 'outOfStock', 'totalProducts', 'totalStockValue',
@@ -161,5 +180,31 @@ class DashboardController extends Controller
             'recentOrders', 'employeeAttendance',
             'salesChart', 'paymentBreakdown'
         ));
+    }
+
+    // Customers who owe us money (receivables / wusooli)
+    public function receivables()
+    {
+        $customers = $this->scopeBranch(Customer::query())
+            ->where('current_balance', '>', 0)
+            ->orderByDesc('current_balance')
+            ->get();
+
+        $total = $customers->sum('current_balance');
+
+        return view('admin.dashboard-detail.receivables', compact('customers', 'total'));
+    }
+
+    // Customers who have advance with us (we owe them)
+    public function advances()
+    {
+        $customers = $this->scopeBranch(Customer::query())
+            ->where('current_balance', '<', 0)
+            ->orderBy('current_balance')
+            ->get();
+
+        $total = abs($customers->sum('current_balance'));
+
+        return view('admin.dashboard-detail.advances', compact('customers', 'total'));
     }
 }

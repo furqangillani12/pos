@@ -17,9 +17,11 @@ class ReportController extends Controller
 
     public function sales(Request $request)
     {
-        $start       = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end         = $request->input('end_date', now()->toDateString());
-        $orderNumber = $request->input('order_number');
+        $start          = $request->input('start_date', now()->startOfMonth()->toDateString());
+        $end            = $request->input('end_date', now()->toDateString());
+        $orderNumber    = $request->input('order_number');
+        $paymentMethod  = $request->input('payment_method');
+        $status         = $request->input('status'); // e.g. 'pending', 'partial'
 
         $query = $this->scopeBranch(Order::query());
 
@@ -29,11 +31,19 @@ class ReportController extends Controller
             $query->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
         }
 
+        if ($paymentMethod) {
+            $query->where('payment_method', $paymentMethod);
+        }
+
+        if ($status === 'pending') {
+            $query->where('balance_amount', '>', 0);
+        }
+
         $orders     = $query->latest()->get();
         $totalSales  = $orders->sum('total');
         $totalOrders = $orders->count();
 
-        return view('admin.reports.sales', compact('orders', 'totalSales', 'totalOrders', 'start', 'end', 'orderNumber'));
+        return view('admin.reports.sales', compact('orders', 'totalSales', 'totalOrders', 'start', 'end', 'orderNumber', 'paymentMethod', 'status'));
     }
 
     public function topProducts(Request $request)
