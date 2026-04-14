@@ -18,7 +18,7 @@ class ReportController extends Controller
     public function sales(Request $request)
     {
         $start       = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end         = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end         = $request->input('end_date', now()->toDateString());
         $orderNumber = $request->input('order_number');
 
         $query = $this->scopeBranch(Order::query());
@@ -26,7 +26,7 @@ class ReportController extends Controller
         if (!empty($orderNumber)) {
             $query->where('order_number', 'like', "%{$orderNumber}%");
         } else {
-            $query->whereBetween('created_at', [$start, $end]);
+            $query->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
         }
 
         $orders     = $query->latest()->get();
@@ -39,10 +39,10 @@ class ReportController extends Controller
     public function topProducts(Request $request)
     {
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end   = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end   = $request->input('end_date', now()->toDateString());
 
         $topProducts = OrderItem::selectRaw('product_id, SUM(quantity) as total_quantity, SUM(total_price) as total_revenue')
-            ->whereBetween('created_at', [$start, $end])
+            ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->whereHas('order', function ($q) {
                 $this->scopeBranch($q);
             })
@@ -60,10 +60,10 @@ class ReportController extends Controller
     public function profitLoss(Request $request)
     {
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end   = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end   = $request->input('end_date', now()->toDateString());
 
         $orders = $this->scopeBranch(Order::with('items.product'))
-            ->whereBetween('created_at', [$start, $end])
+            ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->latest()
             ->get();
 
@@ -97,13 +97,13 @@ class ReportController extends Controller
     public function categorySales(Request $request)
     {
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end   = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end   = $request->input('end_date', now()->toDateString());
 
         $query = DB::table('orders')
             ->join('order_items', 'orders.id', '=', 'order_items.order_id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->join('categories', 'products.category_id', '=', 'categories.id')
-            ->whereBetween('orders.created_at', [$start, $end]);
+            ->whereBetween('orders.created_at', [$start . ' 00:00:00', $end . ' 23:59:59']);
 
         if (!$this->isAllBranches()) {
             $query->where('orders.branch_id', $this->branchId());
@@ -123,12 +123,12 @@ class ReportController extends Controller
     public function customerSales(Request $request)
     {
         $start        = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end          = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end          = $request->input('end_date', now()->toDateString());
         $customerName = $request->input('customer_name');
 
         $query = DB::table('orders')
             ->join('customers', 'orders.customer_id', '=', 'customers.id')
-            ->whereBetween('orders.created_at', [$start, $end])
+            ->whereBetween('orders.created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->when($customerName, function ($query, $customerName) {
                 $query->where('customers.name', 'like', "%{$customerName}%");
             });
@@ -183,7 +183,7 @@ class ReportController extends Controller
     public function productStatement(Request $request)
     {
         $start     = $request->input('start_date', now()->startOfMonth()->toDateString());
-        $end       = $request->input('end_date', now()->endOfMonth()->toDateString());
+        $end       = $request->input('end_date', now()->toDateString());
         $productId = $request->input('product_id');
 
         $products  = $this->scopeBranch(Product::query())->orderBy('name')->get();
@@ -195,7 +195,7 @@ class ReportController extends Controller
             $items = OrderItem::with(['order.customer'])
                 ->where('product_id', $productId)
                 ->whereHas('order', function ($q) use ($start, $end) {
-                    $q->whereBetween('created_at', [$start, $end])
+                    $q->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
                       ->where('status', '!=', 'cancelled');
                     $this->scopeBranch($q);
                 })
