@@ -232,14 +232,21 @@
     </div>
 
     <script>
-        // Auto-submit form when user stops typing (300ms delay)
+        // Auto-submit form when user stops typing (1 second delay)
         let searchTimer;
-        document.getElementById('searchInput').addEventListener('input', function() {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function() {
             clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
                 this.closest('form').submit();
-            }, 500);
+            }, 1000);
         });
+
+        // On page load: if search is active, focus input and place cursor at end
+        if (searchInput.value) {
+            searchInput.focus();
+            searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        }
 
         // Submit on type filter change
         document.getElementById('typeFilter').addEventListener('change', function() {
