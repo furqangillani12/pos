@@ -186,12 +186,14 @@ class SupplierController extends Controller
         $originalPaidOnPurchases = $purchases->sum('paid_amount') - $linkedPaymentsTotal;
         $totalSupplierPayments = $payments->sum('amount');
         $totalPaid = $originalPaidOnPurchases + $totalSupplierPayments;
-        $totalDue = max(0, $totalPurchased - $totalPaid);
+        $balance = $totalPurchased - $totalPaid; // positive = we owe, negative = advance
 
         $summary = [
             'total_purchased' => $totalPurchased,
             'total_paid'      => $totalPaid,
-            'total_due'       => $totalDue,
+            'total_due'       => max(0, $balance),
+            'advance'         => $balance < 0 ? abs($balance) : 0,
+            'balance'         => $balance,
             'payments_count'  => $payments->count(),
         ];
 

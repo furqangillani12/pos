@@ -48,6 +48,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <a href="{{ route('purchases.edit', $purchase->id) }}" class="text-yellow-500 hover:text-yellow-700 mr-3" title="Edit"><i class="fas fa-edit"></i></a>
                                 <a href="{{ route('purchases.invoice', $purchase->id) }}" class="text-green-500 hover:text-green-700 mr-3" title="Invoice"><i class="fas fa-file-invoice"></i></a>
                                 <a href="{{ route('purchases.show', $purchase->id) }}" class="text-blue-500 hover:text-blue-700 mr-3">View</a>
                                 <form action="{{ route('purchases.destroy', $purchase->id) }}" method="POST" class="inline-block">

@@ -60,31 +60,40 @@
                     </div>
 
                     {{-- Balance Status --}}
-                    @php $due = $summary['total_due']; @endphp
+                    @php
+                        $due = $summary['total_due'];
+                        $advance = $summary['advance'] ?? 0;
+                    @endphp
                     <div class="mt-4 rounded-lg p-4 text-center
-                        {{ $due > 0 ? 'bg-red-50 border border-red-200' : 'bg-green-50 border border-green-200' }}">
-                        <p class="text-xs font-medium {{ $due > 0 ? 'text-red-500' : 'text-green-500' }}">
-                            {{ $due > 0 ? 'Balance Due (بقایا)' : 'All Clear (حساب برابر)' }}
+                        {{ $due > 0 ? 'bg-red-50 border border-red-200' : ($advance > 0 ? 'bg-blue-50 border border-blue-200' : 'bg-green-50 border border-green-200') }}">
+                        <p class="text-xs font-medium {{ $due > 0 ? 'text-red-500' : ($advance > 0 ? 'text-blue-500' : 'text-green-500') }}">
+                            @if($advance > 0)
+                                Advance Payment (ایڈوانس)
+                            @elseif($due > 0)
+                                Balance Due (بقایا)
+                            @else
+                                All Clear (حساب برابر)
+                            @endif
                         </p>
-                        <p class="text-2xl font-bold mt-1 {{ $due > 0 ? 'text-red-600' : 'text-green-600' }}">
-                            Rs. {{ number_format($due, 0) }}
+                        <p class="text-2xl font-bold mt-1 {{ $due > 0 ? 'text-red-600' : ($advance > 0 ? 'text-blue-600' : 'text-green-600') }}">
+                            Rs. {{ number_format($advance > 0 ? $advance : $due, 0) }}
                         </p>
                     </div>
                 </div>
 
                 {{-- Payment Form --}}
-                @if($due > 0)
                 <div class="bg-white rounded-lg shadow border border-blue-200">
                     <div class="bg-blue-600 text-white px-5 py-3 rounded-t-lg">
                         <h3 class="font-semibold flex items-center gap-2">
                             <i class="fas fa-hand-holding-usd"></i> Record Payment (ادائیگی)
                         </h3>
-                        <p class="text-xs text-blue-200 mt-0.5">Pay supplier for purchases</p>
+                        <p class="text-xs text-blue-200 mt-0.5">{{ $due > 0 ? 'Pay supplier for purchases' : 'Record advance payment' }}</p>
                     </div>
 
                     <form method="POST" action="{{ route('suppliers.payment.store', $supplier) }}" class="p-5 space-y-4">
                         @csrf
 
+                        @if($due > 0)
                         <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
                             <p class="text-red-600 font-medium">
                                 Due Amount: <strong>Rs. {{ number_format($due, 0) }}</strong>
@@ -95,6 +104,18 @@
                                 &rarr; Click to fill full amount
                             </button>
                         </div>
+                        @elseif($advance > 0)
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                            <p class="text-blue-600 font-medium">
+                                Advance: <strong>Rs. {{ number_format($advance, 0) }}</strong>
+                            </p>
+                            <p class="text-xs text-blue-400">Account is in advance. Any payment will add more advance.</p>
+                        </div>
+                        @else
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                            Account is settled. Any payment will be recorded as advance.
+                        </div>
+                        @endif
 
                         {{-- Against specific purchase (optional) --}}
                         @php
@@ -159,7 +180,6 @@
                         </button>
                     </form>
                 </div>
-                @endif
 
             </div>
 
