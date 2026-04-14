@@ -251,15 +251,13 @@
 
         <div class="edit-card">
             <h3>Customer</h3>
-            <select id="editCustomer" class="item-input" style="width:100%;">
-                <option value="">Walk-in Customer</option>
-                @foreach ($customers as $customer)
-                    <option value="{{ $customer->id }}" data-type="{{ $customer->customer_type }}"
-                        {{ $order->customer_id == $customer->id ? 'selected' : '' }}>
-                        {{ $customer->name }} ({{ $customer->customer_type }})
-                    </option>
-                @endforeach
-            </select>
+            <div class="customer-search-wrap" style="position:relative;">
+                <input type="hidden" id="editCustomer" value="{{ $order->customer_id ?? '' }}">
+                <input type="text" id="customer_search" class="item-input" style="width:100%;"
+                    placeholder="Search customer by name, phone, barcode..."
+                    value="{{ $order->customer ? $order->customer->name . ' (' . $order->customer->customer_type . ')' : '' }}" autocomplete="off">
+                <div id="customer_dropdown" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid #3b82f6;border-top:none;border-radius:0 0 6px 6px;max-height:220px;overflow-y:auto;z-index:100;display:none;box-shadow:0 4px 12px rgba(0,0,0,.12);"></div>
+            </div>
         </div>
 
         <div class="edit-card">
@@ -362,7 +360,53 @@
 @push('scripts')
     <script>
         const productsData = @json($products);
+        const customersData = @json($customers);
         const fmt = n => parseFloat(n || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+
+        // ── Customer search ──
+        (function() {
+            const input = document.getElementById('customer_search');
+            const hidden = document.getElementById('editCustomer');
+            const dropdown = document.getElementById('customer_dropdown');
+
+            function filterCustomers() {
+                const search = input.value.toLowerCase().trim();
+                const filtered = customersData.filter(c => {
+                    return (c.name || '').toLowerCase().includes(search)
+                        || (c.phone || '').toLowerCase().includes(search)
+                        || (c.barcode || '').toLowerCase().includes(search);
+                }).slice(0, 15);
+
+                let html = '<div class="copt" data-id="" data-name="Walk-in Customer" data-type="walkin" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid #f1f5f9;color:#6b7280;">Walk-in Customer</div>';
+                filtered.forEach(c => {
+                    html += `<div class="copt" data-id="${c.id}" data-name="${c.name} (${c.customer_type})" data-type="${c.customer_type}" style="padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:600;color:#1e293b;">${c.name}</div>
+                        <div style="font-size:11px;color:#9ca3af;">${c.phone || ''} · ${c.customer_type} ${c.barcode ? '· ' + c.barcode : ''}</div>
+                    </div>`;
+                });
+
+                dropdown.innerHTML = html;
+                dropdown.style.display = 'block';
+
+                dropdown.querySelectorAll('.copt').forEach(opt => {
+                    opt.onmousedown = function(e) {
+                        e.preventDefault();
+                        input.value = this.dataset.name;
+                        hidden.value = this.dataset.id;
+                        dropdown.style.display = 'none';
+                    };
+                });
+            }
+
+            input.addEventListener('focus', filterCustomers);
+            input.addEventListener('input', function() {
+                hidden.value = '';
+                filterCustomers();
+            });
+            input.addEventListener('blur', function() {
+                setTimeout(() => dropdown.style.display = 'none', 200);
+            });
+        })();
 
         function getPriceForCustomerType(product, customerType) {
             if (customerType === 'reseller' && product.resale_price) return product.resale_price;
