@@ -242,7 +242,7 @@
 
                 {{-- Print-only header --}}
                 <div id="print-header" style="display:none;">
-                    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
+                    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ is_object($currentBranch ?? null) ? $currentBranch->name : config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
                     <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata — {{ $customer->name }}</h2>
                     <p style="font-size:12px;color:#666;margin-bottom:2px;text-align:center;">{{ $customer->phone ?? '' }}</p>
                     <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
