@@ -232,7 +232,16 @@
     </div>
 
     <script>
-        // Submit form on Enter key or type filter change
+        // Auto-submit form when user stops typing (300ms delay)
+        let searchTimer;
+        document.getElementById('searchInput').addEventListener('input', function() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => {
+                this.closest('form').submit();
+            }, 500);
+        });
+
+        // Submit on type filter change
         document.getElementById('typeFilter').addEventListener('change', function() {
             this.closest('form').submit();
         });
