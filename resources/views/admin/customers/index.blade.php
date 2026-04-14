@@ -232,35 +232,9 @@
     </div>
 
     <script>
-        // Also filter current page rows instantly while user types
-        function filterTable() {
-            const search = document.getElementById('searchInput').value.toLowerCase().trim();
-            const type = document.getElementById('typeFilter').value.toLowerCase();
-            const rows = document.querySelectorAll('#customerTableBody tr[data-searchable]');
-            let visibleCount = 0;
-
-            rows.forEach(row => {
-                const text = row.getAttribute('data-searchable').toLowerCase();
-                const rowType = row.getAttribute('data-type').toLowerCase();
-
-                const matchesSearch = !search || text.includes(search);
-                const matchesType = !type || rowType === type;
-
-                if (matchesSearch && matchesType) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-
-            const noResults = document.getElementById('noFilterResults');
-            if (noResults) {
-                noResults.style.display = visibleCount === 0 ? '' : 'none';
-            }
-        }
-
-        document.getElementById('searchInput').addEventListener('input', filterTable);
-        document.getElementById('typeFilter').addEventListener('change', filterTable);
+        // Submit form on Enter key or type filter change
+        document.getElementById('typeFilter').addEventListener('change', function() {
+            this.closest('form').submit();
+        });
     </script>
 @endsection
