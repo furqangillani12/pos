@@ -71,8 +71,14 @@ class DashboardController extends Controller
         // ── Financial ──
         $totalReceivables = $this->scopeBranch(Customer::query())->where('current_balance', '>', 0)->sum('current_balance');
         $totalAdvances    = $this->scopeBranch(Customer::query())->where('current_balance', '<', 0)->sum(DB::raw('ABS(current_balance)'));
-        $monthlyExpenses  = Expense::where('date', '>=', $monthStart)->sum('amount');
-        $todayExpenses    = Expense::whereDate('date', $today)->sum('amount');
+        // Expenses from ledger accounts of type 'expense' (debit = expense incurred)
+        $expenseAccountIds = \App\Models\LedgerAccount::where('type', 'expense')->pluck('id');
+        $monthlyExpenses = \App\Models\LedgerAccountEntry::whereIn('ledger_account_id', $expenseAccountIds)
+            ->where('entry_date', '>=', $monthStart)
+            ->sum('debit');
+        $todayExpenses = \App\Models\LedgerAccountEntry::whereIn('ledger_account_id', $expenseAccountIds)
+            ->whereDate('entry_date', $today)
+            ->sum('debit');
 
         // ── Profit estimate (this month) ──
         $monthlyCostQuery = OrderItem::whereHas('order', function ($q) use ($monthStart) {
