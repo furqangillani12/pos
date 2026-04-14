@@ -29,7 +29,7 @@
                             <label for="purchase_date" class="block text-sm font-medium text-gray-700">Purchase Date *</label>
                             <input type="date" name="purchase_date" id="purchase_date" required
                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                   value="{{ old('purchase_date', $purchase->purchase_date?->format('Y-m-d') ?? $purchase->purchase_date) }}">
+                                   value="{{ old('purchase_date', \Carbon\Carbon::parse($purchase->purchase_date)->format('Y-m-d')) }}">
                         </div>
                     </div>
 
