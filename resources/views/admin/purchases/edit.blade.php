@@ -17,13 +17,12 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label for="supplier_id" class="block text-sm font-medium text-gray-700">Supplier *</label>
-                            <select name="supplier_id" id="supplier_id" required
-                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="">Select Supplier</option>
-                                @foreach($suppliers as $supplier)
-                                    <option value="{{ $supplier->id }}" {{ $purchase->supplier_id == $supplier->id ? 'selected' : '' }}>{{ $supplier->name }}</option>
-                                @endforeach
-                            </select>
+                            <div class="supplier-search-wrap">
+                                <input type="hidden" name="supplier_id" id="supplier_id" value="{{ $purchase->supplier_id }}" required>
+                                <input type="text" id="supplier_search" class="product-search-input" placeholder="Search supplier by name, company, phone..." autocomplete="off"
+                                    value="{{ $purchase->supplier->name ?? '' }}">
+                                <div class="product-dropdown" id="supplier_dropdown"></div>
+                            </div>
                         </div>
                         <div>
                             <label for="purchase_date" class="block text-sm font-medium text-gray-700">Purchase Date *</label>
@@ -83,7 +82,7 @@
     </div>
 
     <style>
-        .product-search-wrap { position: relative; }
+        .product-search-wrap, .supplier-search-wrap { position: relative; }
         .product-search-input {
             width: 100%;
             border: 1px solid #d1d5db;
@@ -109,8 +108,49 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const products = @json($products);
+            const suppliers = @json($suppliers);
             const existingItems = @json($existingItems);
             let itemCount = 0;
+
+            // ── Supplier search ──
+            const supplierInput = document.getElementById('supplier_search');
+            const supplierHidden = document.getElementById('supplier_id');
+            const supplierDropdown = document.getElementById('supplier_dropdown');
+
+            function filterSuppliers() {
+                const search = supplierInput.value.toLowerCase().trim();
+                const filtered = suppliers.filter(s => {
+                    return (s.name || '').toLowerCase().includes(search)
+                        || (s.company_name || '').toLowerCase().includes(search)
+                        || (s.phone || '').toLowerCase().includes(search);
+                }).slice(0, 15);
+
+                if (filtered.length === 0) {
+                    supplierDropdown.innerHTML = '<div class="product-option" style="color:#9ca3af;cursor:default;">No suppliers found</div>';
+                } else {
+                    supplierDropdown.innerHTML = filtered.map(s => `
+                        <div class="product-option" data-id="${s.id}" data-name="${s.name}">
+                            <div class="po-name">${s.name}</div>
+                            <div class="po-meta">${s.company_name || ''} · ${s.phone || ''}</div>
+                        </div>
+                    `).join('');
+                }
+                supplierDropdown.classList.add('show');
+
+                supplierDropdown.querySelectorAll('.product-option[data-id]').forEach(opt => {
+                    opt.onclick = function() {
+                        supplierInput.value = this.dataset.name;
+                        supplierHidden.value = this.dataset.id;
+                        supplierDropdown.classList.remove('show');
+                    };
+                });
+            }
+
+            supplierInput.addEventListener('focus', filterSuppliers);
+            supplierInput.addEventListener('input', function() {
+                supplierHidden.value = '';
+                filterSuppliers();
+            });
 
             function addItemRow(data = null) {
                 itemCount++;
@@ -215,7 +255,7 @@
             }
 
             document.addEventListener('click', function(e) {
-                if (!e.target.closest('.product-search-wrap')) {
+                if (!e.target.closest('.product-search-wrap') && !e.target.closest('.supplier-search-wrap')) {
                     document.querySelectorAll('.product-dropdown.show').forEach(d => d.classList.remove('show'));
                 }
             });
