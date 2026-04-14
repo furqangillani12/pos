@@ -240,6 +240,15 @@
                     </a>
                 </form>
 
+                {{-- Print-only header --}}
+                <div id="print-header" style="display:none;">
+                    <h2 style="font-size:18px;font-weight:bold;margin-bottom:2px;">Customer Khata — {{ $customer->name }}</h2>
+                    <p style="font-size:12px;color:#666;margin-bottom:2px;">{{ $customer->phone ?? '' }}</p>
+                    <p style="font-size:11px;color:#888;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
+                    <p style="font-size:11px;color:#888;margin-bottom:10px;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
+                    <hr style="margin-bottom:8px;">
+                </div>
+
                 {{-- ── Unified Transaction History ── --}}
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="px-5 py-4 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
@@ -419,9 +428,25 @@
                 header,
                 form,
                 button,
-                a[href],
                 .flex.gap-2.flex-wrap {
                     display: none !important;
+                }
+
+                /* Show print header */
+                #print-header {
+                    display: block !important;
+                }
+
+                /* Hide action column in print */
+                table th:last-child,
+                table td:last-child {
+                    display: none !important;
+                }
+
+                /* Keep order number links visible in print */
+                a[href] {
+                    color: #000 !important;
+                    text-decoration: none !important;
                 }
 
                 body {
@@ -448,11 +473,9 @@
                     padding: 0 !important;
                 }
 
-                /* Print header */
                 h1 { font-size: 16px !important; }
                 p.text-sm { font-size: 11px !important; }
 
-                /* Clean table for print */
                 table {
                     width: 100% !important;
                     border-collapse: collapse !important;
@@ -466,7 +489,6 @@
                     background: #f3f4f6 !important;
                 }
 
-                /* Summary cards for print */
                 .grid.grid-cols-2 {
                     display: flex !important;
                     gap: 8px !important;
@@ -477,10 +499,7 @@
                     padding: 6px !important;
                 }
 
-                /* Remove rounded corners and shadows */
                 .rounded-lg { border-radius: 0 !important; }
-
-                /* Footer totals */
                 tfoot td { font-weight: bold !important; }
             }
         </style>
