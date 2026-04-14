@@ -64,19 +64,27 @@ class CreditController extends Controller
     /**
      * Show customer credit statement
      */
-    public function customerStatement(Customer $customer)
+    public function customerStatement(Request $request, Customer $customer)
     {
         if (!$customer->credit_enabled) {
             return redirect()->route('admin.customers.edit', $customer)
                 ->with('warning', 'Credit is not enabled for this customer.');
         }
-        
+
         $ledger = $customer->creditLedger;
-        $transactions = CreditTransaction::with('order:id,order_number')
-                                        ->where('customer_id', $customer->id)
-                                        ->orderBy('transaction_date', 'desc')
-                                        ->orderBy('id', 'desc')
-                                        ->paginate(20);
+        $query = CreditTransaction::with('order:id,order_number')
+                                    ->where('customer_id', $customer->id);
+
+        if ($request->filled('from_date')) {
+            $query->where('transaction_date', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->where('transaction_date', '<=', $request->to_date);
+        }
+
+        $transactions = $query->orderBy('transaction_date', 'desc')
+                              ->orderBy('id', 'desc')
+                              ->paginate(20);
         
         $summary = [
             'total_purchases' => CreditTransaction::where('customer_id', $customer->id)

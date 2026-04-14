@@ -141,10 +141,32 @@
             </div>
         @endif
 
+        <!-- Date Filter -->
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <form method="GET" action="{{ route('admin.credit.statement', $customer) }}" class="flex flex-wrap gap-3 items-end">
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">From Date</label>
+                    <input type="date" name="from_date" value="{{ request('from_date') }}"
+                        class="border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">To Date</label>
+                    <input type="date" name="to_date" value="{{ request('to_date') }}"
+                        class="border rounded-lg px-3 py-2 text-sm">
+                </div>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm">Filter</button>
+                <a href="{{ route('admin.credit.statement', $customer) }}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm">Reset</a>
+            </form>
+        </div>
+
         <!-- Transactions Table -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="px-6 py-4 border-b bg-gray-50">
-                <h3 class="text-lg font-medium text-gray-800">Transaction History</h3>
+                <h3 class="text-lg font-medium text-gray-800">Transaction History
+                    @if(request('from_date') || request('to_date'))
+                        <span class="text-sm font-normal text-gray-500">— {{ request('from_date', 'Start') }} to {{ request('to_date', 'Today') }}</span>
+                    @endif
+                </h3>
             </div>
 
             <div class="overflow-x-auto">
@@ -156,7 +178,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Transaction #</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                Reference</th>
+                                Order #</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Description</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -181,15 +203,18 @@
                                     <span
                                         class="text-sm font-medium text-gray-900">{{ $transaction->transaction_number }}</span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {{ $transaction->reference_number ?? 'N/A' }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if ($transaction->order_id)
+                                        <a href="{{ route('admin.pos.receipt', $transaction->order_id) }}" target="_blank"
+                                            class="font-semibold text-blue-600 hover:underline">
+                                            {{ $transaction->order->order_number ?? '#' . $transaction->order_id }}
+                                        </a>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
                                 </td>
                                 <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
                                     {{ $transaction->description }}
-                                    @if ($transaction->order_id)
-                                        <span class="text-xs text-blue-500 block mt-1">Order
-                                            #{{ $transaction->order->order_number ?? $transaction->order_id }}</span>
-                                    @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
                                     @if ($transaction->transaction_type == 'debit')
