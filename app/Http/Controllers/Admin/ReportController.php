@@ -69,8 +69,14 @@ class ReportController extends Controller
 
         $totalRevenue = 0;
         $totalCost    = 0;
+        $totalDiscount = 0;
+        $totalDelivery = 0;
+        $totalTax = 0;
 
         foreach ($orders as $order) {
+            $totalDiscount += $order->discount ?? 0;
+            $totalDelivery += $order->delivery_charges ?? 0;
+            $totalTax += $order->tax ?? 0;
             foreach ($order->items as $item) {
                 $product       = $item->product;
                 $revenue       = $item->quantity * $item->unit_price;
@@ -80,10 +86,12 @@ class ReportController extends Controller
             }
         }
 
-        $profit = $totalRevenue > $totalCost ? $totalRevenue - $totalCost : 0;
-        $loss   = $totalCost > $totalRevenue ? $totalCost - $totalRevenue : 0;
+        // Revenue = item sales - discount (delivery & tax are not product revenue)
+        $netRevenue = $totalRevenue - $totalDiscount;
+        $profit = $netRevenue > $totalCost ? $netRevenue - $totalCost : 0;
+        $loss   = $totalCost > $netRevenue ? $totalCost - $netRevenue : 0;
 
-        return view('admin.reports.profit_loss', compact('start', 'end', 'profit', 'loss', 'totalRevenue', 'totalCost'));
+        return view('admin.reports.profit_loss', compact('start', 'end', 'profit', 'loss', 'totalRevenue', 'totalCost', 'totalDiscount', 'totalDelivery', 'totalTax', 'netRevenue'));
     }
 
     public function categorySales(Request $request)
