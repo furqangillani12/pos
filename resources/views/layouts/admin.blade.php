@@ -517,7 +517,7 @@
                     <!-- Center: App Name -->
                     <div class="flex-1 flex justify-center">
                         <div class="text-lg font-semibold text-gray-800 dark:text-gray-200 truncate">
-                            Almufeed POS
+                            {{ is_object($currentBranch ?? null) ? $currentBranch->name : config('app.name', 'Almufeed Saqafti Markaz') }}
                         </div>
                     </div>
 
