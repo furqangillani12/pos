@@ -130,7 +130,7 @@
                     <i class="fas fa-truck-loading text-2xl opacity-30"></i>
                 </div>
             </div>
-            <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-4 shadow">
+            <a href="{{ route('admin.ledger-accounts.index') }}" class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-4 shadow hover:shadow-lg transition block">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-xs font-medium text-red-100 uppercase">Today's Expense</p>
@@ -138,7 +138,7 @@
                     </div>
                     <i class="fas fa-file-invoice-dollar text-2xl opacity-30"></i>
                 </div>
-            </div>
+            </a>
         </div>
 
         {{-- Quick Settings Link --}}
@@ -165,11 +165,11 @@
                 <p class="text-xl font-bold mt-1">Rs. {{ number_format($monthlySales, 0) }}</p>
                 <p class="text-xs text-indigo-200 mt-1">{{ $monthlyOrders }} orders</p>
             </div>
-            <div class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4 shadow-sm">
+            <a href="{{ route('admin.ledger-accounts.index') }}" class="bg-gradient-to-br from-orange-500 to-orange-600 text-white rounded-xl p-4 shadow-sm hover:shadow-lg transition block">
                 <p class="text-xs font-medium text-orange-200 uppercase">Monthly Expenses</p>
                 <p class="text-xl font-bold mt-1">Rs. {{ number_format($monthlyExpenses, 0) }}</p>
                 <p class="text-xs text-orange-200 mt-1">Today: Rs. {{ number_format($todayExpenses, 0) }}</p>
-            </div>
+            </a>
             <div class="bg-gradient-to-br {{ $monthlyProfit >= 0 ? 'from-green-600 to-green-700' : 'from-red-600 to-red-700' }} text-white rounded-xl p-4 shadow-sm">
                 <p class="text-xs font-medium {{ $monthlyProfit >= 0 ? 'text-green-200' : 'text-red-200' }} uppercase">Est. Profit</p>
                 <p class="text-xl font-bold mt-1">Rs. {{ number_format(abs($monthlyProfit), 0) }}</p>
