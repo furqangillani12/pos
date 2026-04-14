@@ -109,12 +109,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const products = @json($products);
-            const existingItems = @json($purchase->items->map(fn($item) => [
-                'product_id' => $item->product_id,
-                'product_name' => $item->product->name ?? 'Unknown',
-                'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
-            ]));
+            const existingItems = @json($existingItems);
             let itemCount = 0;
 
             function addItemRow(data = null) {

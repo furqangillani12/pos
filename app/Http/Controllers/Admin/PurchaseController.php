@@ -92,7 +92,15 @@ class PurchaseController extends Controller
         $purchase->load(['items.product']);
         $suppliers = $this->scopeBranch(Supplier::query())->get();
         $products  = $this->scopeBranch(Product::query())->with('category')->get();
-        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products'));
+        $existingItems = $purchase->items->map(function ($item) {
+            return [
+                'product_id'   => $item->product_id,
+                'product_name' => $item->product->name ?? 'Unknown',
+                'quantity'     => $item->quantity,
+                'unit_price'   => $item->unit_price,
+            ];
+        });
+        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products', 'existingItems'));
     }
 
     public function update(Request $request, Purchase $purchase)
