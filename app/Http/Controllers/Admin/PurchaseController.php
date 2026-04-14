@@ -125,7 +125,7 @@ class PurchaseController extends Controller
 
     public function edit(Purchase $purchase)
     {
-        $purchase->load(['items.product']);
+        $purchase->load(['items.product', 'supplier']);
         $suppliers = $this->scopeBranch(Supplier::query())->get();
         $products  = $this->scopeBranch(Product::query())->with('category')->get();
         $existingItems = $purchase->items->map(function ($item) {
@@ -136,21 +136,34 @@ class PurchaseController extends Controller
                 'unit_price'   => $item->unit_price,
             ];
         });
-        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products', 'existingItems'));
+
+        $supplierBalances = [];
+        foreach ($suppliers as $s) {
+            $totalPurchased = Purchase::where('supplier_id', $s->id)->sum('total_amount');
+            $totalPaid = Purchase::where('supplier_id', $s->id)->sum('paid_amount');
+            $supplierPayments = \App\Models\SupplierPayment::where('supplier_id', $s->id)->sum('amount');
+            $supplierBalances[$s->id] = $totalPurchased - $totalPaid - $supplierPayments;
+        }
+
+        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products', 'existingItems', 'supplierBalances'));
     }
 
     public function update(Request $request, Purchase $purchase)
     {
         $request->validate([
-            'supplier_id'        => 'required|exists:suppliers,id',
-            'purchase_date'      => 'required|date',
-            'items'              => 'required|array|min:1',
-            'items.*.product_id' => 'required|exists:products,id',
-            'items.*.quantity'   => 'required|integer|min:1',
-            'items.*.unit_price' => 'required|numeric|min:0',
-            'payment_status'     => 'required|in:paid,partial,unpaid',
-            'paid_amount'        => 'required|numeric|min:0',
-            'notes'              => 'nullable|string',
+            'supplier_id'            => 'required|exists:suppliers,id',
+            'purchase_date'          => 'required|date',
+            'items'                  => 'required|array|min:1',
+            'items.*.product_id'     => 'required|exists:products,id',
+            'items.*.quantity'       => 'required|integer|min:1',
+            'items.*.unit_price'     => 'required|numeric|min:0',
+            'payment_status'         => 'required|in:paid,partial,unpaid',
+            'paid_amount'            => 'required|numeric|min:0',
+            'discount'               => 'nullable|numeric|min:0',
+            'expenses'               => 'nullable|array',
+            'expenses.*.label'       => 'nullable|string|max:255',
+            'expenses.*.amount'      => 'nullable|numeric|min:0',
+            'notes'                  => 'nullable|string',
         ]);
 
         $branchId = $purchase->branch_id;
@@ -168,9 +181,27 @@ class PurchaseController extends Controller
         // Delete old items
         $purchase->items()->delete();
 
-        $totalAmount = collect($request->items)->sum(function ($item) {
+        $itemsTotal = collect($request->items)->sum(function ($item) {
             return $item['quantity'] * $item['unit_price'];
         });
+
+        // Calculate expenses and discount
+        $expenses = collect($request->expenses ?? [])->filter(fn($e) => !empty($e['amount']) && $e['amount'] > 0);
+        $totalExpenses = $expenses->sum('amount');
+        $discount = (float) ($request->discount ?? 0);
+        $totalAmount = $itemsTotal + $totalExpenses - $discount;
+
+        // Calculate total quantity for cost distribution
+        $totalQty = collect($request->items)->sum('quantity');
+        $expensePerUnit = $totalQty > 0 ? ($totalExpenses - $discount) / $totalQty : 0;
+
+        // Build expenses note
+        $expenseNotes = $expenses->map(fn($e) => ($e['label'] ?? 'Expense') . ': Rs.' . number_format($e['amount'], 0))->implode(', ');
+        $notes = $request->notes;
+        if ($expenseNotes) {
+            $notes = ($notes ? $notes . ' | ' : '') . 'Expenses: ' . $expenseNotes;
+            if ($discount > 0) $notes .= ' | Discount: Rs.' . number_format($discount, 0);
+        }
 
         $purchase->update([
             'supplier_id'    => $request->supplier_id,
@@ -178,10 +209,12 @@ class PurchaseController extends Controller
             'paid_amount'    => $request->paid_amount,
             'payment_status' => $request->payment_status,
             'purchase_date'  => $request->purchase_date,
-            'notes'          => $request->notes,
+            'notes'          => $notes,
         ]);
 
         foreach ($request->items as $item) {
+            $adjustedCostPrice = $item['unit_price'] + ($item['quantity'] > 0 ? $expensePerUnit : 0);
+
             PurchaseItem::create([
                 'purchase_id' => $purchase->id,
                 'product_id'  => $item['product_id'],
@@ -192,14 +225,13 @@ class PurchaseController extends Controller
 
             // Update branch stock
             $product = Product::find($item['product_id']);
+            // Update cost price with expenses/discount distributed
+            $product->update(['cost_price' => round($adjustedCostPrice, 2)]);
             if ($branchId) {
                 $product->incrementBranchStock($branchId, $item['quantity']);
             } else {
                 $product->increment('stock_quantity', $item['quantity']);
             }
-
-            // Update product cost price to the new purchase price
-            $product->update(['cost_price' => $item['unit_price']]);
         }
 
         return redirect()->route('purchases.show', $purchase->id)

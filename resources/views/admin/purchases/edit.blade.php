@@ -42,6 +42,44 @@
                         </button>
                     </div>
 
+                    {{-- Previous Balance --}}
+                    <div id="prev-balance-box" style="display:none;" class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm font-semibold text-orange-700">Supplier Previous Balance (سابقہ بقایا)</p>
+                                <p class="text-xs text-orange-500">Outstanding from previous purchases</p>
+                            </div>
+                            <p class="text-xl font-bold text-orange-700" id="prev-balance-amount">Rs. 0</p>
+                        </div>
+                    </div>
+
+                    {{-- Expenses Section --}}
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Expenses / اخراجات (Bilty, Packing, Delivery, Labor etc.)</label>
+                        <div id="expense-rows" class="space-y-2"></div>
+                        <button type="button" id="add-expense" class="mt-2 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 px-3 py-1 rounded text-sm">
+                            + Add Expense
+                        </button>
+                        <p class="text-xs text-gray-400 mt-1">Expenses will be divided across all items and added to their cost price</p>
+                    </div>
+
+                    {{-- Discount --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="purchase_discount" class="block text-sm font-medium text-gray-700">Discount (ڈسکاؤنٹ)</label>
+                            <input type="number" step="0.01" min="0" name="discount" id="purchase_discount"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   value="0" oninput="calculateTotal()">
+                            <p class="text-xs text-gray-400 mt-1">Discount will be subtracted from items' cost price</p>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Total Expenses</label>
+                            <input type="text" id="total_expenses_display" readonly
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-yellow-50 sm:text-sm"
+                                   value="0.00">
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
                             <label for="payment_status" class="block text-sm font-medium text-gray-700">Payment Status *</label>
@@ -59,9 +97,9 @@
                                    value="{{ old('paid_amount', $purchase->paid_amount) }}">
                         </div>
                         <div>
-                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Total Amount</label>
+                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total (Items + Expenses - Discount)</label>
                             <input type="text" id="total_amount" readonly
-                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                   class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-bold text-lg"
                                    value="{{ number_format($purchase->total_amount, 2) }}">
                         </div>
                     </div>
@@ -150,6 +188,50 @@
             supplierInput.addEventListener('input', function() {
                 supplierHidden.value = '';
                 filterSuppliers();
+            });
+
+            // ── Supplier balance display ──
+            const supplierBalances = @json($supplierBalances);
+            const prevBalBox = document.getElementById('prev-balance-box');
+            const prevBalAmt = document.getElementById('prev-balance-amount');
+
+            function updateSupplierBalance() {
+                const sid = supplierHidden.value;
+                if (sid && supplierBalances[sid] && supplierBalances[sid] != 0) {
+                    const bal = parseFloat(supplierBalances[sid]);
+                    prevBalBox.style.display = 'block';
+                    if (bal > 0) {
+                        prevBalAmt.textContent = 'Rs. ' + Math.abs(bal).toLocaleString();
+                        prevBalBox.className = 'bg-orange-50 border border-orange-200 rounded-lg p-4';
+                        prevBalBox.querySelector('p').className = 'text-sm font-semibold text-orange-700';
+                        prevBalBox.querySelector('p').textContent = 'Supplier Previous Balance (سابقہ بقایا)';
+                    } else {
+                        prevBalAmt.textContent = 'Rs. ' + Math.abs(bal).toLocaleString();
+                        prevBalBox.className = 'bg-blue-50 border border-blue-200 rounded-lg p-4';
+                        prevBalBox.querySelector('p').className = 'text-sm font-semibold text-blue-700';
+                        prevBalBox.querySelector('p').textContent = 'Our Advance Payment (ہماری ایڈوانس)';
+                    }
+                } else {
+                    prevBalBox.style.display = 'none';
+                }
+            }
+            supplierDropdown.addEventListener('click', () => setTimeout(updateSupplierBalance, 50));
+            // Show balance on page load if supplier already selected
+            updateSupplierBalance();
+
+            // ── Expense rows ──
+            let expenseCount = 0;
+            document.getElementById('add-expense').addEventListener('click', function() {
+                expenseCount++;
+                const html = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-2 expense-row">
+                    <input type="text" name="expenses[${expenseCount}][label]" placeholder="e.g. Bilty, Packing, Labor..."
+                        class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                    <input type="number" name="expenses[${expenseCount}][amount]" placeholder="Amount" min="0" step="0.01"
+                        class="expense-amount border border-gray-300 rounded-md px-3 py-2 text-sm" oninput="calculateTotal()">
+                    <button type="button" class="text-red-500 hover:text-red-700 text-sm" onclick="this.closest('.expense-row').remove();calculateTotal();">Remove</button>
+                </div>`;
+                document.getElementById('expense-rows').insertAdjacentHTML('beforeend', html);
             });
 
             function addItemRow(data = null) {
@@ -269,13 +351,23 @@
             }
 
             function calculateTotal() {
-                let total = 0;
+                let itemsTotal = 0;
                 document.querySelectorAll('.item-row').forEach(row => {
                     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
                     const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
-                    total += quantity * unitPrice;
+                    itemsTotal += quantity * unitPrice;
                 });
-                document.getElementById('total_amount').value = total.toFixed(2);
+
+                let expensesTotal = 0;
+                document.querySelectorAll('.expense-amount').forEach(input => {
+                    expensesTotal += parseFloat(input.value) || 0;
+                });
+
+                const discount = parseFloat(document.getElementById('purchase_discount').value) || 0;
+                const grandTotal = itemsTotal + expensesTotal - discount;
+
+                document.getElementById('total_expenses_display').value = expensesTotal.toFixed(2);
+                document.getElementById('total_amount').value = grandTotal.toFixed(2);
             }
 
             calculateTotal();
