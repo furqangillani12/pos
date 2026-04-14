@@ -72,7 +72,8 @@ class CreditController extends Controller
         }
         
         $ledger = $customer->creditLedger;
-        $transactions = CreditTransaction::where('customer_id', $customer->id)
+        $transactions = CreditTransaction::with('order:id,order_number')
+                                        ->where('customer_id', $customer->id)
                                         ->orderBy('transaction_date', 'desc')
                                         ->orderBy('id', 'desc')
                                         ->paginate(20);

@@ -479,7 +479,7 @@
                 </div>
 
                 <div class="total-row">
-                    <span class="label">Tax ({{ $order->tax_rate ?? 0 }}%)</span>
+                    <span class="label">Tax @if(($order->tax ?? 0) > 0)({{ ($order->tax_type ?? 'percent') === 'fixed' ? 'Rs.' : ($order->tax_rate ?? 0) . '%' }})@endif</span>
                     <span class="value">
                         @if (is_numeric($order->tax) && floor($order->tax) == $order->tax)
                             {{ number_format($order->tax, 0) }}

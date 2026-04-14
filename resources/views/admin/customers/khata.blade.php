@@ -11,7 +11,9 @@
                 <a href="{{ route('admin.customers.show', $customer) }}"
                     class="text-sm text-blue-600 hover:underline mb-1 block">← Back to Customer</a>
                 <h1 class="text-2xl font-bold text-gray-800">📒 Customer Khata</h1>
-                <p class="text-sm text-gray-500 mt-1">Account statement for <strong>{{ $customer->name }}</strong></p>
+                <p class="text-sm text-gray-500 mt-1">Account statement for <strong>{{ $customer->name }}</strong>
+                    <br><span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</span>
+                </p>
             </div>
             <div class="flex gap-2 flex-wrap">
                 <a href="{{ route('admin.customers.khata', ['customer' => $customer->id, 'export' => 'csv'] + request()->query()) }}"

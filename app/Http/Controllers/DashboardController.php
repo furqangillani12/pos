@@ -81,10 +81,12 @@ class DashboardController extends Controller
         })->join('products', 'order_items.product_id', '=', 'products.id')
           ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost');
         $monthlyCost   = $monthlyCostQuery->value('cost') ?? 0;
-        // Exclude delivery charges and tax from profit calculation — only product revenue counts
-        $monthlyDeliveryCharges = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->sum('delivery_charges');
-        $monthlyTax = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->sum('tax');
-        $monthlyProfit = $monthlySales - $monthlyCost - $monthlyExpenses - $monthlyDeliveryCharges - $monthlyTax;
+        // Exclude delivery charges and tax from profit — profit = sales revenue - cost - expenses - non-product charges
+        $monthlyOrdersQuery = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'));
+        $monthlyDeliveryCharges = (clone $monthlyOrdersQuery)->sum('delivery_charges');
+        $monthlyTax = (clone $monthlyOrdersQuery)->sum('tax');
+        $monthlyDiscount = (clone $monthlyOrdersQuery)->sum('discount');
+        $monthlyProfit = $monthlySales - $monthlyCost - $monthlyExpenses - $monthlyDeliveryCharges - $monthlyTax + $monthlyDiscount;
 
         // ── Employees ──
         $presentEmployees = $this->scopeBranch(Attendance::whereDate('date', $today)->where('status', 'present'))->count();

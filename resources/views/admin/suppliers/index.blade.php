@@ -12,10 +12,18 @@
 @section('title', 'Suppliers')
 
 @section('content')
-    <div class="main-div mb-4">
+    <div class="main-div mb-4 flex flex-wrap justify-between items-center gap-3">
         <a href="{{ route('suppliers.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded shadow inline-block">
             + Add Supplier
         </a>
+        <form method="GET" action="{{ route('suppliers.index') }}" class="flex gap-2">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search name, phone, company..."
+                class="border border-gray-300 rounded-md px-3 py-2 text-sm w-64">
+            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700">Search</button>
+            @if(request('search'))
+                <a href="{{ route('suppliers.index') }}" class="border border-gray-300 text-gray-600 px-4 py-2 rounded text-sm hover:bg-gray-50">Clear</a>
+            @endif
+        </form>
     </div>
 
     @if(session('success'))
@@ -66,7 +74,7 @@
 
         @if($suppliers->hasPages())
             <div class="mt-4">
-                {{ $suppliers->links() }}
+                {{ $suppliers->appends(request()->query())->links() }}
             </div>
         @endif
     </div>

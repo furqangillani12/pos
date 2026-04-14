@@ -203,6 +203,7 @@ class PosController extends Controller
                 'status'           => 'completed',
                 'notes'            => $validated['notes'] ?? null,
                 'tax_rate'         => $taxRate,
+                'tax_type'         => $taxType,
                 'tax'              => $tax,
                 'dispatch_method'  => $validated['dispatch_method'] ?? null,
                 'tracking_id'      => $validated['tracking_id'] ?? null,

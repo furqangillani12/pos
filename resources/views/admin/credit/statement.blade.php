@@ -7,8 +7,14 @@
         <!-- Header -->
         <div class="flex flex-wrap justify-between items-center gap-3 mb-6">
             <div>
-                <h1 class="text-2xl font-bold text-gray-800">Credit Statement</h1>
-                <p class="text-sm text-gray-600 mt-1">Transaction history and balance summary</p>
+                <h1 class="text-2xl font-bold text-gray-800">Credit Statement — {{ $customer->name }}</h1>
+                <p class="text-sm text-gray-600 mt-1">
+                    @if(request('from_date') || request('to_date'))
+                        {{ request('from_date', 'Start') }} to {{ request('to_date', 'Today') }}
+                    @else
+                        Complete transaction history
+                    @endif
+                </p>
             </div>
             <div class="flex flex-wrap gap-2">
                 <a href="{{ route('admin.credit.payment', ['customer_id' => $customer->id]) }}"
@@ -182,7 +188,7 @@
                                     {{ $transaction->description }}
                                     @if ($transaction->order_id)
                                         <span class="text-xs text-blue-500 block mt-1">Order
-                                            #{{ $transaction->order_id }}</span>
+                                            #{{ $transaction->order->order_number ?? $transaction->order_id }}</span>
                                     @endif
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-right">
