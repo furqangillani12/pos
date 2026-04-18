@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
@@ -29,14 +30,19 @@ class CategoryController extends Controller
 
     public function store(Request $request)
     {
+        $branchId = $this->branchId();
+        $scopeBranchId = ($branchId && $branchId !== 'all') ? $branchId : null;
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories',
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('categories', 'name')->where(fn ($q) => $q->where('branch_id', $scopeBranchId)),
+            ],
             'description' => 'nullable|string'
         ]);
 
-        $branchId = $this->branchId();
-        if ($branchId && $branchId !== 'all') {
-            $validated['branch_id'] = $branchId;
+        if ($scopeBranchId) {
+            $validated['branch_id'] = $scopeBranchId;
         }
 
         Category::create($validated);
@@ -46,7 +52,12 @@ class CategoryController extends Controller
     public function update(Request $request, Category $category)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:categories,name,'.$category->id,
+            'name' => [
+                'required', 'string', 'max:255',
+                Rule::unique('categories', 'name')
+                    ->where(fn ($q) => $q->where('branch_id', $category->branch_id))
+                    ->ignore($category->id),
+            ],
             'description' => 'nullable|string'
         ]);
 
