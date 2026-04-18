@@ -1368,7 +1368,10 @@
 
             {{-- ROW 1: HEADER --}}
             <div class="cart-head">
-                <h2><i class="fas fa-shopping-cart"></i> Current Order</h2>
+                <h2 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <span><i class="fas fa-shopping-cart"></i> Current Order</span>
+                    <span style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;">#{{ $nextOrderNumber }}</span>
+                </h2>
 
                 {{-- Customer select with search --}}
                 <div class="customer-wrap" style="position:relative;">
@@ -1589,7 +1592,10 @@
     ══════════════════════════════════════════════════════ --}}
     <div class="mobile-cart-overlay" id="mobileCartOverlay">
         <div class="overlay-header">
-            <h2><i class="fas fa-shopping-cart"></i> Cart</h2>
+            <h2 style="display:flex;align-items:center;gap:8px;flex:1;">
+                <span><i class="fas fa-shopping-cart"></i> Cart</span>
+                <span style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;margin-left:auto;">#{{ $nextOrderNumber }}</span>
+            </h2>
             <button class="mobile-cart-close-btn" onclick="closeMobileCart()">
                 <i class="fas fa-times"></i>
             </button>

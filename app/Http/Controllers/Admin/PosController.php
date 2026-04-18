@@ -49,6 +49,8 @@ class PosController extends Controller
             return ['id' => $dm->id, 'name' => $dm->name, 'has_tracking' => $dm->has_tracking];
         })->values();
 
+        $nextOrderNumber = Order::generateOrderNumber($this->branchId());
+
         return view('admin.pos.index', [
             'customers'          => $customers,
             'categories'         => $categories,
@@ -58,6 +60,7 @@ class PosController extends Controller
             'paymentMethodsJson' => $paymentMethodsJson,
             'dispatchMethodsJson' => $dispatchMethodsJson,
             'deliverySlabsJson'  => $deliverySlabsJson,
+            'nextOrderNumber'    => $nextOrderNumber,
         ]);
     }
 
