@@ -2354,6 +2354,14 @@
                         </div>
                     </div>
 
+                    <!-- Order Date (optional backdate) -->
+                    <div class="dispatch-section" style="padding:10px 14px;">
+                        <div class="sec-label">Order Date (تاریخ)</div>
+                        <input type="date" id="m_order_date" class="pos-select"
+                            value="${document.getElementById('order_date')?.value || ''}"
+                            oninput="document.getElementById('order_date').value=this.value;">
+                    </div>
+
                     <!-- Notes -->
                     <div style="padding:0 14px 8px;">
                         <textarea id="m_order_notes" placeholder="Notes / comments..." rows="2"
