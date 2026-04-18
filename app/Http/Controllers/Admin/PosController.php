@@ -538,12 +538,16 @@ class PosController extends Controller
                 // Note: previous_balance is NOT updated — it's a historical snapshot
                 // and is now computed dynamically in receipts via computePreviousBalance()
             ];
-            if (!empty($validated['order_date'])) {
-                // Preserve the time portion of original created_at
-                $time = \Carbon\Carbon::parse($order->created_at)->format('H:i:s');
-                $updateData['created_at'] = $validated['order_date'] . ' ' . $time;
-            }
             $order->update($updateData);
+
+            if (!empty($validated['order_date'])) {
+                // Preserve the time portion of original created_at.
+                // created_at is not in $fillable, so assign directly and save
+                // (mass assignment via update() would silently drop it).
+                $time = \Carbon\Carbon::parse($order->created_at)->format('H:i:s');
+                $order->created_at = $validated['order_date'] . ' ' . $time;
+                $order->save();
+            }
 
             foreach ($orderItems as $itemData) {
                 $product = $itemData['product'];
