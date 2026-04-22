@@ -12,14 +12,18 @@ return new class extends Migration
     public function up()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->decimal('weight', 8, 2)->nullable()->after('cost_price'); // weight in KG or LB
+            if (!Schema::hasColumn('products', 'weight')) {
+                $table->decimal('weight', 8, 2)->nullable()->after('cost_price'); // weight in KG or LB
+            }
         });
     }
 
     public function down()
     {
         Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('weight');
+            if (Schema::hasColumn('products', 'weight')) {
+                $table->dropColumn('weight');
+            }
         });
     }
 

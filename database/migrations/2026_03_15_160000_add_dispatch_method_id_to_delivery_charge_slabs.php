@@ -9,15 +9,14 @@ return new class extends Migration
 {
     public function up()
     {
-        DB::table('delivery_charge_slabs')->truncate();
-
+        // Only truncate + add column on a fresh DB that doesn't yet have the column.
+        // If the column already exists, the schema is already at target state and
+        // we must NOT wipe the existing slab data.
         if (!Schema::hasColumn('delivery_charge_slabs', 'dispatch_method_id')) {
+            DB::table('delivery_charge_slabs')->truncate();
+
             Schema::table('delivery_charge_slabs', function (Blueprint $table) {
                 $table->foreignId('dispatch_method_id')->after('id')->constrained('dispatch_methods')->onDelete('cascade');
-            });
-        } else {
-            Schema::table('delivery_charge_slabs', function (Blueprint $table) {
-                $table->foreign('dispatch_method_id')->references('id')->on('dispatch_methods')->onDelete('cascade');
             });
         }
     }

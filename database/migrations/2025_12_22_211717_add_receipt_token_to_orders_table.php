@@ -10,11 +10,13 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->string('receipt_token')->nullable()->unique()->after('id');
-        });
-        
-        // Generate tokens for existing orders
+        if (!Schema::hasColumn('orders', 'receipt_token')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->string('receipt_token')->nullable()->unique()->after('id');
+            });
+        }
+
+        // Backfill tokens for any orders still missing one (safe even if column pre-existed)
         $orders = Order::whereNull('receipt_token')->get();
         foreach ($orders as $order) {
             $order->receipt_token = Str::random(32);
@@ -25,7 +27,9 @@ return new class extends Migration
     public function down()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn('receipt_token');
+            if (Schema::hasColumn('orders', 'receipt_token')) {
+                $table->dropColumn('receipt_token');
+            }
         });
     }
 };

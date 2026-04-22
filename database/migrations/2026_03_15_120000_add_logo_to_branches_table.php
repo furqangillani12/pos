@@ -9,15 +9,24 @@ return new class extends Migration
     public function up()
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->string('logo')->nullable()->after('phone');
-            $table->unsignedInteger('order_start_number')->nullable()->after('logo');
+            if (!Schema::hasColumn('branches', 'logo')) {
+                $table->string('logo')->nullable()->after('phone');
+            }
+            if (!Schema::hasColumn('branches', 'order_start_number')) {
+                $table->unsignedInteger('order_start_number')->nullable()->after('logo');
+            }
         });
     }
 
     public function down()
     {
         Schema::table('branches', function (Blueprint $table) {
-            $table->dropColumn(['logo', 'order_start_number']);
+            $cols = [];
+            if (Schema::hasColumn('branches', 'logo'))                $cols[] = 'logo';
+            if (Schema::hasColumn('branches', 'order_start_number'))  $cols[] = 'order_start_number';
+            if (!empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
     }
 };

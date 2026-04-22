@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('delivery_charge_slabs')) {
+            return;
+        }
+
         Schema::create('delivery_charge_slabs', function (Blueprint $table) {
             $table->id();
             $table->decimal('min_weight', 8, 3); // in kg (0.5 = 500g)

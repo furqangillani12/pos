@@ -8,17 +8,26 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->decimal('stock_quantity', 10, 2)->default(0)->change();
-            $table->integer('reorder_level')->default(0)->change();
-        });
+        // Schema may already be at target state on live (seeded from dump). Guard with try/catch.
+        try {
+            Schema::table('products', function (Blueprint $table) {
+                $table->decimal('stock_quantity', 10, 2)->default(0)->change();
+                $table->integer('reorder_level')->default(0)->change();
+            });
+        } catch (\Throwable $e) {
+            // Already at target type — skip.
+        }
     }
 
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->integer('stock_quantity')->default(0)->change();
-            $table->integer('reorder_level')->default(10)->change();
-        });
+        try {
+            Schema::table('products', function (Blueprint $table) {
+                $table->integer('stock_quantity')->default(0)->change();
+                $table->integer('reorder_level')->default(10)->change();
+            });
+        } catch (\Throwable $e) {
+            // Already at target type — skip.
+        }
     }
 };
