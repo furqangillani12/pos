@@ -15,6 +15,7 @@ class SupplierPayment extends Model
         'amount',
         'payment_date',
         'payment_method',
+        'direction',
         'notes',
         'created_by',
     ];

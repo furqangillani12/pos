@@ -143,8 +143,9 @@ class SupplierController extends Controller
         }
 
         foreach ($payments as $pay) {
+            $isReceipt = ($pay->direction ?? 'out') === 'in';
             $transactions[] = [
-                'type'      => 'payment',
+                'type'      => $isReceipt ? 'receipt' : 'payment',
                 'id'        => $pay->id,
                 'date'      => $pay->payment_date,
                 'reference' => $pay->payment_number,
@@ -169,8 +170,11 @@ class SupplierController extends Controller
             if ($txn['type'] === 'purchase') {
                 // Debit: full amount, Credit: original paid at purchase time
                 $runningBalance += ($txn['amount'] - $txn['paid']);
+            } elseif ($txn['type'] === 'receipt') {
+                // Cash received back from supplier increases what they owe (or reduces advance)
+                $runningBalance += $txn['amount'];
             } else {
-                // Supplier payment reduces balance
+                // Payment to supplier reduces balance
                 $runningBalance -= $txn['amount'];
             }
             $txn['running_balance'] = $runningBalance;
@@ -181,27 +185,35 @@ class SupplierController extends Controller
         $transactions = array_reverse($transactions);
 
         // Summary — no double-counting
-        $totalPurchased = $purchases->sum('total_amount');
-        $linkedPaymentsTotal = $payments->whereNotNull('purchase_id')->sum('amount');
+        $paidOutPayments    = $payments->where('direction', '!=', 'in');
+        $receivedInPayments = $payments->where('direction', 'in');
+
+        $totalPurchased          = $purchases->sum('total_amount');
+        $linkedPaymentsTotal     = $paidOutPayments->whereNotNull('purchase_id')->sum('amount');
         $originalPaidOnPurchases = $purchases->sum('paid_amount') - $linkedPaymentsTotal;
-        $totalSupplierPayments = $payments->sum('amount');
-        $totalPaid = $originalPaidOnPurchases + $totalSupplierPayments;
-        $balance = $totalPurchased - $totalPaid; // positive = we owe, negative = advance
+        $totalSupplierPayments   = $paidOutPayments->sum('amount');
+        $totalReceived           = $receivedInPayments->sum('amount');
+        $totalPaid               = $originalPaidOnPurchases + $totalSupplierPayments;
+        $balance                 = $totalPurchased - $totalPaid + $totalReceived; // positive = we owe
 
         $summary = [
             'total_purchased' => $totalPurchased,
             'total_paid'      => $totalPaid,
+            'total_received'  => $totalReceived,
             'total_due'       => max(0, $balance),
             'advance'         => $balance < 0 ? abs($balance) : 0,
             'balance'         => $balance,
-            'payments_count'  => $payments->count(),
+            'payments_count'  => $paidOutPayments->count(),
+            'receipts_count'  => $receivedInPayments->count(),
         ];
 
         return view('admin.suppliers.ledger', compact('supplier', 'transactions', 'summary'));
     }
 
     /**
-     * Record a payment to supplier.
+     * Record a payment to / receipt from supplier.
+     * direction = 'out' (default) — cash paid to supplier.
+     * direction = 'in' — cash received back from supplier (refund / advance return).
      */
     public function storePayment(Request $request, Supplier $supplier)
     {
@@ -211,24 +223,29 @@ class SupplierController extends Controller
             'payment_date'   => 'required|date',
             'purchase_id'    => 'nullable|exists:purchases,id',
             'notes'          => 'nullable|string|max:500',
+            'direction'      => 'nullable|in:in,out',
         ]);
 
-        $branchId = $this->branchId();
+        $direction = $validated['direction'] ?? 'out';
+        $isReceipt = $direction === 'in';
+        $branchId  = $this->branchId();
 
         $payment = SupplierPayment::create([
             'payment_number' => SupplierPayment::generatePaymentNumber(),
             'supplier_id'    => $supplier->id,
-            'purchase_id'    => $validated['purchase_id'] ?? null,
+            // Receipts don't link to a specific purchase
+            'purchase_id'    => $isReceipt ? null : ($validated['purchase_id'] ?? null),
             'branch_id'      => $branchId && $branchId !== 'all' ? $branchId : null,
             'amount'         => $validated['amount'],
             'payment_date'   => $validated['payment_date'],
             'payment_method' => $validated['payment_method'],
+            'direction'      => $direction,
             'notes'          => $validated['notes'] ?? null,
             'created_by'     => auth()->id(),
         ]);
 
-        // If payment is against a specific purchase, update its paid_amount
-        if ($payment->purchase_id) {
+        // Only outbound payments against a specific purchase update paid_amount
+        if (!$isReceipt && $payment->purchase_id) {
             $purchase = $payment->purchase;
             $purchase->paid_amount += $payment->amount;
             if ($purchase->paid_amount >= $purchase->total_amount) {
@@ -239,17 +256,23 @@ class SupplierController extends Controller
             $purchase->save();
         }
 
+        $msg = $isReceipt
+            ? 'Cash receipt of Rs. ' . number_format($validated['amount'], 0) . ' recorded.'
+            : 'Payment of Rs. ' . number_format($validated['amount'], 0) . ' recorded successfully.';
+
         return redirect()->route('suppliers.payment.voucher', [$supplier, $payment])
-            ->with('success', 'Payment of Rs. ' . number_format($validated['amount'], 0) . ' recorded successfully.');
+            ->with('success', $msg);
     }
 
     /**
-     * Delete a supplier payment.
+     * Delete / reverse a supplier payment or receipt.
      */
     public function deletePayment(Supplier $supplier, SupplierPayment $payment)
     {
-        // Reverse purchase paid_amount if linked
-        if ($payment->purchase_id) {
+        $isReceipt = ($payment->direction ?? 'out') === 'in';
+
+        // Only outbound payments touched a purchase's paid_amount — reverse that
+        if (!$isReceipt && $payment->purchase_id) {
             $purchase = $payment->purchase;
             if ($purchase) {
                 $purchase->paid_amount = max(0, $purchase->paid_amount - $payment->amount);
@@ -264,35 +287,44 @@ class SupplierController extends Controller
 
         $payment->delete();
 
+        $msg = $isReceipt ? 'Cash receipt reversed successfully.' : 'Payment reversed successfully.';
+
         return redirect()->route('suppliers.ledger', $supplier)
-            ->with('success', 'Payment reversed successfully.');
+            ->with('success', $msg);
     }
 
     /**
-     * Show payment voucher.
+     * Show payment / receipt voucher.
      */
     public function paymentVoucher(Supplier $supplier, SupplierPayment $payment)
     {
-        // Calculate balance before this payment
-        $totalPurchased = $supplier->purchases()->sum('total_amount');
+        $isReceipt = ($payment->direction ?? 'out') === 'in';
+
+        // Base ledger state (net, excluding this payment for "before")
+        $totalPurchased       = $supplier->purchases()->sum('total_amount');
         $totalPaidOnPurchases = $supplier->purchases()->sum('paid_amount');
-        $totalSupplierPayments = SupplierPayment::where('supplier_id', $supplier->id)
-            ->where('id', '<=', $payment->id)
-            ->sum('amount');
-        $totalSupplierPaymentsBefore = SupplierPayment::where('supplier_id', $supplier->id)
+
+        // Outbound payments before this one
+        $totalPaidBefore = SupplierPayment::where('supplier_id', $supplier->id)
+            ->where('direction', '!=', 'in')
             ->where('id', '<', $payment->id)
             ->sum('amount');
 
-        // If this payment was linked to a purchase and updated its paid_amount,
-        // we need to subtract it from totalPaidOnPurchases for "before" calculation
+        // Receipts before this one
+        $totalReceivedBefore = SupplierPayment::where('supplier_id', $supplier->id)
+            ->where('direction', 'in')
+            ->where('id', '<', $payment->id)
+            ->sum('amount');
+
+        // If this payment was linked to a purchase, its amount is already reflected in paid_amount
         $paidOnPurchasesAdjusted = $totalPaidOnPurchases;
-        if ($payment->purchase_id) {
+        if (!$isReceipt && $payment->purchase_id) {
             $paidOnPurchasesAdjusted -= $payment->amount;
         }
 
-        $balanceBefore = $totalPurchased - $paidOnPurchasesAdjusted - $totalSupplierPaymentsBefore;
-        $balanceAfter = $balanceBefore - $payment->amount;
+        $balanceBefore = $totalPurchased - $paidOnPurchasesAdjusted - $totalPaidBefore + $totalReceivedBefore;
+        $balanceAfter  = $balanceBefore + ($isReceipt ? $payment->amount : -$payment->amount);
 
-        return view('admin.suppliers.payment-voucher', compact('supplier', 'payment', 'balanceBefore', 'balanceAfter'));
+        return view('admin.suppliers.payment-voucher', compact('supplier', 'payment', 'balanceBefore', 'balanceAfter', 'isReceipt'));
     }
 }
