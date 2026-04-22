@@ -71,9 +71,27 @@ return new class extends Migration
             ]);
         }
 
-        // Assign existing records to the default branch (only where NULL)
+        // Assign existing records to the default branch (only where NULL).
+        // EXCEPTION: admin/super_admin/manager users must keep branch_id = NULL
+        // so they can switch between branches freely.
         foreach ($branchIdTables as $tbl) {
-            if (Schema::hasColumn($tbl, 'branch_id')) {
+            if (!Schema::hasColumn($tbl, 'branch_id')) {
+                continue;
+            }
+
+            if ($tbl === 'users' && Schema::hasTable('model_has_roles') && Schema::hasTable('roles')) {
+                $adminManagerUserIds = DB::table('model_has_roles')
+                    ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
+                    ->whereIn('roles.name', ['admin', 'super_admin', 'manager'])
+                    ->where('model_has_roles.model_type', 'App\\Models\\User')
+                    ->pluck('model_has_roles.model_id')
+                    ->toArray();
+
+                DB::table('users')
+                    ->whereNull('branch_id')
+                    ->whereNotIn('id', $adminManagerUserIds ?: [0])
+                    ->update(['branch_id' => $defaultBranch]);
+            } else {
                 DB::table($tbl)->whereNull('branch_id')->update(['branch_id' => $defaultBranch]);
             }
         }
