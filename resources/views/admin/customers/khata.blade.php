@@ -90,46 +90,106 @@
                 </div>
 
                 {{-- ══════════════════════════════════════
-                 RECEIVE PAYMENT FORM
+                 KHATA PAYMENT / PAYOUT FORM
                  ══════════════════════════════════════ --}}
-                <div class="bg-white rounded-lg shadow border border-blue-200">
-                    <div class="bg-blue-600 text-white px-5 py-3 rounded-t-lg">
+                <div x-data="{ direction: 'in' }" class="bg-white rounded-lg shadow border"
+                    :class="direction === 'in' ? 'border-blue-200' : 'border-orange-200'">
+                    <div class="text-white px-5 py-3 rounded-t-lg transition-colors"
+                        :class="direction === 'in' ? 'bg-blue-600' : 'bg-orange-600'">
                         <h3 class="font-semibold flex items-center gap-2">
-                            <i class="fas fa-hand-holding-usd"></i> Receive Payment (رقم وصول کریں)
+                            <i class="fas" :class="direction === 'in' ? 'fa-hand-holding-usd' : 'fa-money-bill-wave'"></i>
+                            <span x-show="direction === 'in'">Receive Payment (رقم وصول کریں)</span>
+                            <span x-show="direction === 'out'" x-cloak>Pay Out / Refund (رقم واپس کریں)</span>
                         </h3>
-                        <p class="text-xs text-blue-200 mt-0.5">Record full or partial payment from customer</p>
+                        <p class="text-xs mt-0.5"
+                            :class="direction === 'in' ? 'text-blue-200' : 'text-orange-200'">
+                            <span x-show="direction === 'in'">Record cash received from customer</span>
+                            <span x-show="direction === 'out'" x-cloak>Record cash given back to customer (refund advance)</span>
+                        </p>
+                    </div>
+
+                    {{-- Direction Toggle --}}
+                    <div class="grid grid-cols-2 gap-0 border-b">
+                        <button type="button" @click="direction = 'in'"
+                            class="py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                            :class="direction === 'in' ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' : 'text-gray-500 hover:bg-gray-50'">
+                            <i class="fas fa-arrow-down"></i> Cash IN
+                        </button>
+                        <button type="button" @click="direction = 'out'"
+                            class="py-3 text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+                            :class="direction === 'out' ? 'bg-orange-50 text-orange-700 border-b-2 border-orange-600' : 'text-gray-500 hover:bg-gray-50'">
+                            <i class="fas fa-arrow-up"></i> Cash OUT
+                        </button>
                     </div>
 
                     <form method="POST" action="{{ route('admin.customers.khata.payment', $customer) }}"
                         class="p-5 space-y-4">
                         @csrf
+                        <input type="hidden" name="direction" :value="direction">
 
-                        {{-- Current Balance Reminder --}}
-                        @if ($balance > 0)
-                            <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
-                                <p class="text-red-600 font-medium">
-                                    Customer owes: <strong>Rs. {{ number_format($balance, 0) }}</strong>
-                                </p>
-                                <button type="button"
-                                    onclick="document.getElementById('payAmount').value = {{ $balance }}"
-                                    class="mt-1 text-xs text-red-500 underline hover:text-red-700">
-                                    → Click to fill full amount
-                                </button>
+                        {{-- Current Balance Reminder (Cash IN context) --}}
+                        <template x-if="direction === 'in'">
+                            <div>
+                                @if ($balance > 0)
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
+                                        <p class="text-red-600 font-medium">
+                                            Customer owes: <strong>Rs. {{ number_format($balance, 0) }}</strong>
+                                        </p>
+                                        <button type="button"
+                                            onclick="document.getElementById('payAmount').value = {{ $balance }}; calcRemaining({{ $balance }})"
+                                            class="mt-1 text-xs text-red-500 underline hover:text-red-700">
+                                            → Click to fill full amount
+                                        </button>
+                                    </div>
+                                @elseif($balance == 0)
+                                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
+                                        ✅ Account is currently settled. Any payment will create advance credit.
+                                    </div>
+                                @else
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm text-blue-700">
+                                        ℹ️ Customer has Rs. {{ number_format(abs($balance), 0) }} advance credit. New payment increases their advance.
+                                    </div>
+                                @endif
                             </div>
-                        @elseif($balance == 0)
-                            <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-700">
-                                ✅ Account is currently settled. Any payment will create advance credit.
+                        </template>
+
+                        {{-- Current Balance Reminder (Cash OUT context) --}}
+                        <template x-if="direction === 'out'">
+                            <div>
+                                @if ($balance < 0)
+                                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+                                        <p class="text-blue-700 font-medium">
+                                            Customer advance: <strong>Rs. {{ number_format(abs($balance), 0) }}</strong>
+                                        </p>
+                                        <button type="button"
+                                            onclick="document.getElementById('payAmount').value = {{ abs($balance) }}; calcRemaining({{ abs($balance) }})"
+                                            class="mt-1 text-xs text-blue-600 underline hover:text-blue-800">
+                                            → Click to refund full advance
+                                        </button>
+                                    </div>
+                                @elseif($balance == 0)
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                                        ⚠️ Account is settled. Cash-out will create a debit on this customer.
+                                    </div>
+                                @else
+                                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                                        ⚠️ Customer already owes Rs. {{ number_format($balance, 0) }}. Cash-out will increase what they owe.
+                                    </div>
+                                @endif
                             </div>
-                        @endif
+                        </template>
 
                         {{-- Amount --}}
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                Amount Received (Rs.) <span class="text-red-500">*</span>
+                                <span x-show="direction === 'in'">Amount Received (Rs.)</span>
+                                <span x-show="direction === 'out'" x-cloak>Amount Paid Out (Rs.)</span>
+                                <span class="text-red-500">*</span>
                             </label>
                             <input type="number" id="payAmount" name="amount" min="1" step="0.01" required
                                 placeholder="Enter amount..."
-                                class="w-full border-2 border-blue-300 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none focus:border-blue-500"
+                                class="w-full border-2 rounded-lg px-3 py-2 text-lg font-bold focus:outline-none transition-colors"
+                                :class="direction === 'in' ? 'border-blue-300 focus:border-blue-500' : 'border-orange-300 focus:border-orange-500'"
                                 oninput="calcRemaining(this.value)">
 
                             {{-- Live remaining preview --}}
@@ -137,14 +197,21 @@
                                 <div class="bg-gray-50 rounded-lg p-2 space-y-1">
                                     <div class="flex justify-between">
                                         <span class="text-gray-500">Current Balance:</span>
-                                        <span class="font-medium text-red-600">Rs. {{ number_format($balance, 0) }}</span>
+                                        <span class="font-medium {{ $balance > 0 ? 'text-red-600' : ($balance < 0 ? 'text-blue-600' : 'text-green-600') }}">
+                                            Rs. {{ number_format(abs($balance), 0) }}
+                                            {{ $balance > 0 ? '(Due)' : ($balance < 0 ? '(Adv)' : '') }}
+                                        </span>
                                     </div>
                                     <div class="flex justify-between">
-                                        <span class="text-gray-500">Paying:</span>
-                                        <span class="font-medium text-green-600" id="payingDisplay">Rs. 0</span>
+                                        <span class="text-gray-500">
+                                            <span x-show="direction === 'in'">Receiving:</span>
+                                            <span x-show="direction === 'out'" x-cloak>Paying out:</span>
+                                        </span>
+                                        <span class="font-medium" id="payingDisplay"
+                                            :class="direction === 'in' ? 'text-green-600' : 'text-orange-600'">Rs. 0</span>
                                     </div>
                                     <div class="flex justify-between border-t pt-1">
-                                        <span class="font-semibold">After Payment:</span>
+                                        <span class="font-semibold">After:</span>
                                         <span class="font-bold" id="afterDisplay">Rs. 0</span>
                                     </div>
                                 </div>
@@ -154,7 +221,9 @@
                         {{-- Payment Method --}}
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                Payment Method <span class="text-red-500">*</span>
+                                <span x-show="direction === 'in'">Payment Method</span>
+                                <span x-show="direction === 'out'" x-cloak>Payout Method</span>
+                                <span class="text-red-500">*</span>
                             </label>
                             <select name="payment_method" required
                                 class="w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-300">
@@ -170,7 +239,7 @@
                         {{-- Payment Date --}}
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-1">
-                                Payment Date <span class="text-red-500">*</span>
+                                Date <span class="text-red-500">*</span>
                             </label>
                             <input type="date" name="payment_date" value="{{ date('Y-m-d') }}" required
                                 class="w-full border rounded-lg px-3 py-2 text-sm">
@@ -179,13 +248,16 @@
                         {{-- Notes --}}
                         <div>
                             <label class="block text-sm text-gray-600 mb-1">Notes (optional)</label>
-                            <input type="text" name="notes" placeholder="e.g. Paid via JazzCash, cheque no..."
+                            <input type="text" name="notes"
+                                :placeholder="direction === 'in' ? 'e.g. Paid via JazzCash, cheque no...' : 'e.g. Refund of advance, returned in cash...'"
                                 class="w-full border rounded-lg px-3 py-2 text-sm">
                         </div>
 
                         <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-bold text-base transition">
-                            ✅ Record Payment
+                            class="w-full text-white py-3 rounded-lg font-bold text-base transition-colors"
+                            :class="direction === 'in' ? 'bg-blue-600 hover:bg-blue-700' : 'bg-orange-600 hover:bg-orange-700'">
+                            <span x-show="direction === 'in'">✅ Record Payment</span>
+                            <span x-show="direction === 'out'" x-cloak>📤 Record Cash Out</span>
                         </button>
                     </form>
                 </div>
@@ -198,7 +270,8 @@
             <div class="lg:col-span-2">
 
                 {{-- Period Summary Cards --}}
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                @php $hasPayouts = ($summary['payouts_count'] ?? 0) > 0; @endphp
+                <div class="grid grid-cols-2 {{ $hasPayouts ? 'sm:grid-cols-5' : 'sm:grid-cols-4' }} gap-3 mb-5">
                     <div class="bg-white rounded-lg shadow p-3 border-l-4 border-blue-500">
                         <p class="text-xs text-gray-500">Total Billed</p>
                         <p class="text-lg font-bold text-blue-600">Rs. {{ number_format($summary['total_billed'], 0) }}</p>
@@ -207,14 +280,22 @@
                         <p class="text-xs text-gray-500">Total Paid</p>
                         <p class="text-lg font-bold text-green-600">Rs. {{ number_format($summary['total_paid'], 0) }}</p>
                     </div>
+                    @if ($hasPayouts)
+                        <div class="bg-white rounded-lg shadow p-3 border-l-4 border-orange-500">
+                            <p class="text-xs text-gray-500">Cash Paid Out</p>
+                            <p class="text-lg font-bold text-orange-600">Rs. {{ number_format($summary['total_khata_payouts'], 0) }}</p>
+                        </div>
+                    @endif
                     <div class="bg-white rounded-lg shadow p-3 border-l-4 border-red-500">
                         <p class="text-xs text-gray-500">Outstanding</p>
                         <p class="text-lg font-bold text-red-600">Rs. {{ number_format($summary['total_balance'], 0) }}
                         </p>
                     </div>
                     <div class="bg-white rounded-lg shadow p-3 border-l-4 border-purple-500">
-                        <p class="text-xs text-gray-500">Payments Made</p>
-                        <p class="text-lg font-bold text-purple-600">{{ $summary['payments_count'] }}</p>
+                        <p class="text-xs text-gray-500">Entries</p>
+                        <p class="text-lg font-bold text-purple-600">
+                            {{ $summary['payments_count'] }}@if ($hasPayouts) <span class="text-xs text-orange-500">+ {{ $summary['payouts_count'] }}</span>@endif
+                        </p>
                     </div>
                 </div>
 
@@ -254,12 +335,15 @@
                 <div class="bg-white rounded-lg shadow overflow-hidden">
                     <div class="px-5 py-4 border-b bg-gray-50 flex flex-wrap items-center justify-between gap-3">
                         <h3 class="font-semibold text-gray-700">Transaction History (کھاتہ)</h3>
-                        <div class="flex items-center gap-3 text-xs">
+                        <div class="flex items-center gap-3 text-xs flex-wrap">
                             <span class="flex items-center gap-1">
                                 <span class="w-3 h-3 rounded-full bg-blue-200 inline-block"></span> Sale Bill
                             </span>
                             <span class="flex items-center gap-1">
                                 <span class="w-3 h-3 rounded-full bg-green-200 inline-block"></span> Payment Received
+                            </span>
+                            <span class="flex items-center gap-1">
+                                <span class="w-3 h-3 rounded-full bg-orange-200 inline-block"></span> Cash Paid Out
                             </span>
                         </div>
                     </div>
@@ -270,7 +354,7 @@
                                 <tr>
                                     <th class="px-3 py-3 text-left">Date</th>
                                     <th class="px-3 py-3 text-left">Details</th>
-                                    <th class="px-3 py-3 text-right text-red-500">Debit (Bill)</th>
+                                    <th class="px-3 py-3 text-right text-red-500">Debit (Bill / Cash Out)</th>
                                     <th class="px-3 py-3 text-right text-green-600">Credit (Paid)</th>
                                     <th class="px-3 py-3 text-right bg-yellow-50">Balance</th>
                                     <th class="px-3 py-3 text-center">Action</th>
@@ -281,13 +365,15 @@
                                 @forelse($transactions as $txn)
                                     @php
                                         $isPayment = $txn['type'] === 'payment';
-                                        $rowClass = $isPayment ? 'bg-green-50/50' : '';
+                                        $isPayout  = $txn['type'] === 'payout';
+                                        $isOrder   = $txn['type'] === 'order';
+                                        $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : '');
                                     @endphp
                                     <tr class="hover:bg-gray-50 transition {{ $rowClass }}">
 
                                         <td class="px-3 py-3 text-xs text-gray-500">
                                             {{ \Carbon\Carbon::parse($txn['date'])->format('d M Y') }}
-                                            @if (!$isPayment)
+                                            @if ($isOrder)
                                                 <br><span
                                                     class="text-gray-300">{{ \Carbon\Carbon::parse($txn['date'])->format('h:i A') }}</span>
                                             @endif
@@ -295,20 +381,26 @@
 
                                         <td class="px-3 py-3">
                                             @if ($isPayment)
-                                                {{-- Payment Row --}}
-                                                <div class="flex items-center gap-2">
-                                                    <div>
-                                                        <p class="font-semibold text-green-700">Payment Received</p>
-                                                        <p class="text-xs text-gray-500">
-                                                            {{ ucfirst(str_replace('_', ' ', $txn['method'] ?? '')) }}
-                                                            @if (!empty($txn['notes']))
-                                                                — {{ $txn['notes'] }}
-                                                            @endif
-                                                        </p>
-                                                    </div>
+                                                <div>
+                                                    <p class="font-semibold text-green-700">Payment Received</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        {{ ucfirst(str_replace('_', ' ', $txn['method'] ?? '')) }}
+                                                        @if (!empty($txn['notes']))
+                                                            — {{ $txn['notes'] }}
+                                                        @endif
+                                                    </p>
+                                                </div>
+                                            @elseif ($isPayout)
+                                                <div>
+                                                    <p class="font-semibold text-orange-700">Cash Paid Out</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        {{ ucfirst(str_replace('_', ' ', $txn['method'] ?? '')) }}
+                                                        @if (!empty($txn['notes']))
+                                                            — {{ $txn['notes'] }}
+                                                        @endif
+                                                    </p>
                                                 </div>
                                             @else
-                                                {{-- Order Row --}}
                                                 <div>
                                                     <a href="{{ route('admin.pos.receipt', $txn['id']) }}"
                                                         target="_blank"
@@ -323,8 +415,10 @@
                                         </td>
 
                                         <td
-                                            class="px-3 py-3 text-right {{ !$isPayment ? 'text-red-600 font-semibold' : 'text-gray-200' }}">
-                                            @if (!$isPayment)
+                                            class="px-3 py-3 text-right {{ $isOrder ? 'text-red-600 font-semibold' : ($isPayout ? 'text-orange-600 font-bold' : 'text-gray-200') }}">
+                                            @if ($isOrder)
+                                                Rs. {{ number_format($txn['amount'], 0) }}
+                                            @elseif ($isPayout)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @else
                                                 —
@@ -332,10 +426,10 @@
                                         </td>
 
                                         <td
-                                            class="px-3 py-3 text-right {{ $isPayment ? 'text-green-600 font-bold' : ($txn['paid'] > 0 ? 'text-green-500' : 'text-gray-200') }}">
+                                            class="px-3 py-3 text-right {{ $isPayment ? 'text-green-600 font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200') }}">
                                             @if ($isPayment)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
-                                            @elseif($txn['paid'] > 0)
+                                            @elseif($isOrder && $txn['paid'] > 0)
                                                 Rs. {{ number_format($txn['paid'], 0) }}
                                             @else
                                                 —
@@ -356,22 +450,20 @@
                                         </td>
 
                                         <td class="px-3 py-3 text-center">
-                                            @if ($isPayment)
+                                            @if ($isPayment || $isPayout)
                                                 <div class="flex items-center justify-center gap-1">
-                                                    {{-- View Voucher --}}
                                                     <a href="{{ route('admin.customers.khata.payment.voucher', [$customer, $txn['id']]) }}"
-                                                        class="text-xs text-blue-400 hover:text-blue-600 px-2 py-1 rounded hover:bg-blue-50"
-                                                        title="View Payment Voucher">
+                                                        class="text-xs {{ $isPayout ? 'text-orange-400 hover:text-orange-600 hover:bg-orange-50' : 'text-blue-400 hover:text-blue-600 hover:bg-blue-50' }} px-2 py-1 rounded"
+                                                        title="View Voucher">
                                                         <i class="fas fa-file-invoice"></i>
                                                     </a>
-                                                    {{-- Delete button --}}
                                                     <form method="POST"
                                                         action="{{ route('admin.customers.khata.payment.delete', [$customer, $txn['id']]) }}"
-                                                        onsubmit="return confirm('Delete this payment of Rs.{{ number_format($txn['amount'], 0) }}? This will add the amount back to the balance.')">
+                                                        onsubmit="return confirm('Delete this {{ $isPayout ? 'cash-out' : 'payment' }} of Rs.{{ number_format($txn['amount'], 0) }}? Customer balance will be adjusted.')">
                                                         @csrf @method('DELETE')
                                                         <button type="submit"
                                                             class="text-xs text-red-400 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50"
-                                                            title="Delete / Reverse Payment">
+                                                            title="Delete / Reverse">
                                                             <i class="fas fa-trash-alt"></i>
                                                         </button>
                                                     </form>
@@ -399,8 +491,12 @@
                                 <tfoot class="bg-gray-100 font-bold text-sm border-t-2">
                                     <tr>
                                         <td colspan="2" class="px-3 py-3 text-gray-600">Period Total</td>
-                                        <td class="px-3 py-3 text-right text-red-600">Rs.
-                                            {{ number_format($summary['total_billed'], 0) }}</td>
+                                        <td class="px-3 py-3 text-right text-red-600">
+                                            Rs. {{ number_format($summary['total_billed'] + ($summary['total_khata_payouts'] ?? 0), 0) }}
+                                            @if (($summary['total_khata_payouts'] ?? 0) > 0)
+                                                <br><span class="text-xs font-normal text-orange-600">incl. Rs. {{ number_format($summary['total_khata_payouts'], 0) }} cash out</span>
+                                            @endif
+                                        </td>
                                         <td class="px-3 py-3 text-right text-green-600">Rs.
                                             {{ number_format($summary['total_paid'], 0) }}
                                         </td>
@@ -511,7 +607,10 @@
             function calcRemaining(value) {
                 const amount = parseFloat(value) || 0;
                 const balance = {{ $customer->current_balance ?? 0 }};
-                const after = balance - amount;
+                // Read direction from the hidden input bound to Alpine
+                const dirInput = document.querySelector('input[name="direction"]');
+                const direction = dirInput ? dirInput.value : 'in';
+                const after = direction === 'out' ? balance + amount : balance - amount;
                 const preview = document.getElementById('remainingPreview');
                 const paying = document.getElementById('payingDisplay');
                 const afterEl = document.getElementById('afterDisplay');
@@ -519,9 +618,12 @@
                 if (amount > 0) {
                     preview.classList.remove('hidden');
                     paying.textContent = 'Rs. ' + amount.toLocaleString('en-PK');
-                    afterEl.textContent = 'Rs. ' + Math.abs(after).toLocaleString('en-PK') + (after < 0 ? ' (Advance)' : (
-                        after === 0 ? ' ✅ Settled' : ' remaining'));
-                    afterEl.className = 'font-bold ' + (after > 0 ? 'text-red-600' : 'text-green-600');
+                    let suffix = '';
+                    if (after === 0) suffix = ' ✅ Settled';
+                    else if (after < 0) suffix = ' (Advance)';
+                    else suffix = ' (Due)';
+                    afterEl.textContent = 'Rs. ' + Math.abs(after).toLocaleString('en-PK') + suffix;
+                    afterEl.className = 'font-bold ' + (after > 0 ? 'text-red-600' : (after < 0 ? 'text-blue-600' : 'text-green-600'));
                 } else {
                     preview.classList.add('hidden');
                 }

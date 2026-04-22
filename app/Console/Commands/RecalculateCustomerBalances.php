@@ -36,7 +36,7 @@ class RecalculateCustomerBalances extends Command
                 ->get();
 
             $khataPayments = Payment::where('customer_id', $customer->id)
-                ->where('payment_type', 'khata')
+                ->whereIn('payment_type', ['khata', 'khata_payout'])
                 ->orderBy('payment_date')
                 ->get();
 
@@ -59,7 +59,7 @@ class RecalculateCustomerBalances extends Command
 
             foreach ($khataPayments as $payment) {
                 $timeline->push([
-                    'type'   => 'payment',
+                    'type'   => $payment->payment_type === 'khata_payout' ? 'payout' : 'payment',
                     'date'   => $payment->payment_date,
                     'amount' => (float) $payment->amount,
                 ]);
@@ -99,6 +99,9 @@ class RecalculateCustomerBalances extends Command
                         }
                         $fixedOrders++;
                     }
+                } elseif ($txn['type'] === 'payout') {
+                    // Cash paid out to customer increases their balance
+                    $runningBalance += $txn['amount'];
                 } else {
                     // Khata payment reduces balance
                     $runningBalance -= $txn['amount'];

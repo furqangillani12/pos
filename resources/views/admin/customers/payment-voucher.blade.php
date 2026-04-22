@@ -1,6 +1,8 @@
 @extends('layouts.admin')
 
-@section('title', 'Payment Voucher — ' . $payment->payment_number)
+@php $isPayout = $isPayout ?? ($payment->payment_type === 'khata_payout'); @endphp
+
+@section('title', ($isPayout ? 'Payout Voucher — ' : 'Payment Voucher — ') . $payment->payment_number)
 
 @push('styles')
 <style>
@@ -46,6 +48,20 @@
         font-weight: 700;
         letter-spacing: .5px;
         margin-top: 10px;
+    }
+
+    .voucher-badge.payout {
+        background: #ea580c;
+    }
+
+    .amount-box.payout {
+        background: #fff7ed;
+        border-color: #ea580c;
+    }
+
+    .amount-box.payout .amount-label,
+    .amount-box.payout .amount-value {
+        color: #ea580c;
     }
 
     .voucher-body {
@@ -222,7 +238,7 @@
             <div class="voucher-header">
                 <h1>ALMufeed Saqafti Markaz</h1>
                 <p>www.almufeed.com.pk | 03007951919</p>
-                <div class="voucher-badge">PAYMENT VOUCHER</div>
+                <div class="voucher-badge {{ $isPayout ? 'payout' : '' }}">{{ $isPayout ? 'PAYOUT VOUCHER' : 'PAYMENT VOUCHER' }}</div>
             </div>
 
             {{-- Voucher Info --}}
@@ -258,31 +274,35 @@
             </div>
 
             {{-- Amount --}}
-            <div class="amount-box">
-                <div class="amount-label">Amount Received (رقم وصول)</div>
+            <div class="amount-box {{ $isPayout ? 'payout' : '' }}">
+                <div class="amount-label">
+                    {{ $isPayout ? 'Amount Paid Out (رقم واپس)' : 'Amount Received (رقم وصول)' }}
+                </div>
                 <div class="amount-value">Rs. {{ number_format($payment->amount, 0) }}</div>
             </div>
 
             {{-- Balance Summary --}}
             <div class="balance-section">
                 <div class="balance-row">
-                    <span class="label">Balance Before Payment</span>
+                    <span class="label">Balance Before</span>
                     <span class="value" style="color:{{ $balanceBefore > 0 ? '#dc2626' : '#16a34a' }}">
                         Rs. {{ number_format(abs($balanceBefore), 0) }}
                         {{ $balanceBefore > 0 ? '(Due)' : ($balanceBefore < 0 ? '(Advance)' : '') }}
                     </span>
                 </div>
                 <div class="balance-row">
-                    <span class="label">Amount Paid</span>
-                    <span class="value" style="color:#16a34a">- Rs. {{ number_format($payment->amount, 0) }}</span>
+                    <span class="label">{{ $isPayout ? 'Amount Paid Out' : 'Amount Paid' }}</span>
+                    <span class="value" style="color:{{ $isPayout ? '#ea580c' : '#16a34a' }}">
+                        {{ $isPayout ? '+' : '-' }} Rs. {{ number_format($payment->amount, 0) }}
+                    </span>
                 </div>
                 <div class="balance-row after">
-                    <span class="label">Balance After Payment</span>
+                    <span class="label">Balance After</span>
                     <span class="value" style="color:{{ $balanceAfter > 0 ? '#dc2626' : '#16a34a' }}">
                         @if($balanceAfter == 0)
                             <span style="color:#16a34a">Rs. 0 — Settled (حساب برابر) ✅</span>
                         @elseif($balanceAfter > 0)
-                            Rs. {{ number_format($balanceAfter, 0) }} (Remaining)
+                            Rs. {{ number_format($balanceAfter, 0) }} (Due)
                         @else
                             Rs. {{ number_format(abs($balanceAfter), 0) }} (Advance Credit)
                         @endif
@@ -292,7 +312,7 @@
 
             {{-- Footer --}}
             <div class="voucher-footer">
-                <p>Thank you for your payment!</p>
+                <p>{{ $isPayout ? 'Amount paid out to customer.' : 'Thank you for your payment!' }}</p>
                 <p>This is a computer-generated receipt.</p>
                 <p style="margin-top:6px;font-size:10px;color:#c9c9c9">{{ $payment->reference_number }}</p>
             </div>
@@ -328,15 +348,15 @@
         }
 
         let msg = `*AlMufeed Saqafti Markaz*\n`;
-        msg += `*Payment Voucher (رسید)*\n\n`;
+        msg += `*{{ $isPayout ? 'Payout Voucher' : 'Payment Voucher' }} (رسید)*\n\n`;
         msg += `*Voucher #*: {{ $payment->payment_number }}\n`;
         msg += `*Date*: {{ \Carbon\Carbon::parse($payment->payment_date)->format('d M, Y') }}\n`;
         msg += `*Customer*: {{ $customer->name }}\n\n`;
-        msg += `*Amount Received*: Rs. {{ number_format($payment->amount, 0) }}\n`;
-        msg += `*Payment Method*: {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}\n\n`;
+        msg += `*{{ $isPayout ? 'Amount Paid Out' : 'Amount Received' }}*: Rs. {{ number_format($payment->amount, 0) }}\n`;
+        msg += `*{{ $isPayout ? 'Payout' : 'Payment' }} Method*: {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}\n\n`;
         msg += `*Balance Before*: Rs. {{ number_format(abs($balanceBefore), 0) }}{{ $balanceBefore > 0 ? ' (Due)' : ($balanceBefore < 0 ? ' (Advance)' : '') }}\n`;
-        msg += `*Balance After*: {{ $balanceAfter == 0 ? 'Rs. 0 — Settled ✅' : 'Rs. ' . number_format(abs($balanceAfter), 0) . ($balanceAfter > 0 ? ' (Remaining)' : ' (Advance)') }}\n\n`;
-        msg += `Thank you for your payment!\n`;
+        msg += `*Balance After*: {{ $balanceAfter == 0 ? 'Rs. 0 — Settled ✅' : 'Rs. ' . number_format(abs($balanceAfter), 0) . ($balanceAfter > 0 ? ' (Due)' : ' (Advance)') }}\n\n`;
+        msg += `{{ $isPayout ? 'Amount paid out to customer.' : 'Thank you for your payment!' }}\n`;
         msg += `AlMufeed Saqafti Markaz\n03007951919`;
 
         window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');

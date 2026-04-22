@@ -396,9 +396,9 @@ class CustomerController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        // ── 2. Get standalone khata payments in period ─────────────────────
+        // ── 2. Get standalone khata payments + payouts in period ───────────
         $khataPayments = \App\Models\Payment::where('customer_id', $customer->id)
-            ->where('payment_type', 'khata')
+            ->whereIn('payment_type', ['khata', 'khata_payout'])
             ->whereBetween('payment_date', [$fromDate, $toDate])
             ->orderBy('payment_date')
             ->get();
@@ -423,11 +423,11 @@ class CustomerController extends Controller
 
         foreach ($khataPayments as $payment) {
             $transactions->push([
-                'type'            => 'payment',
+                'type'            => $payment->payment_type === 'khata_payout' ? 'payout' : 'payment',
                 'date'            => $payment->payment_date,
                 'id'              => $payment->id,
                 'reference'       => $payment->payment_number ?? $payment->reference_number,
-                'amount'          => $payment->amount,           // credit (payment)
+                'amount'          => $payment->amount,
                 'paid'            => $payment->amount,
                 'balance_on_bill' => 0,
                 'method'          => $payment->payment_method,
@@ -447,6 +447,8 @@ class CustomerController extends Controller
         foreach ($transactions as $txn) {
             if ($txn['type'] === 'order') {
                 $runningBalance -= ($txn['amount'] - $txn['paid']);
+            } elseif ($txn['type'] === 'payout') {
+                $runningBalance -= $txn['amount'];
             } else {
                 $runningBalance += $txn['amount'];
             }
@@ -457,6 +459,8 @@ class CustomerController extends Controller
         foreach ($transactions as $i => $txn) {
             if ($txn['type'] === 'order') {
                 $runningBalance += ($txn['amount'] - $txn['paid']);
+            } elseif ($txn['type'] === 'payout') {
+                $runningBalance += $txn['amount'];
             } else {
                 $runningBalance -= $txn['amount'];
             }
@@ -476,9 +480,15 @@ class CustomerController extends Controller
             ->whereBetween('payment_date', [$fromDate, $toDate])
             ->get();
 
+        $allKhataPayouts = \App\Models\Payment::where('customer_id', $customer->id)
+            ->where('payment_type', 'khata_payout')
+            ->whereBetween('payment_date', [$fromDate, $toDate])
+            ->get();
+
         $totalBilled = $allOrders->sum('total');
         $totalPaidOnOrders = $allOrders->sum(fn($o) => ($o->paid_amount == 0 && $o->balance_amount == 0) ? $o->total : $o->paid_amount);
         $totalKhataPayments = $allKhataPayments->sum('amount');
+        $totalKhataPayouts = $allKhataPayouts->sum('amount');
         $totalPaid = $totalPaidOnOrders + $totalKhataPayments;
 
         $summary = [
@@ -488,6 +498,8 @@ class CustomerController extends Controller
             'order_count'          => $allOrders->count(),
             'total_khata_payments' => $totalKhataPayments,
             'payments_count'       => $allKhataPayments->count(),
+            'total_khata_payouts'  => $totalKhataPayouts,
+            'payouts_count'        => $allKhataPayouts->count(),
         ];
 
         // ── 6. For pagination display we use the paginator on orders ──────
@@ -507,16 +519,31 @@ class CustomerController extends Controller
             ];
             $callback = function () use ($transactions, $customer, $openingBalance) {
                 $handle = fopen('php://output', 'w');
-                fputcsv($handle, ['Date', 'Type', 'Reference', 'Debit (Bill)', 'Credit (Paid)', 'Running Balance', 'Method', 'Notes']);
+                fputcsv($handle, ['Date', 'Type', 'Reference', 'Debit (Bill / Cash Out)', 'Credit (Paid)', 'Running Balance', 'Method', 'Notes']);
                 $firstDate = !empty($transactions) ? ($transactions[array_key_first($transactions)]['date'] ?? '') : '';
                 fputcsv($handle, [$firstDate, 'Opening Balance', '', '', '', number_format($openingBalance, 2), '', '']);
                 foreach ($transactions as $txn) {
+                    $typeLabel = match ($txn['type']) {
+                        'payment' => 'Payment Received',
+                        'payout'  => 'Cash Paid Out',
+                        default   => 'Sale Bill',
+                    };
+                    $debit = match ($txn['type']) {
+                        'order'  => number_format($txn['amount'], 2),
+                        'payout' => number_format($txn['amount'], 2),
+                        default  => '',
+                    };
+                    $credit = match ($txn['type']) {
+                        'payment' => number_format($txn['amount'], 2),
+                        'order'   => $txn['paid'] > 0 ? number_format($txn['paid'], 2) : '',
+                        default   => '',
+                    };
                     fputcsv($handle, [
                         \Carbon\Carbon::parse($txn['date'])->format('d-M-Y'),
-                        $txn['type'] === 'payment' ? 'Payment' : 'Sale Bill',
+                        $typeLabel,
                         $txn['reference'],
-                        $txn['type'] !== 'payment' ? number_format($txn['amount'], 2) : '',
-                        $txn['type'] === 'payment'  ? number_format($txn['amount'], 2) : ($txn['paid'] > 0 ? number_format($txn['paid'], 2) : ''),
+                        $debit,
+                        $credit,
                         number_format($txn['running_balance'], 2),
                         $txn['method'] ?? '',
                         $txn['notes'] ?? '',
@@ -537,7 +564,7 @@ class CustomerController extends Controller
 
 
     /**
-     * Receive / record a payment against customer khata
+     * Record a khata transaction — either cash IN (payment) or cash OUT (payout / refund advance).
      */
     public function storeKhataPayment(Request $request, Customer $customer)
     {
@@ -546,33 +573,40 @@ class CustomerController extends Controller
             'payment_method' => 'required|string',
             'payment_date'   => 'required|date',
             'notes'          => 'nullable|string|max:500',
+            'direction'      => 'nullable|in:in,out',
         ]);
 
-        $amount = (float) $request->amount;
+        $amount    = (float) $request->amount;
+        $direction = $request->input('direction', 'in');
+        $isPayout  = $direction === 'out';
 
         DB::beginTransaction();
         try {
             $payment = \App\Models\Payment::create([
                 'payment_number'   => \App\Models\Payment::generatePaymentNumber(),
-                'payment_type'     => 'khata',
+                'payment_type'     => $isPayout ? 'khata_payout' : 'khata',
                 'order_id'         => null,
                 'customer_id'      => $customer->id,
                 'amount'           => $amount,
                 'payment_date'     => $request->payment_date,
                 'payment_method'   => $request->payment_method,
-                'reference_number' => 'KHATA-' . strtoupper(uniqid()),
+                'reference_number' => ($isPayout ? 'PAYOUT-' : 'KHATA-') . strtoupper(uniqid()),
                 'notes'            => $request->notes,
                 'status'           => 'completed',
                 'created_by'       => auth()->id(),
             ]);
 
-            $newBalance = (float) ($customer->current_balance ?? 0) - $amount;
+            $newBalance = (float) ($customer->current_balance ?? 0) + ($isPayout ? $amount : -$amount);
             $customer->update(['current_balance' => $newBalance]);
 
             DB::commit();
 
+            $msg = $isPayout
+                ? 'Rs. ' . number_format($amount, 0) . ' paid out to customer.'
+                : 'Rs. ' . number_format($amount, 0) . ' payment recorded.';
+
             return redirect()->route('admin.customers.khata.payment.voucher', [$customer, $payment])
-                ->with('success', 'Rs. ' . number_format($amount, 0) . ' payment recorded.');
+                ->with('success', $msg);
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -582,21 +616,29 @@ class CustomerController extends Controller
 
 
     /**
-     * Delete / reverse a khata payment
+     * Delete / reverse a khata payment or payout
      */
     public function deleteKhataPayment(Customer $customer, \App\Models\Payment $payment)
     {
-        if ($payment->customer_id !== $customer->id || $payment->payment_type !== 'khata') {
+        if ($payment->customer_id !== $customer->id || !in_array($payment->payment_type, ['khata', 'khata_payout'], true)) {
             return back()->with('error', 'Cannot delete this payment.');
         }
 
+        $isPayout = $payment->payment_type === 'khata_payout';
+
         DB::beginTransaction();
         try {
-            $customer->update(['current_balance' => $customer->current_balance + $payment->amount]);
+            $delta = $isPayout ? -$payment->amount : $payment->amount;
+            $customer->update(['current_balance' => $customer->current_balance + $delta]);
             $payment->delete();
             DB::commit();
+
+            $msg = $isPayout
+                ? 'Cash-out of Rs. ' . number_format($payment->amount, 0) . ' reversed.'
+                : 'Payment of Rs. ' . number_format($payment->amount, 0) . ' reversed.';
+
             return redirect()->route('admin.customers.khata', $customer)
-                ->with('success', 'Payment of Rs. ' . number_format($payment->amount, 0) . ' reversed.');
+                ->with('success', $msg);
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed: ' . $e->getMessage());
@@ -604,13 +646,15 @@ class CustomerController extends Controller
     }
 
     /**
-     * Show payment voucher / receipt for a khata payment
+     * Show voucher for a khata payment or payout
      */
     public function paymentVoucher(Customer $customer, \App\Models\Payment $payment)
     {
-        if ($payment->customer_id !== $customer->id || $payment->payment_type !== 'khata') {
+        if ($payment->customer_id !== $customer->id || !in_array($payment->payment_type, ['khata', 'khata_payout'], true)) {
             abort(404);
         }
+
+        $isPayout = $payment->payment_type === 'khata_payout';
 
         // Calculate balance before and after this payment
         // All order nets before this payment
@@ -627,17 +671,23 @@ class CustomerController extends Controller
             ), 0) as net')
             ->value('net');
 
-        // All khata payments before this one
+        // All khata payments (in) before this one — reduce balance
         $khataPaymentsBefore = (float) \App\Models\Payment::where('customer_id', $customer->id)
             ->where('payment_type', 'khata')
             ->where('id', '<', $payment->id)
             ->sum('amount');
 
-        $balanceBefore = $orderNetBefore - $khataPaymentsBefore;
-        $balanceAfter = $balanceBefore - $payment->amount;
+        // All khata payouts (out) before this one — increase balance
+        $khataPayoutsBefore = (float) \App\Models\Payment::where('customer_id', $customer->id)
+            ->where('payment_type', 'khata_payout')
+            ->where('id', '<', $payment->id)
+            ->sum('amount');
+
+        $balanceBefore = $orderNetBefore - $khataPaymentsBefore + $khataPayoutsBefore;
+        $balanceAfter  = $balanceBefore + ($isPayout ? $payment->amount : -$payment->amount);
 
         return view('admin.customers.payment-voucher', compact(
-            'customer', 'payment', 'balanceBefore', 'balanceAfter'
+            'customer', 'payment', 'balanceBefore', 'balanceAfter', 'isPayout'
         ));
     }
 
