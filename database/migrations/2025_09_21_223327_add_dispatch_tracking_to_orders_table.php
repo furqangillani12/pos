@@ -9,15 +9,24 @@ return new class extends Migration
     public function up()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->string('dispatch_method')->nullable();
-            $table->string('tracking_id')->nullable();
+            if (!Schema::hasColumn('orders', 'dispatch_method')) {
+                $table->string('dispatch_method')->nullable();
+            }
+            if (!Schema::hasColumn('orders', 'tracking_id')) {
+                $table->string('tracking_id')->nullable();
+            }
         });
     }
 
     public function down()
     {
         Schema::table('orders', function (Blueprint $table) {
-            $table->dropColumn(['dispatch_method', 'tracking_id']);
+            $cols = [];
+            if (Schema::hasColumn('orders', 'dispatch_method')) $cols[] = 'dispatch_method';
+            if (Schema::hasColumn('orders', 'tracking_id'))     $cols[] = 'tracking_id';
+            if (!empty($cols)) {
+                $table->dropColumn($cols);
+            }
         });
     }
 
