@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ config('app.name', 'ALMUFEED SAQAFTI MARKAZ') }}</title>
-    <meta name="description" content="ALMUFEED SAQAFTI MARKAZ — modern point-of-sale, inventory, khata and multi-branch management.">
-    <link rel="icon" type="image/png" href="{{ asset('assets/images/mufeed.png') }}">
+    <title>Almufeed Point Of Sale</title>
+    <meta name="description" content="Almufeed Point Of Sale — modern POS, inventory, khata and multi-branch management.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230c1f3d'/><text x='16' y='22' text-anchor='middle' font-family='Inter,sans-serif' font-size='16' font-weight='800' fill='%23fbbf24'>A</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -129,57 +129,32 @@
 </head>
 <body>
 
-    {{-- ═══════════════════════════════ NAV ═══════════════════════════════ --}}
-    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-md border-b border-gray-200/60"
-         style="-webkit-backdrop-filter:blur(12px);">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-16">
-            <a href="/" class="flex items-center gap-3">
-                <img src="{{ asset('assets/images/mufeed.png') }}" alt="Almufeed" class="h-9 w-auto">
-                <span class="hidden sm:block font-extrabold text-gray-900 tracking-tight">ALMUFEED</span>
-            </a>
-            <div class="flex items-center gap-2 sm:gap-3">
-                @auth
-                    <a href="{{ route('admin.dashboard') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold"
-                       style="background:linear-gradient(135deg,#0c1f3d,#0891b2);">
-                        <i class="fas fa-tachometer-alt text-xs"></i>
-                        <span class="hidden sm:inline">Go to Dashboard</span><span class="sm:hidden">Dashboard</span>
-                    </a>
-                @else
-                    <a href="{{ route('login') }}"
-                       class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold"
-                       style="background:linear-gradient(135deg,#0c1f3d,#0891b2);">
-                        <i class="fas fa-sign-in-alt text-xs"></i> Login
-                    </a>
-                @endauth
-            </div>
-        </div>
-    </nav>
-
     {{-- ═══════════════════════════════ HERO ═══════════════════════════════ --}}
-    <section class="hero-bg pt-28 sm:pt-32 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8 text-white">
+    <section class="hero-bg pt-16 sm:pt-20 pb-20 sm:pb-28 px-4 sm:px-6 lg:px-8 text-white">
         <div class="hero-pattern"></div>
         <div class="relative max-w-6xl mx-auto text-center">
 
-            {{-- Floating logo card --}}
-            <div class="logo-card inline-flex items-center justify-center rounded-3xl px-8 py-6 mb-8">
-                <img src="{{ asset('assets/images/mufeed.png') }}" alt="Almufeed Saqafti Markaz" class="max-h-28 sm:max-h-32 w-auto drop-shadow-2xl">
-            </div>
-
-            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-5"
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold mb-6"
                  style="background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.3);color:#fde68a;">
                 <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
-                Trusted Retail Management Platform
+                Multi-Branch Retail Management Platform
             </div>
 
-            <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight">
-                ALMUFEED <span style="color:#fbbf24;">SAQAFTI</span> MARKAZ
+            <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-2 leading-tight">
+                Almufeed
             </h1>
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight mb-5 leading-tight" style="color:#fbbf24;">
+                Point Of Sale
+            </h2>
+            <div class="flex justify-center mb-6">
+                <span style="display:block;width:80px;height:3px;border-radius:9999px;background:linear-gradient(90deg,#fbbf24,transparent);"></span>
+            </div>
+
             <p class="text-base sm:text-lg md:text-xl text-sky-100/90 max-w-2xl mx-auto mb-3">
-                Your trusted place for quality and affordability.
+                One platform to run every branch of your business.
             </p>
             <p class="text-sm sm:text-base text-sky-100/70 max-w-xl mx-auto mb-10">
-                A complete point-of-sale, inventory and khata management system — built for multi-branch retail.
+                Complete POS, inventory, khata, payroll and accounting — all in one place, branch-aware out of the box.
             </p>
 
             <div class="flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -260,9 +235,10 @@
     {{-- ═══════════════════════════════ CTA BAND ═══════════════════════════════ --}}
     <section class="cta-band py-16 sm:py-20 px-4 sm:px-6 lg:px-8 text-white">
         <div class="relative max-w-4xl mx-auto text-center">
-            <div class="inline-flex items-center gap-3 bg-white/10 backdrop-blur px-4 py-2 rounded-full mb-5 border border-white/20">
-                <img src="{{ asset('assets/images/mufeed.png') }}" alt="" class="h-6 w-auto">
-                <span class="text-sm font-semibold">ALMUFEED SAQAFTI MARKAZ</span>
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-5 border border-white/20"
+                 style="background:rgba(251,191,36,.15);color:#fde68a;border-color:rgba(251,191,36,.3);">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span>
+                <span class="text-xs font-semibold uppercase tracking-widest">Almufeed POS</span>
             </div>
             <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
                 Ready to manage your business better?
@@ -288,14 +264,15 @@
     <footer class="bg-gray-900 text-gray-400 py-10 px-4 sm:px-6 lg:px-8">
         <div class="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3">
-                <img src="{{ asset('assets/images/mufeed.png') }}" alt="Almufeed" class="h-10 w-auto opacity-90">
+                <span class="inline-flex items-center justify-center w-10 h-10 rounded-lg text-white font-extrabold"
+                      style="background:linear-gradient(135deg,#0c1f3d,#0891b2);">A</span>
                 <div>
-                    <div class="font-bold text-white">ALMUFEED SAQAFTI MARKAZ</div>
-                    <div class="text-xs">Quality &amp; affordability since day one.</div>
+                    <div class="font-bold text-white">Almufeed Point Of Sale</div>
+                    <div class="text-xs">Multi-branch retail management.</div>
                 </div>
             </div>
             <div class="text-xs text-center sm:text-right">
-                &copy; {{ now()->year }} ALMUFEED SAQAFTI MARKAZ. All rights reserved.<br>
+                &copy; {{ now()->year }} Almufeed POS. All rights reserved.<br>
                 <span class="text-gray-500">www.almufeed.com.pk</span>
             </div>
         </div>

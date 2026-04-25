@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Almufeed') }}</title>
-    <link rel="icon" type="image/png" href="{{ asset('assets/images/mufeed.png') }}">
+    <title>Almufeed Point Of Sale</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230c1f3d'/><text x='16' y='22' text-anchor='middle' font-family='Inter,sans-serif' font-size='16' font-weight='800' fill='%23fbbf24'>A</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -124,22 +124,24 @@
         </div>
 
         <div style="position:relative;" class="text-center max-w-md mx-auto py-8">
-            <div class="logo-card mb-6">
-                <img src="{{ asset('assets/images/mufeed.png') }}" alt="Almufeed Saqafti Markaz"
-                     style="max-height:120px;" class="w-auto">
-            </div>
 
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-4"
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold mb-6"
                  style="background:rgba(251,191,36,.15); border:1px solid rgba(251,191,36,.3); color:#fde68a;">
                 <span style="width:6px;height:6px;background:#fbbf24;border-radius:9999px;display:inline-block;"></span>
-                Multi-Branch POS Platform
+                Multi-Branch Retail Platform
             </div>
 
-            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight leading-tight">
-                ALMUFEED <span style="color:#fbbf24;">SAQAFTI</span> MARKAZ
+            <h1 class="text-3xl sm:text-5xl font-extrabold tracking-tight leading-tight">
+                Almufeed
             </h1>
+            <h2 class="text-xl sm:text-3xl font-extrabold tracking-tight leading-tight mt-1" style="color:#fbbf24;">
+                Point Of Sale
+            </h2>
+            <div class="flex justify-center mt-4 mb-4">
+                <span style="display:block;width:60px;height:3px;border-radius:9999px;background:linear-gradient(90deg,#fbbf24,transparent);"></span>
+            </div>
             <p class="text-sm sm:text-base text-sky-100/80 mt-3 max-w-sm mx-auto">
-                Manage POS, inventory, khata and reports for every branch — from one secure dashboard.
+                Run POS, inventory, khata and reports across every branch — from one secure dashboard.
             </p>
 
             {{-- Feature highlights --}}
@@ -160,7 +162,7 @@
         </div>
 
         <div style="position:relative;" class="text-center text-xs text-sky-100/60">
-            &copy; {{ now()->year }} ALMUFEED SAQAFTI MARKAZ. All rights reserved.
+            &copy; {{ now()->year }} Almufeed Point Of Sale. All rights reserved.
         </div>
     </aside>
 
