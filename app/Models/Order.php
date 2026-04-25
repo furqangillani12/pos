@@ -175,13 +175,21 @@ class Order extends Model
             ), 0) as net')
             ->value('net');
 
-        // Subtract any standalone khata payments made before this order
-        $priorKhataPayments = (float) Payment::where('customer_id', $this->customer_id)
-            ->where('payment_type', 'khata')
+        // Khata-side adjustments before this order:
+        //   khata        — customer paid us → reduces what they owe
+        //   khata_offset — offset against linked supplier → reduces what they owe (no cash)
+        //   khata_payout — we paid customer (refund/advance) → increases what they owe
+        $priorReducing = (float) Payment::where('customer_id', $this->customer_id)
+            ->whereIn('payment_type', ['khata', 'khata_offset'])
             ->where('created_at', '<', $this->created_at)
             ->sum('amount');
 
-        return $priorOrdersNet - $priorKhataPayments;
+        $priorIncreasing = (float) Payment::where('customer_id', $this->customer_id)
+            ->where('payment_type', 'khata_payout')
+            ->where('created_at', '<', $this->created_at)
+            ->sum('amount');
+
+        return round($priorOrdersNet - $priorReducing + $priorIncreasing, 2);
     }
 
     /**
