@@ -750,6 +750,12 @@
                     </a>
                 @endcan
 
+                {{-- ── Cash In / Out ── --}}
+                <a href="{{ route('admin.cash.index') }}"
+                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.cash.*') ? 'bg-emerald-100 text-emerald-700 font-semibold dark:bg-emerald-900 dark:text-emerald-300' : 'hover:bg-emerald-100 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300' }}">
+                    <i class="fas fa-money-bill-wave mr-2 text-xs"></i> Cash In / Out
+                </a>
+
                 {{-- ── HR: Employees, Attendance, Payroll ── --}}
                 <button @click="hrOpen = !hrOpen"
                     class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">

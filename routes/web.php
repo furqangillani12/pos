@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\CreditController;
 use App\Http\Controllers\Admin\LedgerController;
 use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Admin\CashTransactionController;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
@@ -259,6 +260,13 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::put('/settings/delivery-slabs/{slab}', [SettingsController::class, 'updateDeliverySlab'])->name('settings.delivery-slabs.update');
     Route::patch('/settings/delivery-slabs/{slab}/toggle', [SettingsController::class, 'toggleDeliverySlab'])->name('settings.delivery-slabs.toggle');
     Route::delete('/settings/delivery-slabs/{slab}', [SettingsController::class, 'destroyDeliverySlab'])->name('settings.delivery-slabs.destroy');
+});
+
+// ── Cash In / Out ──
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/cash',         [CashTransactionController::class, 'index'])->name('cash.index');
+    Route::post('/cash',        [CashTransactionController::class, 'store'])->name('cash.store');
+    Route::get('/cash/history', [CashTransactionController::class, 'history'])->name('cash.history');
 });
 
 // ── Ledger ──
