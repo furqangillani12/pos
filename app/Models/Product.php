@@ -10,11 +10,14 @@ class Product extends Model
     protected $fillable = [
         'branch_id',
         'category_id',
+        'brand_id',
         'unit_id',
         'name',
+        'slug',
         'barcode',
         'description',
-        'price', 
+        'summary',
+        'price',
         'sale_price',
         'resale_price',
         'wholesale_price',
@@ -23,15 +26,97 @@ class Product extends Model
         'stock_quantity',
         'reorder_level',
         'image',
+        'gallery',
         'is_active',
+        'is_featured',
+        'show_on_website',
+        'condition_label',
+        'meta_title',
+        'meta_description',
+        'avg_rating',
+        'review_count',
         'track_inventory',
-        'rank' // Added rank field for box placement
+        'rank',
     ];
+
+    protected $casts = [
+        'gallery'         => 'array',
+        'is_featured'     => 'boolean',
+        'show_on_website' => 'boolean',
+        'avg_rating'      => 'decimal:2',
+    ];
+
+    protected static function booted()
+    {
+        static::saving(function (Product $p) {
+            if (empty($p->slug) && $p->name) {
+                $base = \Illuminate\Support\Str::slug($p->name);
+                $slug = $base;
+                $i = 1;
+                while (static::where('slug', $slug)->where('id', '!=', $p->id ?? 0)->exists()) {
+                    $slug = $base . '-' . ++$i;
+                }
+                $p->slug = $slug;
+            }
+        });
+    }
+
+    public function getRouteKeyName()
+    {
+        // The storefront resolves products by slug, while admin can still use id explicitly via Route::model bindings.
+        return 'slug';
+    }
 
     // Relationship with Category
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(Brand::class);
+    }
+
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    public function approvedReviews(): HasMany
+    {
+        return $this->hasMany(ProductReview::class)->where('status', 'approved')->latest();
+    }
+
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    /**
+     * All image URLs for the product (cover + gallery), as web-accessible paths.
+     * Returns at least one entry — falls back to a placeholder string.
+     */
+    public function getImageUrlsAttribute(): array
+    {
+        $urls = [];
+        if ($this->image) $urls[] = $this->image;
+        if (is_array($this->gallery)) {
+            foreach ($this->gallery as $g) {
+                if ($g && !in_array($g, $urls)) $urls[] = $g;
+            }
+        }
+        return $urls;
+    }
+
+    public function scopeOnWebsite($q)
+    {
+        return $q->where('is_active', true)->where('show_on_website', true);
+    }
+
+    public function scopeFeatured($q)
+    {
+        return $q->where('is_featured', true)->where('is_active', true);
     }
 
     public function unit(): BelongsTo

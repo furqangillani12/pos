@@ -2,12 +2,19 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Customer extends Model
+/**
+ * Customer = the same record used by POS for khata AND by the storefront for online login.
+ * Authenticatable so the 'customer' guard can sign them in.
+ */
+class Customer extends Authenticatable
 {
+    use Notifiable;
+
     protected $fillable = [
         'branch_id',
         'name',
@@ -23,6 +30,21 @@ class Customer extends Model
         'credit_due_days',
         'credit_start_date',
         'linked_supplier_id',
+        'password',
+        'last_login_at',
+        'avatar',
+    ];
+
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'last_login_at'     => 'datetime',
+        'password'          => 'hashed',
+        'credit_enabled'    => 'boolean',
     ];
 
     public function branch()
