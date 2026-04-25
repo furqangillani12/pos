@@ -15,13 +15,23 @@
     @vite('resources/css/app.css')
 
     <style>
-        :root { --bg-1:#064e3b; --bg-2:#065f46; --bg-3:#0f766e; --gold:#fbbf24; }
+        /* Brand palette — sourced from the Almufeed logo:
+           - Logo blue:  #1f8fc1  (the M / arch)
+           - Logo navy:  #0e1f3d  (Arabic text, stars)
+           - Accent gold:#fbbf24  (warm contrast on blue) */
+        :root {
+            --brand-navy: #0c1f3d;
+            --brand-blue: #1e3a8a;
+            --brand-cyan: #0891b2;
+            --brand-light:#1f8fc1;
+            --gold:       #fbbf24;
+        }
         html, body { font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif; }
         body { background:#f8fafc; color:#1f2937; -webkit-font-smoothing:antialiased; }
 
-        /* Animated gradient background */
+        /* Animated gradient background — navy → deep blue → cyan, matches logo */
         .hero-bg {
-            background: linear-gradient(120deg, var(--bg-1), var(--bg-2), var(--bg-3), var(--bg-2));
+            background: linear-gradient(120deg, var(--brand-navy), var(--brand-blue), var(--brand-cyan), var(--brand-blue));
             background-size: 300% 300%;
             animation: gradientShift 18s ease infinite;
             position: relative;
@@ -36,27 +46,27 @@
             position: absolute; inset: 0;
             background:
                 radial-gradient(circle at 20% 20%, rgba(251,191,36,.18), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(16,185,129,.18), transparent 45%);
+                radial-gradient(circle at 80% 70%, rgba(31,143,193,.25), transparent 45%);
             pointer-events: none;
         }
         .hero-pattern {
             position: absolute; inset: 0;
             background-image:
-                linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+                linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
             background-size: 48px 48px;
             mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
             -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
             pointer-events: none;
         }
 
-        /* Floating logo */
+        /* Floating logo — bright white card so the blue logo pops */
         .logo-card {
-            background: rgba(255,255,255,.08);
-            border: 1px solid rgba(255,255,255,.15);
+            background: rgba(255,255,255,.96);
+            border: 1px solid rgba(255,255,255,.5);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,.4);
+            box-shadow: 0 25px 50px -12px rgba(12,31,61,.5), 0 0 0 6px rgba(255,255,255,.08);
             animation: floaty 6s ease-in-out infinite;
         }
         @keyframes floaty {
@@ -64,6 +74,7 @@
             50%     { transform: translateY(-10px); }
         }
 
+        /* Primary button — gold (warm contrast on blue) */
         .btn-primary {
             background: linear-gradient(135deg, #fbbf24, #f59e0b);
             box-shadow: 0 10px 25px -10px rgba(251,191,36,.6);
@@ -88,8 +99,8 @@
         }
         .feature-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 20px 40px -20px rgba(0,0,0,.15);
-            border-color: #10b981;
+            box-shadow: 0 20px 40px -20px rgba(8,145,178,.25);
+            border-color: var(--brand-cyan);
         }
         .feature-icon {
             width: 56px; height: 56px;
@@ -99,9 +110,9 @@
             margin-bottom: 16px;
         }
 
-        /* CTA band */
+        /* CTA band — navy → cyan */
         .cta-band {
-            background: linear-gradient(135deg, #064e3b, #0f766e);
+            background: linear-gradient(135deg, var(--brand-navy), var(--brand-cyan));
             position: relative; overflow: hidden;
         }
         .cta-band::before {
@@ -130,14 +141,14 @@
                 @auth
                     <a href="{{ route('admin.dashboard') }}"
                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold"
-                       style="background:linear-gradient(135deg,#059669,#047857);">
+                       style="background:linear-gradient(135deg,#0c1f3d,#0891b2);">
                         <i class="fas fa-tachometer-alt text-xs"></i>
                         <span class="hidden sm:inline">Go to Dashboard</span><span class="sm:hidden">Dashboard</span>
                     </a>
                 @else
                     <a href="{{ route('login') }}"
                        class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold"
-                       style="background:linear-gradient(135deg,#059669,#047857);">
+                       style="background:linear-gradient(135deg,#0c1f3d,#0891b2);">
                         <i class="fas fa-sign-in-alt text-xs"></i> Login
                     </a>
                 @endauth
@@ -164,10 +175,10 @@
             <h1 class="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight mb-4 leading-tight">
                 ALMUFEED <span style="color:#fbbf24;">SAQAFTI</span> MARKAZ
             </h1>
-            <p class="text-base sm:text-lg md:text-xl text-emerald-100/90 max-w-2xl mx-auto mb-3">
+            <p class="text-base sm:text-lg md:text-xl text-sky-100/90 max-w-2xl mx-auto mb-3">
                 Your trusted place for quality and affordability.
             </p>
-            <p class="text-sm sm:text-base text-emerald-100/70 max-w-xl mx-auto mb-10">
+            <p class="text-sm sm:text-base text-sky-100/70 max-w-xl mx-auto mb-10">
                 A complete point-of-sale, inventory and khata management system — built for multi-branch retail.
             </p>
 
@@ -197,15 +208,15 @@
             <div class="grid grid-cols-3 gap-4 sm:gap-8 max-w-3xl mx-auto mt-16 pt-10 border-t border-white/15">
                 <div>
                     <div class="text-2xl sm:text-4xl font-extrabold" style="color:#fbbf24;">Multi</div>
-                    <div class="text-[11px] sm:text-sm text-emerald-100/80 mt-1">Branch Support</div>
+                    <div class="text-[11px] sm:text-sm text-sky-100/80 mt-1">Branch Support</div>
                 </div>
                 <div>
                     <div class="text-2xl sm:text-4xl font-extrabold" style="color:#fbbf24;">24/7</div>
-                    <div class="text-[11px] sm:text-sm text-emerald-100/80 mt-1">Always Available</div>
+                    <div class="text-[11px] sm:text-sm text-sky-100/80 mt-1">Always Available</div>
                 </div>
                 <div>
                     <div class="text-2xl sm:text-4xl font-extrabold" style="color:#fbbf24;">100%</div>
-                    <div class="text-[11px] sm:text-sm text-emerald-100/80 mt-1">Khata Tracking</div>
+                    <div class="text-[11px] sm:text-sm text-sky-100/80 mt-1">Khata Tracking</div>
                 </div>
             </div>
         </div>
@@ -215,7 +226,7 @@
     <section id="features" class="py-16 sm:py-24 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div class="max-w-7xl mx-auto">
             <div class="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-                <span class="inline-block text-xs font-bold uppercase tracking-widest text-emerald-700 mb-3">Features</span>
+                <span class="inline-block text-xs font-bold uppercase tracking-widest text-cyan-700 mb-3">Features</span>
                 <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold text-gray-900 mb-4">
                     Everything you need to run your business
                 </h2>
@@ -256,7 +267,7 @@
             <h2 class="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 leading-tight">
                 Ready to manage your business better?
             </h2>
-            <p class="text-base sm:text-lg text-emerald-100 max-w-xl mx-auto mb-8">
+            <p class="text-base sm:text-lg text-sky-100 max-w-xl mx-auto mb-8">
                 Sign in to access the dashboard, POS, inventory, khata and reports — all in one place.
             </p>
             @auth
