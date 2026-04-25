@@ -342,15 +342,17 @@
                 }
             });
 
-            function calculateRowTotal(row) {
+            // Exposed on window so inline oninput="calculateTotal()" attributes
+            // (on the discount input and dynamically inserted expense rows) can find them.
+            window.calculateRowTotal = function (row) {
                 const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
                 const unitPrice = parseFloat(row.querySelector('.unit-price').value) || 0;
                 const total = quantity * unitPrice;
                 row.querySelector('.total-price').textContent = total.toFixed(2);
-                calculateTotal();
-            }
+                window.calculateTotal();
+            };
 
-            function calculateTotal() {
+            window.calculateTotal = function () {
                 let itemsTotal = 0;
                 document.querySelectorAll('.item-row').forEach(row => {
                     const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
@@ -368,7 +370,11 @@
 
                 document.getElementById('total_expenses_display').value = expensesTotal.toFixed(2);
                 document.getElementById('total_amount').value = grandTotal.toFixed(2);
-            }
+            };
+
+            // Local aliases so existing inner code keeps working unchanged.
+            const calculateTotal = window.calculateTotal;
+            const calculateRowTotal = window.calculateRowTotal;
 
             calculateTotal();
         });
