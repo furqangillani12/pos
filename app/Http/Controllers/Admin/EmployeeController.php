@@ -12,10 +12,29 @@ use Illuminate\Http\Request;
 class EmployeeController extends Controller
 {
     use BranchScoped;
-    public function index()
+    public function index(Request $request)
     {
-        $employees = $this->scopeBranch(Employee::query())->with('user')->latest()->paginate(10);
-        return view('admin.employees.index', compact('employees'));
+        $query = $this->scopeBranch(Employee::query())->with(['user.roles']);
+
+        if ($search = trim((string) $request->input('search'))) {
+            $query->where(function ($q) use ($search) {
+                $q->where('phone', 'like', "%{$search}%")
+                  ->orWhere('address', 'like', "%{$search}%")
+                  ->orWhereHas('user', function ($u) use ($search) {
+                      $u->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($role = $request->input('role')) {
+            $query->whereHas('user.roles', fn ($q) => $q->where('name', $role));
+        }
+
+        $employees = $query->latest()->paginate(12)->withQueryString();
+        $roles = Role::orderBy('name')->get();
+
+        return view('admin.employees.index', compact('employees', 'roles'));
     }
 
     public function create()
@@ -57,14 +76,14 @@ class EmployeeController extends Controller
 
     public function show(Employee $employee)
     {
-        $employee->load('user');
+        $employee->load(['user.roles', 'branch']);
         return view('admin.employees.show', compact('employee'));
     }
 
     public function edit(Employee $employee)
     {
         $roles = Role::all();
-        $employee->load('user');
+        $employee->load(['user.roles', 'branch']);
         return view('admin.employees.edit', compact('employee', 'roles'));
     }
 
