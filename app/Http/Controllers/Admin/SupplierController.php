@@ -58,10 +58,18 @@ class SupplierController extends Controller
             $validated['branch_id'] = $branchId;
         }
 
-        Supplier::create($validated);
+        $supplier = Supplier::create($validated);
+
+        $linkedMsg = '';
+        if ($request->boolean('also_customer')) {
+            $customer = $this->ensureCustomerCounterpart($supplier);
+            if ($customer) {
+                $linkedMsg = " Linked to customer “{$customer->name}”.";
+            }
+        }
 
         return redirect()->route('suppliers.index')
-            ->with('success', 'Supplier created successfully.');
+            ->with('success', 'Supplier created successfully.' . $linkedMsg);
     }
 
     /**
@@ -95,8 +103,63 @@ class SupplierController extends Controller
 
         $supplier->update($validated);
 
+        $linkedMsg = '';
+        if ($request->boolean('also_customer') && !$supplier->linked_customer_id) {
+            $supplier->refresh();
+            $customer = $this->ensureCustomerCounterpart($supplier);
+            if ($customer) {
+                $linkedMsg = " Linked to customer “{$customer->name}”.";
+            }
+        }
+
         return redirect()->route('suppliers.index')
-            ->with('success', 'Supplier updated successfully.');
+            ->with('success', 'Supplier updated successfully.' . $linkedMsg);
+    }
+
+    /**
+     * Find or create the customer record that represents the same party,
+     * and link both directions. Returns the customer (existing or new), or
+     * null if no action was needed.
+     */
+    private function ensureCustomerCounterpart(Supplier $supplier): ?\App\Models\Customer
+    {
+        if ($supplier->linked_customer_id) {
+            return $supplier->linkedCustomer;
+        }
+
+        $branchId = $supplier->branch_id;
+
+        $customer = null;
+        if ($supplier->phone) {
+            $customer = \App\Models\Customer::where('phone', $supplier->phone)
+                ->whereNull('linked_supplier_id')
+                ->when($branchId, fn ($q) => $q->where(function ($q) use ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                }))
+                ->first();
+        }
+
+        if (!$customer) {
+            $customer = \App\Models\Customer::create([
+                'branch_id'       => $branchId,
+                'name'            => $supplier->name,
+                'email'           => $supplier->email,
+                'phone'           => $supplier->phone,
+                'address'         => $supplier->address,
+                'customer_type'   => 'customer',
+                'loyalty_points'  => 0,
+                'credit_enabled'  => false,
+                'credit_limit'    => 0,
+                'current_balance' => 0,
+                'credit_due_days' => 30,
+                'barcode'         => \App\Models\Customer::generateBarcode(),
+            ]);
+        }
+
+        $supplier->update(['linked_customer_id' => $customer->id]);
+        $customer->update(['linked_supplier_id' => $supplier->id]);
+
+        return $customer;
     }
 
     /**

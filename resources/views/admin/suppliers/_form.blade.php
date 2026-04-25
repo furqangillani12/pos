@@ -52,6 +52,42 @@
             </div>
         </div>
     </div>
+
+    {{-- ── LINKED-CUSTOMER OPTION ── --}}
+    @php $alreadyLinked = isset($supplier) && $supplier && $supplier->linked_customer_id; @endphp
+    <div class="bg-cyan-50/40 border border-cyan-200 rounded-lg p-4">
+        <h3 class="text-sm font-semibold text-cyan-800 flex items-center gap-2 mb-3">
+            <i class="fas fa-link text-xs"></i> Supplier–Customer Link
+        </h3>
+
+        @if ($alreadyLinked)
+            @php $lc = $supplier->linkedCustomer; @endphp
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 bg-white border border-cyan-200 rounded-md px-3 py-2">
+                <div class="text-sm">
+                    <span class="text-gray-600">Already linked to customer:</span>
+                    <a href="{{ route('admin.customers.khata', $lc) }}" class="font-semibold text-cyan-700 hover:underline">{{ $lc->name }}</a>
+                    @if ($lc->phone) <span class="text-gray-400 text-xs">· {{ $lc->phone }}</span> @endif
+                </div>
+                <span class="text-[11px] text-gray-500">Use the supplier ledger to unlink or apply offsets.</span>
+            </div>
+        @else
+            <label for="also_customer" class="flex items-start gap-2 cursor-pointer select-none">
+                <input type="checkbox" name="also_customer" id="also_customer" value="1"
+                       {{ old('also_customer') ? 'checked' : '' }}
+                       class="mt-0.5 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500">
+                <div>
+                    <div class="text-sm font-semibold text-gray-800">This supplier is also a customer</div>
+                    <div class="text-xs text-gray-500">
+                        We also sell goods to them. A matching customer record will be created and linked automatically,
+                        so you can offset what you owe them against their khata in one click.
+                        @if (isset($supplier) && $supplier && $supplier->phone)
+                            <br>If a customer with phone <strong>{{ $supplier->phone }}</strong> already exists, that one will be linked instead.
+                        @endif
+                    </div>
+                </div>
+            </label>
+        @endif
+    </div>
 </div>
 
 <div class="mt-8 pt-6 border-t border-gray-200 flex justify-between">

@@ -145,17 +145,67 @@ class CustomerController extends Controller
                 ]);
             }
             
+            // Auto-create + link supplier counterpart if requested
+            $linkedMsg = '';
+            if ($request->boolean('also_supplier')) {
+                $supplier = $this->ensureSupplierCounterpart($customer);
+                if ($supplier) {
+                    $linkedMsg = " Linked to supplier “{$supplier->name}”.";
+                }
+            }
+
             DB::commit();
-            
+
             return redirect()->route('admin.customers.index')
-                ->with('success', 'Customer created successfully.');
-                
+                ->with('success', 'Customer created successfully.' . $linkedMsg);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
                 ->with('error', 'Failed to create customer: ' . $e->getMessage())
                 ->withInput();
         }
+    }
+
+    /**
+     * Find or create the supplier record that represents the same party,
+     * and link both directions. Returns the supplier (existing or new), or
+     * null if no action was needed.
+     */
+    private function ensureSupplierCounterpart(Customer $customer): ?\App\Models\Supplier
+    {
+        if ($customer->linked_supplier_id) {
+            return $customer->linkedSupplier; // already linked, no-op
+        }
+
+        $branchId = $customer->branch_id;
+
+        // Prefer an existing un-linked supplier with the same phone in the same branch
+        $supplier = null;
+        if ($customer->phone) {
+            $supplier = \App\Models\Supplier::where('phone', $customer->phone)
+                ->whereNull('linked_customer_id')
+                ->when($branchId, fn ($q) => $q->where(function ($q) use ($branchId) {
+                    $q->where('branch_id', $branchId)->orWhereNull('branch_id');
+                }))
+                ->first();
+        }
+
+        if (!$supplier) {
+            $supplier = \App\Models\Supplier::create([
+                'branch_id'    => $branchId,
+                'name'         => $customer->name,
+                'email'        => $customer->email,
+                'phone'        => $customer->phone,
+                'address'      => $customer->address,
+                'company_name' => null,
+            ]);
+        }
+
+        $customer->update(['linked_supplier_id' => $supplier->id]);
+        $supplier->update(['linked_customer_id' => $customer->id]);
+
+        return $supplier;
     }
 
     public function show(Customer $customer)
@@ -263,11 +313,21 @@ class CustomerController extends Controller
                 }
             }
             
+            // Auto-link to supplier counterpart if requested and not already linked
+            $linkedMsg = '';
+            if ($request->boolean('also_supplier') && !$customer->linked_supplier_id) {
+                $customer->refresh();
+                $supplier = $this->ensureSupplierCounterpart($customer);
+                if ($supplier) {
+                    $linkedMsg = " Linked to supplier “{$supplier->name}”.";
+                }
+            }
+
             DB::commit();
-            
+
             return redirect()->route('admin.customers.index')
-                ->with('success', 'Customer updated successfully.');
-                
+                ->with('success', 'Customer updated successfully.' . $linkedMsg);
+
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
