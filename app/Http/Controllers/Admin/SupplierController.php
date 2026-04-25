@@ -276,10 +276,10 @@ class SupplierController extends Controller
         $linkedCustomerBalance = 0.0;
         $linkedNetBalance = $balance; // default: just what we owe
         if ($linkedCustomer) {
-            $linkedCustomerBalance = (float) ($linkedCustomer->current_balance ?? 0);
+            $linkedCustomerBalance = round((float) ($linkedCustomer->current_balance ?? 0), 2);
             // Net (from supplier’s point-of-view): supplier balance - customer balance.
             // Positive = we still owe them net. Negative = they owe us net.
-            $linkedNetBalance = $balance - $linkedCustomerBalance;
+            $linkedNetBalance = round($balance - $linkedCustomerBalance, 2);
         }
 
         $availableCustomers = $linkedCustomer ? collect() : $this->scopeBranch(\App\Models\Customer::query())

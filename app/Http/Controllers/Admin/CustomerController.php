@@ -631,8 +631,8 @@ class CustomerController extends Controller
             $paidLinked   = (float) $linkedSupplier->purchases()->sum('paid_amount');
             $paidUnlinked = (float) $linkedSupplier->payments()->whereNull('purchase_id')->where('direction', 'out')->sum('amount');
             $received     = (float) $linkedSupplier->payments()->whereNull('purchase_id')->where('direction', 'in')->sum('amount');
-            $linkedSupplierBalance = $purchased - $paidLinked - $paidUnlinked + $received;
-            $linkedNetBalance = (float) ($customer->current_balance ?? 0) - $linkedSupplierBalance;
+            $linkedSupplierBalance = round($purchased - $paidLinked - $paidUnlinked + $received, 2);
+            $linkedNetBalance      = round((float) ($customer->current_balance ?? 0) - $linkedSupplierBalance, 2);
         }
 
         // For the "Link to existing supplier" picker (only loaded when not yet linked)

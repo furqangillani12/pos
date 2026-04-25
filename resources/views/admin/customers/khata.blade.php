@@ -43,7 +43,9 @@
         {{-- ── LINKED-SUPPLIER BANNER (when this customer is also a supplier) ── --}}
         @if ($linkedSupplier)
             @php
-                $maxOffset = min(max(0, (float)($customer->current_balance ?? 0)), max(0, (float)$linkedSupplierBalance));
+                // Round to 2 dp (DB precision) so tiny float residues like 2.27e-13 don't
+                // sneak through and pre-fill nonsense into the modal.
+                $maxOffset = round(min(max(0, (float)($customer->current_balance ?? 0)), max(0, (float)$linkedSupplierBalance)), 2);
             @endphp
             <div class="mb-5 bg-white border-2 rounded-xl overflow-hidden" style="border-color:#0891b2;"
                  x-data="{ showOffset:false }">
@@ -129,8 +131,9 @@
 
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1.5">Amount (Rs.)</label>
-                                <input type="number" name="amount" step="0.01" min="0.01" max="{{ $maxOffset }}"
-                                       value="{{ $maxOffset }}" required
+                                <input type="number" name="amount" step="0.01" min="0.01"
+                                       max="{{ number_format($maxOffset, 2, '.', '') }}"
+                                       value="{{ number_format($maxOffset, 2, '.', '') }}" required
                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                                 <p class="text-[11px] text-gray-500 mt-1">Max possible: Rs. {{ number_format($maxOffset, 2) }}</p>
                             </div>

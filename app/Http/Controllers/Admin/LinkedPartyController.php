@@ -144,7 +144,7 @@ class LinkedPartyController extends Controller
                 'created_by'       => auth()->id(),
             ]);
             $customer->update([
-                'current_balance' => (float) ($customer->current_balance ?? 0) - $amount,
+                'current_balance' => round((float) ($customer->current_balance ?? 0) - $amount, 2),
             ]);
 
             // Supplier side: reduce A/P via SupplierPayment with payment_method='offset'
@@ -275,6 +275,7 @@ class LinkedPartyController extends Controller
             ->whereNull('purchase_id')->where('direction', 'out')->sum('amount');
         $received = (float) $supplier->payments()
             ->whereNull('purchase_id')->where('direction', 'in')->sum('amount');
-        return $purchased - $paidLinked - $paidUnlinked + $received;
+        // Round to 2 dp so tiny float residues from sums never propagate.
+        return round($purchased - $paidLinked - $paidUnlinked + $received, 2);
     }
 }
