@@ -1,47 +1,85 @@
 <x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('login') }}">
+    <div class="text-center mb-6">
+        <h2 class="text-2xl font-extrabold text-gray-900">Welcome back</h2>
+        <p class="text-sm text-gray-500 mt-1">Sign in to continue to your dashboard</p>
+    </div>
+
+    {{-- Session status --}}
+    @if (session('status'))
+        <div class="mb-4 p-3 rounded-lg text-sm border"
+             style="background:#ecfdf5;border-color:#a7f3d0;color:#047857;">
+            <i class="fas fa-circle-info mr-1"></i> {{ session('status') }}
+        </div>
+    @endif
+
+    {{-- Validation errors --}}
+    @if ($errors->any())
+        <div class="mb-4 p-3 rounded-lg text-sm border"
+             style="background:#fef2f2;border-color:#fecaca;color:#b91c1c;">
+            <ul class="list-disc list-inside space-y-0.5">
+                @foreach ($errors->all() as $err)<li>{{ $err }}</li>@endforeach
+            </ul>
+        </div>
+    @endif
+
+    <form method="POST" action="{{ route('login') }}"
+          x-data="{ showPwd:false }" class="space-y-4">
         @csrf
 
-        <!-- Email Address -->
+        {{-- Email --}}
         <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
+            <label for="email" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                Email address
             </label>
+            <div style="position:relative;">
+                <i class="fas fa-envelope text-gray-400"
+                   style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;"></i>
+                <input id="email" name="email" type="email" required autofocus autocomplete="username"
+                       value="{{ old('email') }}"
+                       style="padding-left:40px;"
+                       class="field-input"
+                       placeholder="you@example.com">
+            </div>
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
+        {{-- Password --}}
+        <div>
+            <label for="password" class="block text-xs font-semibold text-gray-700 mb-1.5">
+                Password
+            </label>
+            <div style="position:relative;">
+                <i class="fas fa-lock text-gray-400"
+                   style="position:absolute;left:14px;top:50%;transform:translateY(-50%);pointer-events:none;font-size:13px;"></i>
+                <input id="password" name="password" required autocomplete="current-password"
+                       :type="showPwd ? 'text' : 'password'"
+                       style="padding-left:40px;padding-right:42px;"
+                       class="field-input"
+                       placeholder="Enter your password">
+                <button type="button" @click="showPwd = !showPwd" tabindex="-1"
+                        class="text-gray-400 hover:text-gray-700"
+                        style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:13px;">
+                    <i class="fas" :class="showPwd ? 'fa-eye-slash' : 'fa-eye'"></i>
+                </button>
+            </div>
         </div>
+
+        {{-- Remember me --}}
+        <label for="remember_me" class="inline-flex items-center cursor-pointer select-none">
+            <input id="remember_me" name="remember" type="checkbox"
+                   class="rounded border-gray-300 text-cyan-600 shadow-sm focus:ring-cyan-500">
+            <span class="ms-2 text-sm text-gray-600">Remember me on this device</span>
+        </label>
+
+        {{-- Submit --}}
+        <button type="submit" class="btn-primary w-full inline-flex items-center justify-center gap-2 mt-2">
+            <i class="fas fa-sign-in-alt"></i> Sign In
+        </button>
     </form>
+
+    {{-- Helper note --}}
+    <p class="text-center text-xs text-gray-400 mt-5">
+        <i class="fas fa-shield-halved mr-1"></i> Secure connection · branch-aware access
+    </p>
+
 </x-guest-layout>
