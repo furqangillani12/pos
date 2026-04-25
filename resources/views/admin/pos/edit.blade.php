@@ -399,6 +399,7 @@
                         input.value = this.dataset.name;
                         hidden.value = this.dataset.id;
                         dropdown.style.display = 'none';
+                        repriceAllItems();
                     };
                 });
             }
@@ -419,21 +420,24 @@
             return product.sale_price;
         }
 
-        // Auto-update prices when customer changes
-        document.getElementById('editCustomer').addEventListener('change', function() {
-            const selectedOption = this.options[this.selectedIndex];
-            const customerType = selectedOption.dataset.type || 'walkin';
+        function getCurrentCustomerType() {
+            const id = document.getElementById('editCustomer').value;
+            if (!id) return 'walkin';
+            const c = customersData.find(c => c.id == id);
+            return c?.customer_type || 'walkin';
+        }
 
+        function repriceAllItems() {
+            const customerType = getCurrentCustomerType();
             document.querySelectorAll('.item-row').forEach(row => {
                 const productId = row.querySelector('.edit-product-id')?.value;
                 if (!productId) return;
                 const product = productsData.find(p => p.id == productId);
                 if (!product) return;
-                const priceInput = row.querySelector('.edit-price');
-                priceInput.value = getPriceForCustomerType(product, customerType);
+                row.querySelector('.edit-price').value = getPriceForCustomerType(product, customerType);
             });
             recalcEdit();
-        });
+        }
 
         function addEditItem() {
             const container = document.getElementById('editItems');
@@ -499,8 +503,7 @@
             hiddenInput.value = option.dataset.id;
 
             // Use customer-type-aware price
-            const customerSelect = document.getElementById('editCustomer');
-            const customerType = customerSelect.options[customerSelect.selectedIndex].dataset.type || 'walkin';
+            const customerType = getCurrentCustomerType();
             const product = productsData.find(p => p.id == option.dataset.id);
             priceInput.value = product ? getPriceForCustomerType(product, customerType) : option.dataset.price;
 

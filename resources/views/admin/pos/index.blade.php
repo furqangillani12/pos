@@ -1370,7 +1370,7 @@
             <div class="cart-head">
                 <h2 style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                     <span><i class="fas fa-shopping-cart"></i> Current Order</span>
-                    <span style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;">#{{ $nextOrderNumber }}</span>
+                    <span class="js-next-order-number" style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;">#{{ $nextOrderNumber }}</span>
                 </h2>
 
                 {{-- Customer select with search --}}
@@ -1594,7 +1594,7 @@
         <div class="overlay-header">
             <h2 style="display:flex;align-items:center;gap:8px;flex:1;">
                 <span><i class="fas fa-shopping-cart"></i> Cart</span>
-                <span style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;margin-left:auto;">#{{ $nextOrderNumber }}</span>
+                <span class="js-next-order-number" style="font-size:11px;font-weight:700;color:#2563eb;background:#eff6ff;border:1px solid #dbeafe;padding:3px 8px;border-radius:999px;letter-spacing:.2px;margin-left:auto;">#{{ $nextOrderNumber }}</span>
             </h2>
             <button class="mobile-cart-close-btn" onclick="closeMobileCart()">
                 <i class="fas fa-times"></i>
@@ -2760,6 +2760,11 @@
                 const data = await res.json();
 
                 if (data.success) {
+                    if (data.next_order_number) {
+                        document.querySelectorAll('.js-next-order-number').forEach(el => {
+                            el.textContent = '#' + data.next_order_number;
+                        });
+                    }
                     let msg =
                         `Order Processed!\n\nOrder #: ${data.order_number}\nTotal: Rs. ${formatNumber(data.total)}\nPaid: Rs. ${formatNumber(data.paid_amount)}`;
                     if (data.balance_amount > 0) msg += `\nRemaining: Rs. ${formatNumber(data.balance_amount)}`;

@@ -271,16 +271,17 @@ class PosController extends Controller
             $order->load('items');
 
             return response()->json([
-                'success'          => true,
-                'message'          => 'Order created successfully',
-                'order_id'         => $order->id,
-                'order_number'     => $order->order_number,
-                'total'            => $order->total,
-                'paid_amount'      => $paidAmount,
-                'balance_amount'   => $balanceOnOrder,
-                'previous_balance' => $previousBalance,
-                'new_balance'      => $newRunningBalance,
-                'receipt_url'      => route('admin.pos.receipt', $order),
+                'success'           => true,
+                'message'           => 'Order created successfully',
+                'order_id'          => $order->id,
+                'order_number'      => $order->order_number,
+                'next_order_number' => Order::generateOrderNumber($branchId),
+                'total'             => $order->total,
+                'paid_amount'       => $paidAmount,
+                'balance_amount'    => $balanceOnOrder,
+                'previous_balance'  => $previousBalance,
+                'new_balance'       => $newRunningBalance,
+                'receipt_url'       => route('admin.pos.receipt', $order),
             ]);
 
         } catch (\Exception $e) {
@@ -403,7 +404,7 @@ class PosController extends Controller
 
     public function editOrder(Order $order)
     {
-        $order->load('items.product', 'customer');
+        $order->load('items.product.unit', 'customer');
         $products   = $this->scopeBranch(Product::query())->with(['category', 'unit'])->orderBy('created_at', 'desc')->get();
         $customers  = $this->scopeBranch(Customer::query())->get();
         $categories = $this->scopeBranch(Category::query())->get();
@@ -593,14 +594,14 @@ class PosController extends Controller
 
     public function downloadReceiptPdf(Order $order)
     {
-        $order->load('branch');
+        $order->load(['branch', 'items.product.unit']);
         $pdf = Pdf::loadView('admin.pos.receipt-pdf', compact('order'));
         return $pdf->download("Receipt-{$order->order_number}.pdf");
     }
 
     public function downloadReceipt(Order $order)
     {
-        $order->load('branch');
+        $order->load(['branch', 'items.product.unit']);
         $pdf = Pdf::loadView('admin.pos.receipt', compact('order'));
         $pdf->setPaper('a4', 'portrait');
         return $pdf->download('receipt-' . $order->order_number . '.pdf');
@@ -608,13 +609,13 @@ class PosController extends Controller
 
     public function showReceipt(Order $order)
     {
-        $order->load('branch');
+        $order->load(['branch', 'items.product.unit']);
         return view('admin.pos.receipt', compact('order'));
     }
 
     public function thermalReceipt(Order $order)
     {
-        $order->load(['items.product', 'customer', 'user', 'branch']);
+        $order->load(['items.product.unit', 'customer', 'user', 'branch']);
         return view('admin.pos.receipt-thermal', compact('order'));
     }
 

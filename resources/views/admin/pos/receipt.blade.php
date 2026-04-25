@@ -444,7 +444,7 @@
                         @foreach ($order->items as $item)
                             <tr>
                                 <td>{{ $item->product?->name ?? 'Deleted Product' }}</td>
-                                <td>{{ $item->quantity ?? 0 }}</td>
+                                <td>{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                                 <td>
                                     @if (is_numeric($item->unit_price) && floor($item->unit_price) == $item->unit_price)
                                         {{ number_format($item->unit_price, 0) }}

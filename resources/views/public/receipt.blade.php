@@ -756,7 +756,7 @@
                                     <div class="product-sku">SKU: {{ $item->product->sku }}</div>
                                 @endif
                             </td>
-                            <td>{{ $item->quantity }}</td>
+                            <td>{{ $item->quantity }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                             <td>
                                 @if ($item->unit_price == floor($item->unit_price))
                                     {{ number_format($item->unit_price, 0) }}

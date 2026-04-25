@@ -14,7 +14,7 @@ class PublicReceiptController extends Controller
     public function show($token)
     {
         // Find order by receipt token
-        $order = Order::with(['customer', 'items.product', 'branch'])
+        $order = Order::with(['customer', 'items.product.unit', 'branch'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -26,7 +26,7 @@ class PublicReceiptController extends Controller
      */
     public function download($token)
     {
-        $order = Order::with(['customer', 'items.product', 'branch'])
+        $order = Order::with(['customer', 'items.product.unit', 'branch'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -47,7 +47,7 @@ class PublicReceiptController extends Controller
      */
     public function print($token)
     {
-        $order = Order::with(['customer', 'items.product'])
+        $order = Order::with(['customer', 'items.product.unit'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -59,7 +59,7 @@ class PublicReceiptController extends Controller
      */
     public function send($token, Request $request)
     {
-        $order = Order::with(['customer', 'items.product'])
+        $order = Order::with(['customer', 'items.product.unit'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -83,7 +83,7 @@ class PublicReceiptController extends Controller
      */
     public function json($token)
     {
-        $order = Order::with(['customer', 'items.product'])
+        $order = Order::with(['customer', 'items.product.unit'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
@@ -101,6 +101,7 @@ class PublicReceiptController extends Controller
                     return [
                         'product_name' => $item->product->name,
                         'quantity' => $item->quantity,
+                        'unit' => $item->product->unit->abbreviation ?? null,
                         'unit_price' => $item->unit_price,
                         'total_price' => $item->total_price,
                     ];

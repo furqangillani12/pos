@@ -66,7 +66,7 @@
         @foreach($order->items as $item)
             <tr>
                 <td>{{ $item->product?->name ?? 'Deleted' }}</td>
-                <td>{{ $item->quantity ?? 0 }}</td>
+                <td>{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                 <td>{{ number_format($item->unit_price ?? 0, 2) }}</td>
                 <td>{{ number_format($item->total_price ?? 0, 2) }}</td>
             </tr>
