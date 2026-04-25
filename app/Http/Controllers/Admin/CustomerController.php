@@ -396,9 +396,9 @@ class CustomerController extends Controller
             ->orderBy('created_at')
             ->get();
 
-        // ── 2. Get standalone khata payments + payouts in period ───────────
+        // ── 2. Get standalone khata payments + payouts + offsets in period ───
         $khataPayments = \App\Models\Payment::where('customer_id', $customer->id)
-            ->whereIn('payment_type', ['khata', 'khata_payout'])
+            ->whereIn('payment_type', ['khata', 'khata_payout', 'khata_offset'])
             ->whereBetween('payment_date', [$fromDate, $toDate])
             ->orderBy('payment_date')
             ->get();
@@ -422,8 +422,13 @@ class CustomerController extends Controller
         }
 
         foreach ($khataPayments as $payment) {
+            $type = match ($payment->payment_type) {
+                'khata_payout' => 'payout',
+                'khata_offset' => 'offset',
+                default        => 'payment',
+            };
             $transactions->push([
-                'type'            => $payment->payment_type === 'khata_payout' ? 'payout' : 'payment',
+                'type'            => $type,
                 'date'            => $payment->payment_date,
                 'id'              => $payment->id,
                 'reference'       => $payment->payment_number ?? $payment->reference_number,
@@ -556,9 +561,29 @@ class CustomerController extends Controller
 
         $paymentMethods = PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
 
+        // ── 8. Linked supplier (if any) ────────────────────────────────────
+        $customer->load('linkedSupplier');
+        $linkedSupplier = $customer->linkedSupplier;
+        $linkedSupplierBalance = 0.0;
+        $linkedNetBalance = (float) ($customer->current_balance ?? 0);
+        if ($linkedSupplier) {
+            $purchased    = (float) $linkedSupplier->purchases()->sum('total_amount');
+            $paidLinked   = (float) $linkedSupplier->purchases()->sum('paid_amount');
+            $paidUnlinked = (float) $linkedSupplier->payments()->whereNull('purchase_id')->where('direction', 'out')->sum('amount');
+            $received     = (float) $linkedSupplier->payments()->whereNull('purchase_id')->where('direction', 'in')->sum('amount');
+            $linkedSupplierBalance = $purchased - $paidLinked - $paidUnlinked + $received;
+            $linkedNetBalance = (float) ($customer->current_balance ?? 0) - $linkedSupplierBalance;
+        }
+
+        // For the "Link to existing supplier" picker (only loaded when not yet linked)
+        $availableSuppliers = $linkedSupplier ? collect() : $this->scopeBranch(\App\Models\Supplier::query())
+            ->whereNull('linked_customer_id')
+            ->orderBy('name')->get(['id', 'name', 'phone', 'company_name']);
+
         return view('admin.customers.khata', compact(
             'customer', 'orders', 'transactions',
-            'fromDate', 'toDate', 'summary', 'openingBalance', 'paymentMethods'
+            'fromDate', 'toDate', 'summary', 'openingBalance', 'paymentMethods',
+            'linkedSupplier', 'linkedSupplierBalance', 'linkedNetBalance', 'availableSuppliers'
         ));
     }
 

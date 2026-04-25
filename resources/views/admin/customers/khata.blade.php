@@ -40,6 +40,169 @@
             </div>
         @endif
 
+        {{-- ── LINKED-SUPPLIER BANNER (when this customer is also a supplier) ── --}}
+        @if ($linkedSupplier)
+            @php
+                $maxOffset = min(max(0, (float)($customer->current_balance ?? 0)), max(0, (float)$linkedSupplierBalance));
+            @endphp
+            <div class="mb-5 bg-white border-2 rounded-xl overflow-hidden" style="border-color:#0891b2;"
+                 x-data="{ showOffset:false }">
+                <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                     style="background:linear-gradient(135deg,#ecfeff,#f0f9ff);">
+                    <div class="flex items-start gap-3">
+                        <span class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                              style="background:#0891b2;color:#fff;">
+                            <i class="fas fa-link"></i>
+                        </span>
+                        <div>
+                            <div class="text-xs font-bold uppercase tracking-wide" style="color:#0891b2;">Linked party</div>
+                            <div class="text-sm font-semibold text-gray-800">
+                                Also a supplier:
+                                <a href="{{ route('suppliers.ledger', $linkedSupplier) }}"
+                                   class="hover:underline" style="color:#0e7490;">{{ $linkedSupplier->name }}</a>
+                                @if ($linkedSupplier->company_name)
+                                    <span class="text-gray-500">· {{ $linkedSupplier->company_name }}</span>
+                                @endif
+                            </div>
+                            <div class="text-[11px] text-gray-500 mt-0.5">
+                                Customer balance: <span class="font-semibold text-rose-700">Rs. {{ number_format(max(0,(float)$customer->current_balance), 0) }}</span>
+                                · We owe them: <span class="font-semibold text-amber-700">Rs. {{ number_format(max(0,(float)$linkedSupplierBalance), 0) }}</span>
+                                · <span class="font-bold {{ $linkedNetBalance > 0 ? 'text-rose-700' : ($linkedNetBalance < 0 ? 'text-emerald-700' : 'text-gray-600') }}">
+                                    Net: Rs. {{ number_format(abs($linkedNetBalance), 0) }}
+                                    {{ $linkedNetBalance > 0 ? '(they owe net)' : ($linkedNetBalance < 0 ? '(we owe net)' : '(settled)') }}
+                                  </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        @if ($maxOffset > 0)
+                            <button type="button" @click="showOffset = true"
+                                    class="inline-flex items-center gap-2 px-3 py-2 text-white text-xs font-semibold rounded-lg shadow-sm"
+                                    style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                                <i class="fas fa-right-left"></i> Offset Rs. {{ number_format($maxOffset, 0) }}
+                            </button>
+                        @else
+                            <span class="text-[11px] text-gray-500 italic">Nothing to offset</span>
+                        @endif
+                        <a href="{{ route('admin.customers.combined-statement', $customer) }}"
+                           class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-semibold rounded-lg">
+                            <i class="fas fa-file-invoice"></i> Combined statement
+                        </a>
+                        <form action="{{ route('admin.linked-party.unlink') }}" method="POST"
+                              onsubmit="return confirm('Unlink {{ addslashes($customer->name) }} from supplier {{ addslashes($linkedSupplier->name) }}? This does NOT undo any past offsets.')">
+                            @csrf
+                            <input type="hidden" name="from_type" value="customer">
+                            <input type="hidden" name="from_id" value="{{ $customer->id }}">
+                            <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-rose-200 hover:bg-rose-50 text-rose-600 text-xs font-semibold rounded-lg">
+                                <i class="fas fa-link-slash"></i> Unlink
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Offset modal --}}
+                <div x-show="showOffset" x-cloak
+                     style="position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:60;display:flex;align-items:center;justify-content:center;padding:16px;">
+                    <div @click.outside="showOffset = false"
+                         class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
+                                <i class="fas fa-right-left" style="color:#0891b2;"></i> Offset receivable against payable
+                            </h3>
+                            <button type="button" @click="showOffset = false" class="text-gray-400 hover:text-gray-700">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <p class="text-xs text-gray-500 mb-4">
+                            Reduces both <strong>{{ $customer->name }}</strong>'s khata and <strong>{{ $linkedSupplier->name }}</strong>'s outstanding by the same amount.
+                            <em>No cash moves</em> — this is a journal swap.
+                        </p>
+
+                        <form action="{{ route('admin.linked-party.offset') }}" method="POST" class="space-y-3">
+                            @csrf
+                            <input type="hidden" name="customer_id" value="{{ $customer->id }}">
+                            <input type="hidden" name="supplier_id" value="{{ $linkedSupplier->id }}">
+                            <input type="hidden" name="redirect_to" value="customer">
+
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Amount (Rs.)</label>
+                                <input type="number" name="amount" step="0.01" min="0.01" max="{{ $maxOffset }}"
+                                       value="{{ $maxOffset }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                                <p class="text-[11px] text-gray-500 mt-1">Max possible: Rs. {{ number_format($maxOffset, 2) }}</p>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Date</label>
+                                <input type="date" name="transaction_date" value="{{ now()->toDateString() }}" required
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-700 mb-1.5">Notes (optional)</label>
+                                <input type="text" name="notes" maxlength="500" placeholder="e.g. Mar-26 reconciliation"
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            </div>
+
+                            <div class="flex gap-2 pt-2">
+                                <button type="button" @click="showOffset = false"
+                                        class="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded-lg">
+                                    Cancel
+                                </button>
+                                <button type="submit"
+                                        class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg"
+                                        style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                                    <i class="fas fa-check"></i> Apply Offset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        @else
+            {{-- Not linked yet — small "link to supplier" affordance --}}
+            @if ($availableSuppliers->count())
+                <div class="mb-5 bg-white border border-dashed border-gray-300 rounded-xl p-4"
+                     x-data="{ showLink:false }">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <span class="w-9 h-9 rounded-lg bg-gray-100 text-gray-500 flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-link text-sm"></i>
+                            </span>
+                            <div>
+                                <div class="text-sm font-semibold text-gray-700">Is this customer also a supplier?</div>
+                                <div class="text-xs text-gray-500">Link them once and you can offset receivables against payables in one click.</div>
+                            </div>
+                        </div>
+                        <button type="button" @click="showLink = !showLink"
+                                class="text-xs font-semibold px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50">
+                            <i class="fas fa-link mr-1"></i> Link supplier
+                        </button>
+                    </div>
+
+                    <div x-show="showLink" x-cloak class="mt-4 pt-4 border-t border-gray-200">
+                        <form action="{{ route('admin.linked-party.link') }}" method="POST" class="flex flex-col sm:flex-row gap-2">
+                            @csrf
+                            <input type="hidden" name="customer_id" value="{{ $customer->id }}">
+                            <input type="hidden" name="redirect_to" value="customer">
+                            <select name="supplier_id" required
+                                    class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                                <option value="">— Select supplier —</option>
+                                @foreach ($availableSuppliers as $s)
+                                    <option value="{{ $s->id }}">
+                                        {{ $s->name }}{{ $s->company_name ? ' (' . $s->company_name . ')' : '' }}{{ $s->phone ? ' · ' . $s->phone : '' }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit"
+                                    class="inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg"
+                                    style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                                <i class="fas fa-link"></i> Link
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+        @endif
+
         {{-- ── MAIN LAYOUT: 2 columns on large screens ── --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -366,8 +529,9 @@
                                     @php
                                         $isPayment = $txn['type'] === 'payment';
                                         $isPayout  = $txn['type'] === 'payout';
+                                        $isOffset  = $txn['type'] === 'offset';
                                         $isOrder   = $txn['type'] === 'order';
-                                        $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : '');
+                                        $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : ($isOffset ? 'bg-cyan-50/50' : ''));
                                     @endphp
                                     <tr class="hover:bg-gray-50 transition {{ $rowClass }}">
 
@@ -400,6 +564,16 @@
                                                         @endif
                                                     </p>
                                                 </div>
+                                            @elseif ($isOffset)
+                                                <div>
+                                                    <p class="font-semibold" style="color:#0e7490;"><i class="fas fa-right-left text-xs mr-1"></i>Offset (against supplier)</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        Ref: {{ $txn['reference'] }}
+                                                        @if (!empty($txn['notes']))
+                                                            — {{ $txn['notes'] }}
+                                                        @endif
+                                                    </p>
+                                                </div>
                                             @else
                                                 <div>
                                                     <a href="{{ route('admin.pos.receipt', $txn['id']) }}"
@@ -426,8 +600,11 @@
                                         </td>
 
                                         <td
-                                            class="px-3 py-3 text-right {{ $isPayment ? 'text-green-600 font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200') }}">
+                                            class="px-3 py-3 text-right {{ $isPayment ? 'text-green-600 font-bold' : ($isOffset ? 'font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200')) }}"
+                                            @if ($isOffset) style="color:#0891b2;" @endif>
                                             @if ($isPayment)
+                                                Rs. {{ number_format($txn['amount'], 0) }}
+                                            @elseif($isOffset)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @elseif($isOrder && $txn['paid'] > 0)
                                                 Rs. {{ number_format($txn['paid'], 0) }}
@@ -468,6 +645,8 @@
                                                         </button>
                                                     </form>
                                                 </div>
+                                            @elseif ($isOffset)
+                                                <span class="text-[10px] text-gray-400 italic" title="Offsets are paired with the supplier side and cannot be deleted standalone">Paired</span>
                                             @else
                                                 <a href="{{ route('admin.pos.receipt', $txn['id']) }}" target="_blank"
                                                     class="text-blue-400 hover:text-blue-600 text-xs"

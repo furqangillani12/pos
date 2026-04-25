@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Customer extends Model
@@ -20,12 +21,22 @@ class Customer extends Model
         'credit_limit',
         'current_balance',
         'credit_due_days',
-        'credit_start_date'
+        'credit_start_date',
+        'linked_supplier_id',
     ];
 
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * The supplier record that represents the SAME real-world party as this customer.
+     * Used for offsetting A/R against A/P when one person is both customer and supplier.
+     */
+    public function linkedSupplier(): BelongsTo
+    {
+        return $this->belongsTo(Supplier::class, 'linked_supplier_id');
     }
 
     public static function generateBarcode()

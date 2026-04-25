@@ -207,7 +207,26 @@ class SupplierController extends Controller
             'receipts_count'  => $receivedInPayments->count(),
         ];
 
-        return view('admin.suppliers.ledger', compact('supplier', 'transactions', 'summary'));
+        // ── Linked customer (if any) ───────────────────────────────────────
+        $supplier->load('linkedCustomer');
+        $linkedCustomer = $supplier->linkedCustomer;
+        $linkedCustomerBalance = 0.0;
+        $linkedNetBalance = $balance; // default: just what we owe
+        if ($linkedCustomer) {
+            $linkedCustomerBalance = (float) ($linkedCustomer->current_balance ?? 0);
+            // Net (from supplier’s point-of-view): supplier balance - customer balance.
+            // Positive = we still owe them net. Negative = they owe us net.
+            $linkedNetBalance = $balance - $linkedCustomerBalance;
+        }
+
+        $availableCustomers = $linkedCustomer ? collect() : $this->scopeBranch(\App\Models\Customer::query())
+            ->whereNull('linked_supplier_id')
+            ->orderBy('name')->get(['id', 'name', 'phone', 'customer_type', 'current_balance']);
+
+        return view('admin.suppliers.ledger', compact(
+            'supplier', 'transactions', 'summary',
+            'linkedCustomer', 'linkedCustomerBalance', 'linkedNetBalance', 'availableCustomers'
+        ));
     }
 
     /**

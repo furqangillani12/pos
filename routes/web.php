@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\LedgerController;
 use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CashTransactionController;
+use App\Http\Controllers\Admin\LinkedPartyController;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
@@ -267,6 +268,15 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/cash',         [CashTransactionController::class, 'index'])->name('cash.index');
     Route::post('/cash',        [CashTransactionController::class, 'store'])->name('cash.store');
     Route::get('/cash/history', [CashTransactionController::class, 'history'])->name('cash.history');
+});
+
+// ── Linked customer ↔ supplier (offset feature) ──
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+    Route::post('/linked-party/link',   [LinkedPartyController::class, 'link'])->name('linked-party.link');
+    Route::post('/linked-party/unlink', [LinkedPartyController::class, 'unlink'])->name('linked-party.unlink');
+    Route::post('/linked-party/offset', [LinkedPartyController::class, 'offset'])->name('linked-party.offset');
+    Route::get('/customers/{customer}/combined-statement',
+        [LinkedPartyController::class, 'combinedStatement'])->name('customers.combined-statement');
 });
 
 // ── Ledger ──
