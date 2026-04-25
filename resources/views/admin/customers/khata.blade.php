@@ -65,11 +65,11 @@
                                 @endif
                             </div>
                             <div class="text-[11px] text-gray-500 mt-0.5">
-                                Customer balance: <span class="font-semibold text-rose-700">Rs. {{ number_format(max(0,(float)$customer->current_balance), 0) }}</span>
-                                · We owe them: <span class="font-semibold text-amber-700">Rs. {{ number_format(max(0,(float)$linkedSupplierBalance), 0) }}</span>
+                                Customer ka khata: <span class="font-semibold text-rose-700">Rs. {{ number_format(max(0,(float)$customer->current_balance), 0) }}</span> <span class="text-gray-400">(لینا)</span>
+                                · Hamara dena: <span class="font-semibold text-amber-700">Rs. {{ number_format(max(0,(float)$linkedSupplierBalance), 0) }}</span> <span class="text-gray-400">(دینا)</span>
                                 · <span class="font-bold {{ $linkedNetBalance > 0 ? 'text-rose-700' : ($linkedNetBalance < 0 ? 'text-emerald-700' : 'text-gray-600') }}">
                                     Net: Rs. {{ number_format(abs($linkedNetBalance), 0) }}
-                                    {{ $linkedNetBalance > 0 ? '(they owe net)' : ($linkedNetBalance < 0 ? '(we owe net)' : '(settled)') }}
+                                    {{ $linkedNetBalance > 0 ? '(Lena / لینا)' : ($linkedNetBalance < 0 ? '(Dena / دینا)' : '(Hisaab saaf / حساب صاف)') }}
                                   </span>
                             </div>
                         </div>
@@ -78,11 +78,12 @@
                         @if ($maxOffset > 0)
                             <button type="button" @click="showOffset = true"
                                     class="inline-flex items-center gap-2 px-3 py-2 text-white text-xs font-semibold rounded-lg shadow-sm"
-                                    style="background:linear-gradient(135deg,#0891b2,#0e7490);">
-                                <i class="fas fa-right-left"></i> Offset Rs. {{ number_format($maxOffset, 0) }}
+                                    style="background:linear-gradient(135deg,#0891b2,#0e7490);"
+                                    title="Lena-Dena ek dosray say katwa do — koi cash nahi chalega">
+                                <i class="fas fa-right-left"></i> Adjust Rs. {{ number_format($maxOffset, 0) }} <span class="opacity-80">(لینا/دینا کاٹیں)</span>
                             </button>
                         @else
-                            <span class="text-[11px] text-gray-500 italic">Nothing to offset</span>
+                            <span class="text-[11px] text-gray-500 italic">Adjust ke liye kuch nahi (hisaab saaf)</span>
                         @endif
                         <a href="{{ route('admin.customers.combined-statement', $customer) }}"
                            class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 text-xs font-semibold rounded-lg">
@@ -107,16 +108,18 @@
                          class="bg-white rounded-xl shadow-2xl w-full max-w-md p-5">
                         <div class="flex items-center justify-between mb-3">
                             <h3 class="text-base font-bold text-gray-800 flex items-center gap-2">
-                                <i class="fas fa-right-left" style="color:#0891b2;"></i> Offset receivable against payable
+                                <i class="fas fa-right-left" style="color:#0891b2;"></i> Lena-Dena Adjust (حساب ملانا)
                             </h3>
                             <button type="button" @click="showOffset = false" class="text-gray-400 hover:text-gray-700">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <p class="text-xs text-gray-500 mb-4">
-                            Reduces both <strong>{{ $customer->name }}</strong>'s khata and <strong>{{ $linkedSupplier->name }}</strong>'s outstanding by the same amount.
-                            <em>No cash moves</em> — this is a journal swap.
-                        </p>
+                        <div class="text-xs text-gray-600 mb-4 leading-relaxed bg-cyan-50/50 border border-cyan-100 rounded-md p-3">
+                            <strong class="text-cyan-800">Yeh kya karega?</strong>
+                            <br>Customer <strong>{{ $customer->name }}</strong> ka khata aur supplier <strong>{{ $linkedSupplier->name }}</strong> ka dena — dono ek saath barabar amount say kam ho jayenge.
+                            <br><em class="text-gray-500">Cash ka koi lain-dain nahi hota — sirf hisaab apas mein adjust hota hai.</em>
+                            <br><span class="text-gray-500">(Misaal: Customer ka 1000 Lena hai, supplier ka 600 Dena hai → 600 ka Adjust karne se: Customer pe 400 Lena rah jayega, supplier ka hisaab saaf.)</span>
+                        </div>
 
                         <form action="{{ route('admin.linked-party.offset') }}" method="POST" class="space-y-3">
                             @csrf
@@ -150,7 +153,7 @@
                                 <button type="submit"
                                         class="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg"
                                         style="background:linear-gradient(135deg,#0891b2,#0e7490);">
-                                    <i class="fas fa-check"></i> Apply Offset
+                                    <i class="fas fa-check"></i> Adjust Karein (لینا/دینا کاٹیں)
                                 </button>
                             </div>
                         </form>
@@ -296,7 +299,7 @@
                                 @if ($balance > 0)
                                     <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-sm">
                                         <p class="text-red-600 font-medium">
-                                            Customer owes: <strong>Rs. {{ number_format($balance, 0) }}</strong>
+                                            Customer ka baqaya / Hamara lena: <strong>Rs. {{ number_format($balance, 0) }}</strong> <span class="text-red-400">(لینا)</span>
                                         </p>
                                         <button type="button"
                                             onclick="document.getElementById('payAmount').value = {{ $balance }}; calcRemaining({{ $balance }})"
@@ -332,11 +335,11 @@
                                     </div>
                                 @elseif($balance == 0)
                                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                                        ⚠️ Account is settled. Cash-out will create a debit on this customer.
+                                        ⚠️ Hisaab saaf hai. Cash-out karne se customer pe baqaya ban jayega (لینا).
                                     </div>
                                 @else
                                     <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                                        ⚠️ Customer already owes Rs. {{ number_format($balance, 0) }}. Cash-out will increase what they owe.
+                                        ⚠️ Customer ka pehle se baqaya Rs. {{ number_format($balance, 0) }} hai. Cash-out karne se aur barh jayega (مزید لینا).
                                     </div>
                                 @endif
                             </div>
@@ -566,7 +569,7 @@
                                                 </div>
                                             @elseif ($isOffset)
                                                 <div>
-                                                    <p class="font-semibold" style="color:#0e7490;"><i class="fas fa-right-left text-xs mr-1"></i>Offset (against supplier)</p>
+                                                    <p class="font-semibold" style="color:#0e7490;"><i class="fas fa-right-left text-xs mr-1"></i>Adjust — Supplier ke saath (حساب کٹا)</p>
                                                     <p class="text-xs text-gray-500">
                                                         Ref: {{ $txn['reference'] }}
                                                         @if (!empty($txn['notes']))
@@ -646,7 +649,7 @@
                                                     </form>
                                                 </div>
                                             @elseif ($isOffset)
-                                                <span class="text-[10px] text-gray-400 italic" title="Offsets are paired with the supplier side and cannot be deleted standalone">Paired</span>
+                                                <span class="text-[10px] text-gray-400 italic" title="Yeh entry supplier ke saath jori hui hai — sirf yahan se delete nahi hoti">Mila hua</span>
                                             @else
                                                 <a href="{{ route('admin.pos.receipt', $txn['id']) }}" target="_blank"
                                                     class="text-blue-400 hover:text-blue-600 text-xs"

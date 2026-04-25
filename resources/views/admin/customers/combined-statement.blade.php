@@ -44,17 +44,17 @@
     {{-- ── Balance summary ── --}}
     <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
         <div class="bg-white rounded-xl border border-rose-200 p-4 shadow-sm">
-            <div class="text-[11px] uppercase tracking-wide text-rose-700 font-semibold">Customer Owes Us</div>
+            <div class="text-[11px] uppercase tracking-wide text-rose-700 font-semibold">Customer Lena (لینا)</div>
             <div class="text-2xl font-extrabold text-rose-700 mt-1">Rs. {{ number_format(max(0, $custBalance), 0) }}</div>
             @if ($custBalance < 0)
-                <div class="text-[10px] text-emerald-600">Adv. Rs. {{ number_format(abs($custBalance), 0) }}</div>
+                <div class="text-[10px] text-emerald-600">Advance: Rs. {{ number_format(abs($custBalance), 0) }} (پیشگی)</div>
             @endif
         </div>
         <div class="bg-white rounded-xl border border-amber-200 p-4 shadow-sm">
-            <div class="text-[11px] uppercase tracking-wide text-amber-700 font-semibold">We Owe Supplier</div>
+            <div class="text-[11px] uppercase tracking-wide text-amber-700 font-semibold">Supplier Dena (دینا)</div>
             <div class="text-2xl font-extrabold text-amber-700 mt-1">Rs. {{ number_format(max(0, $supBalance), 0) }}</div>
             @if ($supBalance < 0)
-                <div class="text-[10px] text-emerald-600">Adv. Rs. {{ number_format(abs($supBalance), 0) }}</div>
+                <div class="text-[10px] text-emerald-600">Advance: Rs. {{ number_format(abs($supBalance), 0) }} (پیشگی)</div>
             @endif
         </div>
         <div class="bg-white rounded-xl border-2 p-4 shadow-sm col-span-2 sm:col-span-1"
@@ -69,11 +69,11 @@
             </div>
             <div class="text-[10px] mt-0.5">
                 @if ($netBalance > 0)
-                    They owe you net
+                    Net Lena (ہمارا لینا)
                 @elseif ($netBalance < 0)
-                    You owe them net
+                    Net Dena (ہمارا دینا)
                 @else
-                    Settled
+                    Hisaab saaf (حساب صاف)
                 @endif
             </div>
         </div>
@@ -101,11 +101,11 @@
                                 'sale'                  => ['Sale',                   'rose'],
                                 'khata_payment'         => ['Khata payment',          'emerald'],
                                 'cash_out_to_customer'  => ['Cash out to customer',   'amber'],
-                                'offset_credit'         => ['Offset (customer side)', 'cyan'],
+                                'offset_credit'         => ['Adjust (customer side)', 'cyan'],
                                 'purchase'              => ['Purchase',               'amber'],
                                 'supplier_payment'      => ['Paid supplier',          'emerald'],
                                 'supplier_refund'       => ['Refund from supplier',   'amber'],
-                                'offset_debit'          => ['Offset (supplier side)', 'cyan'],
+                                'offset_debit'          => ['Adjust (supplier side)', 'cyan'],
                             ];
                             [$label, $color] = $kindLabels[$r['kind']] ?? [$r['kind'], 'gray'];
                             $colorMap = [
@@ -142,9 +142,9 @@
                             <td class="px-4 py-3 text-right font-bold whitespace-nowrap bg-yellow-50"
                                 style="color:{{ $r['running_net'] > 0 ? '#be123c' : ($r['running_net'] < 0 ? '#92400e' : '#047857') }};">
                                 Rs. {{ number_format(abs($r['running_net']), 0) }}
-                                @if ($r['running_net'] < 0) <span class="text-[10px] font-normal">(we owe)</span>
-                                @elseif ($r['running_net'] > 0) <span class="text-[10px] font-normal">(they owe)</span>
-                                @else <span class="text-[10px] font-normal">(clear)</span>
+                                @if ($r['running_net'] < 0) <span class="text-[10px] font-normal">(دینا)</span>
+                                @elseif ($r['running_net'] > 0) <span class="text-[10px] font-normal">(لینا)</span>
+                                @else <span class="text-[10px] font-normal">(saaf)</span>
                                 @endif
                             </td>
                         </tr>
@@ -162,8 +162,8 @@
     </div>
 
     <p class="text-center text-[11px] text-gray-400 mt-4">
-        Effect column: <span class="text-rose-600 font-semibold">+</span> means the net moves toward "they owe you";
-        <span class="text-emerald-600 font-semibold">−</span> means it moves toward "you owe them".
+        Effect column: <span class="text-rose-600 font-semibold">+</span> = aap ka <strong>Lena</strong> barhta hai (لینا زیادہ);
+        <span class="text-emerald-600 font-semibold">−</span> = aap ka <strong>Dena</strong> barhta hai (دینا زیادہ).
     </p>
 </div>
 @endsection
