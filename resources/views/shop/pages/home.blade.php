@@ -1,7 +1,7 @@
 @extends('shop.layouts.app')
 
 @section('title', 'Home')
-@section('description', 'Almufeed — quality and affordability you can trust. Multi-branch retail platform.')
+@section('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail in PanjGirain, Bhakkar.')
 
 @section('content')
 
@@ -20,7 +20,7 @@
                 in every box.
             </h1>
             <p class="text-base sm:text-lg text-sky-100/80 max-w-md mt-6">
-                Discover hand-picked products from your trusted Almufeed shops — now online with same-day branch fulfilment.
+                Discover hand-picked products from <strong>AL MUFEED TRADERS</strong> — now online with same-day fulfilment from our shop in PanjGirain.
             </p>
             <div class="flex flex-wrap gap-3 mt-8">
                 <a href="{{ route('shop.catalog') }}" class="btn btn-primary">Shop now <i class="fas fa-arrow-right text-xs"></i></a>

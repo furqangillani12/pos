@@ -270,6 +270,14 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/cash/history', [CashTransactionController::class, 'history'])->name('cash.history');
 });
 
+// ── Storefront admin (Brands + Banners) ──
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+    Route::resource('brands',  \App\Http\Controllers\Admin\BrandController::class)->except(['show']);
+    Route::patch('/brands/{brand}/toggle',   [\App\Http\Controllers\Admin\BrandController::class,  'toggle'])->name('brands.toggle');
+    Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->except(['show']);
+    Route::patch('/banners/{banner}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
+});
+
 // ── Linked customer ↔ supplier (offset feature) ──
 Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
     Route::post('/linked-party/link',   [LinkedPartyController::class, 'link'])->name('linked-party.link');

@@ -619,7 +619,8 @@
                 reportsOpen: false,
                 attendanceOpen: false,
                 hrOpen: false,
-                settingsOpen: false
+                settingsOpen: false,
+                storefrontOpen: false
             }">
 
                 {{-- ── Dashboard ── --}}
@@ -755,6 +756,29 @@
                     class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.cash.*') ? 'bg-emerald-100 text-emerald-700 font-semibold dark:bg-emerald-900 dark:text-emerald-300' : 'hover:bg-emerald-100 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300' }}">
                     <i class="fas fa-money-bill-wave mr-2 text-xs"></i> Cash In / Out
                 </a>
+
+                {{-- ── Storefront (Brands + Banners) ── --}}
+                <button @click="storefrontOpen = !storefrontOpen"
+                    class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
+                    <span><i class="fas fa-globe mr-2 text-xs"></i> Storefront</span>
+                    <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': storefrontOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
+                </button>
+                <div x-show="storefrontOpen" x-cloak class="ml-4 space-y-1">
+                    <a href="{{ route('admin.brands.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.brands.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-tag mr-2 text-xs"></i> Brands
+                    </a>
+                    <a href="{{ route('admin.banners.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.banners.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-image mr-2 text-xs"></i> Banners
+                    </a>
+                    <a href="{{ url(env('SHOP_PREFIX', 'shop')) }}" target="_blank"
+                       class="block px-4 py-2 rounded-md transition hover:bg-cyan-50 hover:text-cyan-700">
+                        <i class="fas fa-external-link-alt mr-2 text-xs"></i> View site
+                    </a>
+                </div>
 
                 {{-- ── HR: Employees, Attendance, Payroll ── --}}
                 <button @click="hrOpen = !hrOpen"

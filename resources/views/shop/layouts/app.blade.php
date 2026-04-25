@@ -6,10 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#0c1f3d">
 
-    <title>@yield('title', 'Almufeed') · Almufeed Point Of Sale</title>
-    <meta name="description" content="@yield('description', 'Almufeed — quality and affordability you can trust.')">
+    <title>@yield('title', 'Almufeed Traders') · Almufeed Traders</title>
+    <meta name="description" content="@yield('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail branches across Pakistan.')">
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%230c1f3d'/><text x='16' y='22' text-anchor='middle' font-family='Inter,sans-serif' font-size='16' font-weight='800' fill='%23fbbf24'>A</text></svg>">
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/brand/almufeed-traders-square.jpg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -185,7 +185,7 @@
             <i class="fas fa-truck text-[10px]" style="color:var(--gold);"></i>
             <span>Free delivery across Pakistan on orders above Rs. 5,000</span>
             <span class="hidden sm:inline opacity-60 mx-2">·</span>
-            <span class="hidden sm:inline">Trusted retail · Almufeed Point Of Sale</span>
+            <span class="hidden sm:inline">PanjGirain, Tehsil Darya Khan, District Bhakkar</span>
         </div>
     </div>
 
@@ -195,13 +195,11 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
             <button @click="mobileNavOpen = true" class="lg:hidden text-gray-700 text-xl"><i class="fas fa-bars"></i></button>
 
-            <a href="{{ route('shop.home') }}" class="flex items-center gap-2 mr-4 group">
-                <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-white font-extrabold text-sm transition group-hover:scale-110"
-                      style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">A</span>
-                <div class="leading-tight">
-                    <div class="font-extrabold text-gray-900 tracking-tight text-base">Almufeed</div>
-                    <div class="text-[10px] uppercase tracking-widest" style="color:var(--brand-cyan);">Point of Sale</div>
-                </div>
+            <a href="{{ route('shop.home') }}" class="flex items-center mr-4 group" aria-label="Almufeed Traders home">
+                <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}"
+                     alt="AL MUFEED TRADERS"
+                     class="h-10 sm:h-11 w-auto transition group-hover:scale-105"
+                     style="max-width:200px;">
             </a>
 
             <nav class="hidden lg:flex items-center gap-6 text-sm text-gray-700">
@@ -257,14 +255,15 @@
     <footer class="mt-20 bg-gray-900 text-gray-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-white font-extrabold text-sm" style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">A</span>
-                    <div>
-                        <div class="font-bold text-white">Almufeed</div>
-                        <div class="text-[10px] uppercase tracking-widest" style="color:var(--gold);">Point of Sale</div>
-                    </div>
+                <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}"
+                     alt="AL MUFEED TRADERS"
+                     class="h-12 mb-4 brightness-0 invert opacity-90"
+                     style="max-width:200px;">
+                <p class="text-sm text-gray-400 leading-relaxed">Quality and affordability you can trust. PanjGirain, Tehsil Darya Khan, District Bhakkar.</p>
+                <div class="text-xs text-gray-500 mt-3 space-y-1">
+                    <div><i class="fas fa-phone mr-2"></i> +92 300 7951919</div>
+                    <div><i class="fas fa-envelope mr-2"></i> Amt7212@gmail.com</div>
                 </div>
-                <p class="text-sm text-gray-400 leading-relaxed">Quality and affordability you can trust. Multi-branch retail platform powering the storefront and our shops.</p>
             </div>
             <div>
                 <h4 class="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Shop</h4>
@@ -300,7 +299,7 @@
             </div>
         </div>
         <div class="border-t border-gray-800 py-5 text-center text-xs text-gray-500">
-            &copy; {{ now()->year }} Almufeed Point Of Sale. All rights reserved.
+            &copy; {{ now()->year }} AL MUFEED TRADERS. All rights reserved.
         </div>
     </footer>
 

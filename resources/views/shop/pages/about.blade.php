@@ -4,9 +4,11 @@
 <section class="hero py-20 text-center">
     <div class="hero-pattern absolute inset-0"></div>
     <div class="relative max-w-3xl mx-auto px-4">
+        <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}" alt="AL MUFEED TRADERS"
+             class="h-14 mx-auto mb-6 brightness-0 invert opacity-95">
         <span class="chip mb-4 inline-block" style="background:rgba(251,191,36,.15);color:#fde68a;border:1px solid rgba(251,191,36,.3);">About us</span>
         <h1 class="display text-5xl sm:text-6xl font-bold text-white mb-4 leading-tight">Quality you can trust.</h1>
-        <p class="text-base sm:text-lg text-sky-100/80">Almufeed has been a trusted name in our community for years. Today we extend the same care online.</p>
+        <p class="text-base sm:text-lg text-sky-100/80">AL MUFEED TRADERS has been a trusted name in our community in PanjGirain, Bhakkar. Today we extend the same care online.</p>
     </div>
 </section>
 <section class="py-20">
