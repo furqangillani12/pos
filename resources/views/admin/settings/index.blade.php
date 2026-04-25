@@ -344,5 +344,101 @@
             </div>
         </div>
 
+        {{-- ═══════════════════════════════════════
+             CHANGE PASSWORD
+        ═══════════════════════════════════════ --}}
+        <div class="mt-6 bg-white rounded-lg shadow-sm border border-gray-200 max-w-2xl">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-key text-amber-500"></i>
+                    Change Password
+                </h2>
+                <span class="text-xs text-gray-400">{{ auth()->user()->email }}</span>
+            </div>
+
+            <div class="p-5">
+                @if (session('status') === 'password-updated')
+                    <div class="mb-4 p-3 bg-emerald-50 text-emerald-800 rounded border border-emerald-200 text-sm"
+                         x-data="{ show: true }" x-show="show" x-init="setTimeout(() => show = false, 4000)" x-cloak>
+                        <i class="fas fa-check-circle mr-1"></i> Password updated successfully.
+                    </div>
+                @endif
+
+                @if ($errors->updatePassword->any())
+                    <div class="mb-4 p-3 bg-red-50 text-red-800 rounded border border-red-200 text-sm">
+                        <ul class="list-disc list-inside space-y-0.5">
+                            @foreach ($errors->updatePassword->all() as $err)
+                                <li>{{ $err }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                <form method="POST" action="{{ route('password.update') }}"
+                      x-data="{ show1:false, show2:false, show3:false }"
+                      class="space-y-4">
+                    @csrf
+                    @method('put')
+
+                    <div>
+                        <label for="update_password_current_password" class="block text-xs font-medium text-gray-600 mb-1.5">
+                            Current Password <span class="text-rose-500">*</span>
+                        </label>
+                        <div style="position:relative;">
+                            <input id="update_password_current_password" name="current_password" required
+                                   :type="show1 ? 'text' : 'password'" autocomplete="current-password"
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <button type="button" @click="show1=!show1" tabindex="-1"
+                                    class="text-gray-400 hover:text-gray-700"
+                                    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;">
+                                <i class="fas" :class="show1 ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="update_password_password" class="block text-xs font-medium text-gray-600 mb-1.5">
+                            New Password <span class="text-rose-500">*</span>
+                        </label>
+                        <div style="position:relative;">
+                            <input id="update_password_password" name="password" required minlength="8"
+                                   :type="show2 ? 'text' : 'password'" autocomplete="new-password"
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <button type="button" @click="show2=!show2" tabindex="-1"
+                                    class="text-gray-400 hover:text-gray-700"
+                                    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;">
+                                <i class="fas" :class="show2 ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                        <p class="mt-1 text-[11px] text-gray-500">Use at least 8 characters. Mixing letters, numbers and symbols is best.</p>
+                    </div>
+
+                    <div>
+                        <label for="update_password_password_confirmation" class="block text-xs font-medium text-gray-600 mb-1.5">
+                            Confirm New Password <span class="text-rose-500">*</span>
+                        </label>
+                        <div style="position:relative;">
+                            <input id="update_password_password_confirmation" name="password_confirmation" required minlength="8"
+                                   :type="show3 ? 'text' : 'password'" autocomplete="new-password"
+                                   class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <button type="button" @click="show3=!show3" tabindex="-1"
+                                    class="text-gray-400 hover:text-gray-700"
+                                    style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;">
+                                <i class="fas" :class="show3 ? 'fa-eye-slash' : 'fa-eye'"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="pt-1">
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 px-5 py-2 text-white rounded-lg text-sm font-semibold shadow-sm"
+                                style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                            <i class="fas fa-shield-alt"></i> Update Password
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 @endsection

@@ -5,15 +5,50 @@
 <div class="space-y-6">
     <h2 class="text-2xl font-bold">Product Statement</h2>
 
-    <form method="GET" class="bg-white p-4 rounded-lg shadow flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-end">
-        <div>
+    @php
+        $selectedProduct = $productId ? $products->firstWhere('id', (int) $productId) : null;
+    @endphp
+    <form method="GET" class="bg-white p-4 rounded-lg shadow flex flex-col sm:flex-row flex-wrap gap-4 items-start sm:items-end"
+          x-data="productPicker({
+              products: @js($products->map(fn($p) => ['id'=>$p->id,'name'=>$p->name,'barcode'=>$p->barcode ?? ''])),
+              initialId: '{{ $productId }}',
+              initialName: @js($selectedProduct?->name ?? ''),
+          })">
+        <div style="position:relative;min-width:280px;" @click.outside="open=false">
             <label class="block text-sm font-medium text-gray-700">Product</label>
-            <select name="product_id" required class="mt-1 block w-full border border-gray-300 rounded-md py-2 px-3 text-sm">
-                <option value="">Select Product</option>
-                @foreach($products as $p)
-                    <option value="{{ $p->id }}" {{ $productId == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
-                @endforeach
-            </select>
+            <input type="hidden" name="product_id" :value="selectedId" required>
+            <div style="position:relative;">
+                <input type="text" x-model="search"
+                       @focus="open=true"
+                       @input="open=true; if(!search) selectedId=''"
+                       placeholder="Search product by name or barcode..."
+                       autocomplete="off"
+                       class="mt-1 block w-full border border-gray-300 rounded-md py-2 pl-9 pr-9 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <i class="fas fa-search text-gray-400"
+                   style="position:absolute;left:12px;top:55%;transform:translateY(-50%);pointer-events:none;"></i>
+                <button type="button" x-show="search" @click="clear()"
+                        class="text-gray-400 hover:text-rose-500"
+                        style="position:absolute;right:10px;top:55%;transform:translateY(-50%);background:none;border:none;cursor:pointer;">
+                    <i class="fas fa-times-circle"></i>
+                </button>
+            </div>
+            <div x-show="open && filtered().length" x-cloak
+                 class="mt-1 border border-gray-200 rounded-md max-h-64 overflow-y-auto bg-white shadow-lg"
+                 style="position:absolute;left:0;right:0;z-index:50;">
+                <template x-for="p in filtered()" :key="p.id">
+                    <button type="button" @click="pick(p)"
+                            class="w-full text-left px-3 py-2 hover:bg-blue-50 border-b border-gray-100 last:border-0 text-sm"
+                            :class="selectedId == p.id ? 'bg-blue-50' : ''">
+                        <div class="font-medium text-gray-800 truncate" x-text="p.name"></div>
+                        <div class="text-xs text-gray-500" x-text="p.barcode ? 'Barcode: ' + p.barcode : ''"></div>
+                    </button>
+                </template>
+            </div>
+            <p x-show="open && search && !filtered().length" x-cloak
+               class="mt-1 border border-gray-200 rounded-md bg-white shadow-lg px-3 py-2 text-xs text-gray-500 italic"
+               style="position:absolute;left:0;right:0;z-index:50;">
+                No products match.
+            </p>
         </div>
         <div>
             <label class="block text-sm font-medium text-gray-700">From</label>
@@ -27,6 +62,37 @@
             View Statement
         </button>
     </form>
+
+    @push('scripts')
+    <script>
+    function productPicker({ products, initialId, initialName }) {
+        return {
+            products,
+            search: initialName || '',
+            selectedId: initialId || '',
+            open: false,
+            filtered() {
+                const q = (this.search || '').toLowerCase().trim();
+                if (!q) return this.products.slice(0, 50);
+                return this.products.filter(p =>
+                    (p.name || '').toLowerCase().includes(q)
+                    || (p.barcode || '').toLowerCase().includes(q)
+                ).slice(0, 50);
+            },
+            pick(p) {
+                this.selectedId = p.id;
+                this.search = p.name;
+                this.open = false;
+            },
+            clear() {
+                this.search = '';
+                this.selectedId = '';
+                this.open = true;
+            },
+        };
+    }
+    </script>
+    @endpush
 
     @if($statement)
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
