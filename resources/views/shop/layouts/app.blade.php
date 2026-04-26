@@ -209,15 +209,72 @@
                      style="max-width:200px;">
             </a>
 
+            @php
+                /* All categories from every branch, deduplicated by slug, with product counts.
+                   Shown in the hover-mega-menu in the header. */
+                $allShopCategories = \Illuminate\Support\Facades\Cache::remember('shop:nav-cats', 300, function () {
+                    return \App\Models\Category::active()
+                        ->withCount(['products' => fn ($q) => $q->where('is_active', true)->where('show_on_website', true)])
+                        ->orderByDesc('is_featured')
+                        ->orderBy('sort_order')->orderBy('name')
+                        ->get()
+                        ->unique(fn ($c) => $c->slug ?: \Illuminate\Support\Str::slug($c->name))
+                        ->values();
+                });
+                $featuredCats = $allShopCategories->where('is_featured', true)->take(4);
+            @endphp
+
             <nav class="hidden lg:flex items-center gap-6 text-sm text-gray-700">
-                <a href="{{ route('shop.home') }}"      class="nav-link {{ request()->routeIs('shop.home') ? 'active' : '' }}">Home</a>
-                <a href="{{ route('shop.catalog') }}"   class="nav-link {{ request()->routeIs('shop.catalog') ? 'active' : '' }}">Shop</a>
-                @php $featuredCats = \App\Models\Category::active()->where('is_featured', true)->orderBy('sort_order')->limit(4)->get(); @endphp
-                @foreach ($featuredCats as $cat)
-                    <a href="{{ route('shop.category', $cat->slug) }}" class="nav-link">{{ $cat->name }}</a>
-                @endforeach
-                <a href="{{ route('shop.about') }}"     class="nav-link">About</a>
-                <a href="{{ route('shop.contact') }}"   class="nav-link">Contact</a>
+                <a href="{{ route('shop.home') }}"    class="nav-link {{ request()->routeIs('shop.home') ? 'active' : '' }}">Home</a>
+                <a href="{{ route('shop.catalog') }}" class="nav-link {{ request()->routeIs('shop.catalog') ? 'active' : '' }}">Shop</a>
+
+                {{-- ─── Categories mega-menu (hover) ─── --}}
+                <div class="relative" x-data="{ open: false, t: null }"
+                     @mouseenter="clearTimeout(t); open = true"
+                     @mouseleave="t = setTimeout(() => open = false, 150)">
+                    <button class="nav-link inline-flex items-center gap-1.5 {{ request()->routeIs('shop.category') ? 'active' : '' }}">
+                        Categories
+                        <i class="fas fa-chevron-down text-[10px]" :class="open ? 'rotate-180' : ''" style="transition:transform .2s;"></i>
+                    </button>
+
+                    {{-- Invisible bridge to prevent the menu from closing when the cursor moves between trigger and panel --}}
+                    <div x-show="open" x-cloak class="absolute left-0 right-0 top-full h-3"></div>
+
+                    <div x-show="open" x-cloak
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-2"
+                         class="absolute left-1/2 -translate-x-1/2 top-full mt-3 w-[680px] max-w-[92vw] bg-white rounded-2xl shadow-2xl border border-gray-100 z-40 overflow-hidden">
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-1 p-3 max-h-[60vh] overflow-y-auto">
+                            @foreach ($allShopCategories as $cat)
+                                <a href="{{ route('shop.category', $cat->slug) }}"
+                                   class="group flex items-center gap-3 p-3 rounded-xl hover:bg-cyan-50 transition">
+                                    <span class="w-10 h-10 rounded-lg bg-gray-100 group-hover:bg-cyan-100 transition overflow-hidden flex items-center justify-center flex-shrink-0">
+                                        @if ($cat->photo)
+                                            <img src="{{ shop_image($cat->photo) }}" alt="" class="w-full h-full object-cover">
+                                        @else
+                                            <i class="fas fa-folder text-gray-400 group-hover:text-cyan-600 text-sm"></i>
+                                        @endif
+                                    </span>
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-semibold text-gray-800 group-hover:text-cyan-700 truncate text-sm">{{ $cat->name }}</div>
+                                        <div class="text-[11px] text-gray-400">{{ $cat->products_count }} {{ \Str::plural('product', $cat->products_count) }}</div>
+                                    </div>
+                                </a>
+                            @endforeach
+                        </div>
+                        <a href="{{ route('shop.catalog') }}"
+                           class="block px-5 py-3 text-center text-sm font-semibold border-t border-gray-100 text-gray-700 hover:bg-gray-50 transition">
+                            View all products <i class="fas fa-arrow-right text-xs ml-1"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <a href="{{ route('shop.about') }}"   class="nav-link">About</a>
+                <a href="{{ route('shop.contact') }}" class="nav-link">Contact</a>
             </nav>
 
             <div class="ml-auto flex items-center gap-2">
@@ -355,12 +412,28 @@
             <span class="font-bold text-gray-900">Menu</span>
             <button @click="mobileNavOpen = false" class="text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
         </div>
-        <nav class="flex-1 overflow-y-auto p-5 space-y-2 text-sm">
+        <nav class="flex-1 overflow-y-auto p-5 space-y-2 text-sm" x-data="{ catsOpen: false }">
             <a href="{{ route('shop.home') }}"     class="block py-2 hover:text-cyan-700 font-semibold">Home</a>
             <a href="{{ route('shop.catalog') }}"  class="block py-2 hover:text-cyan-700 font-semibold">Shop</a>
-            @foreach ($featuredCats ?? collect() as $cat)
-                <a href="{{ route('shop.category', $cat->slug) }}" class="block py-2 hover:text-cyan-700">{{ $cat->name }}</a>
-            @endforeach
+
+            <button type="button" @click="catsOpen = !catsOpen"
+                    class="w-full flex items-center justify-between py-2 hover:text-cyan-700 font-semibold">
+                <span>Categories</span>
+                <i class="fas fa-chevron-down text-[10px] text-gray-400" :class="catsOpen ? 'rotate-180' : ''" style="transition:transform .2s;"></i>
+            </button>
+            <div x-show="catsOpen" x-cloak
+                 x-transition:enter="transition ease-out duration-200"
+                 x-transition:enter-start="opacity-0 -translate-y-1"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 class="pl-3 space-y-1 border-l border-gray-200">
+                @foreach ($allShopCategories ?? collect() as $cat)
+                    <a href="{{ route('shop.category', $cat->slug) }}" class="block py-1.5 text-gray-600 hover:text-cyan-700">
+                        {{ $cat->name }}
+                        <span class="text-[10px] text-gray-400">({{ $cat->products_count ?? 0 }})</span>
+                    </a>
+                @endforeach
+            </div>
+
             <hr class="border-gray-200 my-3">
             @auth('customer')
                 <a href="{{ route('shop.account') }}" class="block py-2"><i class="fas fa-user mr-2 text-gray-400"></i> My account</a>
