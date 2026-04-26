@@ -225,8 +225,44 @@
 
                 <a href="{{ route('shop.track') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="Track order"><i class="fas fa-truck"></i></a>
                 @auth('customer')
-                    <a href="{{ route('shop.account') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="My account"><i class="fas fa-user"></i></a>
                     <a href="{{ route('shop.wishlist') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="Wishlist"><i class="fas fa-heart"></i></a>
+
+                    {{-- Account dropdown with Sign out --}}
+                    <div class="relative hidden sm:block" x-data="{ open: false }" @click.outside="open = false">
+                        <button @click="open = !open"
+                                class="inline-flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-gray-100 text-gray-700"
+                                :class="open ? 'bg-gray-100' : ''" title="My account">
+                            <span class="w-8 h-8 rounded-full text-white font-bold flex items-center justify-center text-xs"
+                                  style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">
+                                {{ strtoupper(substr(auth('customer')->user()->name ?? 'U', 0, 1)) }}
+                            </span>
+                            <i class="fas fa-chevron-down text-[10px] text-gray-500" :class="open ? 'rotate-180' : ''" style="transition:transform .2s;"></i>
+                        </button>
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0 -translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="absolute right-0 mt-2 w-60 bg-white rounded-2xl shadow-2xl border border-gray-100 py-2 z-50">
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <div class="text-[11px] uppercase tracking-widest text-gray-400">Signed in as</div>
+                                <div class="font-bold text-gray-900 truncate">{{ auth('customer')->user()->name }}</div>
+                                <div class="text-xs text-gray-500 truncate">{{ auth('customer')->user()->email }}</div>
+                            </div>
+                            <a href="{{ route('shop.account') }}"          class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-user-circle text-gray-400 w-4"></i> My account</a>
+                            <a href="{{ route('shop.account.orders') }}"   class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-receipt text-gray-400 w-4"></i> My orders</a>
+                            <a href="{{ route('shop.wishlist') }}"         class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-heart text-gray-400 w-4"></i> Wishlist</a>
+                            <a href="{{ route('shop.account.profile') }}"  class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-pen text-gray-400 w-4"></i> Edit profile</a>
+                            <a href="{{ route('shop.account.password') }}" class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-lock text-gray-400 w-4"></i> Change password</a>
+                            <div class="border-t border-gray-100 mt-2 pt-2">
+                                <form method="POST" action="{{ route('shop.logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full text-left px-4 py-2 text-sm hover:bg-rose-50 text-rose-600 flex items-center gap-2">
+                                        <i class="fas fa-sign-out-alt text-rose-400 w-4"></i> Sign out
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
                 @else
                     <a href="{{ route('shop.login') }}" class="hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-user text-xs"></i> Sign in

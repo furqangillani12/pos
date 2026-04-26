@@ -78,9 +78,9 @@ $registerShopRoutes = function () {
             Route::get('/account/orders',          [AccountController::class, 'orders'])->name('account.orders');
             Route::get('/account/orders/{order}',  [AccountController::class, 'orderShow'])->name('account.order');
 
-            Route::get('/wishlist',                       [WishlistController::class, 'index'])->name('wishlist');
-            Route::post('/wishlist/toggle/{product}',     [WishlistController::class, 'toggle'])->name('wishlist.toggle');
-            Route::delete('/wishlist/{wishlist}',         [WishlistController::class, 'remove'])->name('wishlist.remove');
+            Route::get('/wishlist',                        [WishlistController::class, 'index'])->name('wishlist');
+            Route::post('/wishlist/toggle/{product:id}',   [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+            Route::delete('/wishlist/{wishlist}',          [WishlistController::class, 'remove'])->name('wishlist.remove');
 
             Route::post('/product/{product:slug}/review', [ReviewController::class, 'store'])->name('review.store');
         });
