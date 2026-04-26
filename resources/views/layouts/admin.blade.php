@@ -757,15 +757,32 @@
                     <i class="fas fa-money-bill-wave mr-2 text-xs"></i> Cash In / Out
                 </a>
 
-                {{-- ── Storefront (Brands + Banners) ── --}}
+                {{-- ── Manage Website (storefront brands / banners / online orders) ── --}}
+                @php
+                    $websiteOpen = request()->routeIs('admin.brands.*')
+                        || request()->routeIs('admin.banners.*')
+                        || request()->routeIs('admin.online-orders.*');
+                @endphp
                 <button @click="storefrontOpen = !storefrontOpen"
-                    class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300">
-                    <span><i class="fas fa-globe mr-2 text-xs"></i> Storefront</span>
+                    class="w-full flex items-center justify-between px-4 py-2 rounded-md transition {{ $websiteOpen ? 'bg-cyan-50 text-cyan-700 font-semibold' : 'hover:bg-cyan-100 dark:hover:bg-cyan-900 hover:text-cyan-700 dark:hover:text-cyan-300' }}">
+                    <span><i class="fas fa-globe mr-2 text-xs"></i> Manage Website</span>
                     <svg class="w-4 h-4 transform transition-transform" :class="{ 'rotate-180': storefrontOpen }" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                     </svg>
                 </button>
-                <div x-show="storefrontOpen" x-cloak class="ml-4 space-y-1">
+                <div x-show="storefrontOpen || {{ $websiteOpen ? 'true' : 'false' }}" x-cloak class="ml-4 space-y-1">
+                    <a href="{{ route('admin.online-orders.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.online-orders.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-bag-shopping mr-2 text-xs"></i> Online Orders
+                        @php
+                            try {
+                                $newOrders = \App\Models\Order::where('order_source', 'online')->where('status', 'pending')->count();
+                            } catch (\Throwable $e) { $newOrders = 0; }
+                        @endphp
+                        @if ($newOrders > 0)
+                            <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 ml-1 rounded-full bg-amber-400 text-[10px] font-bold text-gray-900">{{ $newOrders }}</span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.brands.index') }}"
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.brands.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-tag mr-2 text-xs"></i> Brands

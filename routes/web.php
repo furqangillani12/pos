@@ -270,12 +270,17 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/cash/history', [CashTransactionController::class, 'history'])->name('cash.history');
 });
 
-// ── Storefront admin (Brands + Banners) ──
+// ── Manage Website (Brands + Banners + Online Orders) ──
 Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('brands',  \App\Http\Controllers\Admin\BrandController::class)->except(['show']);
     Route::patch('/brands/{brand}/toggle',   [\App\Http\Controllers\Admin\BrandController::class,  'toggle'])->name('brands.toggle');
     Route::resource('banners', \App\Http\Controllers\Admin\BannerController::class)->except(['show']);
     Route::patch('/banners/{banner}/toggle', [\App\Http\Controllers\Admin\BannerController::class, 'toggle'])->name('banners.toggle');
+
+    Route::get('/online-orders',                     [\App\Http\Controllers\Admin\OnlineOrderController::class, 'index'])->name('online-orders.index');
+    Route::get('/online-orders/{order}',             [\App\Http\Controllers\Admin\OnlineOrderController::class, 'show'])->name('online-orders.show');
+    Route::patch('/online-orders/{order}/status',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'updateStatus'])->name('online-orders.status');
+    Route::patch('/online-orders/{order}/mark-paid', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'markPaid'])->name('online-orders.mark-paid');
 });
 
 // ── Linked customer ↔ supplier (offset feature) ──
