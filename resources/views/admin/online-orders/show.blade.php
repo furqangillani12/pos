@@ -51,7 +51,7 @@
                         'pending'   => ['Pending',   'fa-clock'],
                         'confirmed' => ['Confirmed', 'fa-check'],
                         'shipped'   => ['Shipped',   'fa-truck'],
-                        'delivered' => ['Delivered', 'fa-box-circle-check'],
+                        'delivered' => ['Delivered', 'fa-circle-check'],
                     ];
                     $current = $order->status === 'completed' ? 'delivered' : $order->status;
                     $cancelled = $order->status === 'cancelled';
@@ -73,22 +73,22 @@
                     <div class="px-5 -mt-2 pb-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-ban"></i> Cancelled</span></div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.online-orders.status', $order) }}" class="border-t border-gray-100 p-5 grid grid-cols-1 sm:grid-cols-12 gap-3">
+                <form method="POST" action="{{ route('admin.online-orders.status', $order) }}" class="border-t border-gray-100 p-5 flex flex-col sm:flex-row sm:items-end gap-3">
                     @csrf @method('PATCH')
-                    <div class="sm:col-span-4">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Update status</label>
+                    <div class="sm:w-44 flex-shrink-0">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Update status</label>
                         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                             @foreach (['pending','confirmed','shipped','delivered','cancelled'] as $s)
                                 <option value="{{ $s }}" @selected($order->status === $s)>{{ ucfirst($s) }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div class="sm:col-span-5">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tracking ID (optional)</label>
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Tracking ID <span class="text-gray-400 font-normal">(optional)</span></label>
                         <input type="text" name="tracking_id" value="{{ $order->tracking_id }}" placeholder="e.g. TCS-1234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     </div>
-                    <div class="sm:col-span-3 flex items-end">
-                        <button class="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-white text-sm font-semibold rounded-lg" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                    <div class="flex-shrink-0">
+                        <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 text-white text-sm font-semibold rounded-lg whitespace-nowrap" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
                             <i class="fas fa-check"></i> Update
                         </button>
                     </div>
