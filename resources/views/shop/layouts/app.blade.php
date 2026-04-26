@@ -200,14 +200,17 @@
     <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-gray-200/60"
             style="-webkit-backdrop-filter:blur(12px);">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center gap-4">
-            <button @click="mobileNavOpen = true" class="lg:hidden text-gray-700 text-xl"><i class="fas fa-bars"></i></button>
+            {{-- Left: hamburger (mobile) + logo --}}
+            <div class="flex items-center gap-3 flex-1">
+                <button @click="mobileNavOpen = true" class="lg:hidden text-gray-700 text-xl"><i class="fas fa-bars"></i></button>
 
-            <a href="{{ route('shop.home') }}" class="flex items-center mr-4 group" aria-label="Almufeed Traders home">
-                <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}"
-                     alt="AL MUFEED TRADERS"
-                     class="h-10 sm:h-11 w-auto transition group-hover:scale-105"
-                     style="max-width:200px;">
-            </a>
+                <a href="{{ route('shop.home') }}" class="flex items-center group" aria-label="Almufeed Traders home">
+                    <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}"
+                         alt="AL MUFEED TRADERS"
+                         class="h-10 sm:h-11 w-auto transition group-hover:scale-105"
+                         style="max-width:200px;">
+                </a>
+            </div>
 
             @php
                 /* All categories from every branch, deduplicated by slug, with product counts.
@@ -224,7 +227,8 @@
                 $featuredCats = $allShopCategories->where('is_featured', true)->take(4);
             @endphp
 
-            <nav class="hidden lg:flex items-center gap-6 text-sm text-gray-700">
+            {{-- Center: nav (tabs centered between logo and actions) --}}
+            <nav class="hidden lg:flex items-center justify-center gap-8 text-sm text-gray-700 flex-shrink-0">
                 <a href="{{ route('shop.home') }}"    class="nav-link {{ request()->routeIs('shop.home') ? 'active' : '' }}">Home</a>
                 <a href="{{ route('shop.catalog') }}" class="nav-link {{ request()->routeIs('shop.catalog') ? 'active' : '' }}">Shop</a>
 
@@ -272,12 +276,10 @@
                         </a>
                     </div>
                 </div>
-
-                <a href="{{ route('shop.about') }}"   class="nav-link">About</a>
-                <a href="{{ route('shop.contact') }}" class="nav-link">Contact</a>
             </nav>
 
-            <div class="ml-auto flex items-center gap-2">
+            {{-- Right: actions (search, track, account, cart) --}}
+            <div class="flex items-center gap-2 flex-1 justify-end">
                 <button @click="searchOpen = !searchOpen" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-700"><i class="fas fa-search"></i></button>
 
                 <a href="{{ route('shop.track') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="Track order"><i class="fas fa-truck"></i></a>
