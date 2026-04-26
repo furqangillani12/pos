@@ -97,7 +97,7 @@
                         <input type="number" min="1" x-model.number="qty" class="w-14 bg-transparent text-center font-bold border-0 focus:ring-0">
                         <button type="button" @click="qty = qty + 1" class="px-4 py-3 text-gray-600 hover:text-gray-900"><i class="fas fa-plus text-xs"></i></button>
                     </div>
-                    <button type="button" @click="addToCart({{ $product->id }}, qty); $root.miniCartOpen = true; $root.cartCount += qty;"
+                    <button type="button" @click="addToCart({{ $product->id }}, qty)"
                             class="btn btn-dark flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
                         <i class="fas fa-bag-shopping"></i> Add to bag
                     </button>

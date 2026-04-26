@@ -48,18 +48,20 @@
         @keyframes fadeIn  { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
-        /* ── Reveal-on-scroll ─────────────────────────────────────────── */
-        .reveal { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
-        .reveal.in { opacity: 1; transform: none; }
-        .reveal-stagger > * { opacity: 0; transform: translateY(20px); transition: opacity .7s ease, transform .7s ease; }
-        .reveal-stagger.in > *:nth-child(1) { transition-delay: 0ms; }
-        .reveal-stagger.in > *:nth-child(2) { transition-delay: 80ms; }
-        .reveal-stagger.in > *:nth-child(3) { transition-delay: 160ms; }
-        .reveal-stagger.in > *:nth-child(4) { transition-delay: 240ms; }
-        .reveal-stagger.in > *:nth-child(5) { transition-delay: 320ms; }
-        .reveal-stagger.in > *:nth-child(6) { transition-delay: 400ms; }
-        .reveal-stagger.in > *:nth-child(n+7) { transition-delay: 480ms; }
-        .reveal-stagger.in > * { opacity: 1; transform: none; }
+        /* ── Reveal-on-scroll (progressive enhancement: only hides when JS marks <html>) ── */
+        .reveal             { transition: opacity .7s ease, transform .7s ease; }
+        .reveal-stagger > * { transition: opacity .7s ease, transform .7s ease; }
+        html.js-reveal .reveal             { opacity: 0; transform: translateY(20px); }
+        html.js-reveal .reveal.in          { opacity: 1; transform: none; }
+        html.js-reveal .reveal-stagger > * { opacity: 0; transform: translateY(20px); }
+        html.js-reveal .reveal-stagger.in > *:nth-child(1) { transition-delay: 0ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(2) { transition-delay: 80ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(3) { transition-delay: 160ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(4) { transition-delay: 240ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(5) { transition-delay: 320ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(6) { transition-delay: 400ms; }
+        html.js-reveal .reveal-stagger.in > *:nth-child(n+7) { transition-delay: 480ms; }
+        html.js-reveal .reveal-stagger.in > * { opacity: 1; transform: none; }
 
         /* ── Buttons ──────────────────────────────────────────────────── */
         .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -160,24 +162,29 @@
         mobileNavOpen: false,
         searchOpen: false,
         cartCount: {{ shop_cart_count() }},
+        cartItems: [],
+        cartSubtotal: 0,
+        cartLoading: false,
+        async loadCart() {
+            this.cartLoading = true;
+            try {
+                const res = await fetch('{{ route('shop.cart.json') }}', { headers: { 'Accept': 'application/json' }});
+                const data = await res.json();
+                this.cartItems    = data.items || [];
+                this.cartSubtotal = data.subtotal || 0;
+                this.cartCount    = (data.items || []).reduce((s, i) => s + Number(i.qty), 0);
+            } finally { this.cartLoading = false; }
+        },
+        async removeFromCart(id) {
+            const res = await fetch('/shop/cart/remove/' + id, {
+                method: 'DELETE',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+            });
+            if (res.ok) { window.toast && window.toast('Removed from bag', 'success'); this.loadCart(); }
+            else        { window.toast && window.toast('Could not remove', 'error'); }
+        },
     }"
-    x-init="
-        // reveal-on-scroll
-        const io = new IntersectionObserver((es) => es.forEach(e => e.isIntersecting && e.target.classList.add('in')), {threshold: .12});
-        document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => io.observe(el));
-        // lazy images
-        const li = new IntersectionObserver((es, obs) => es.forEach(e => { if (e.isIntersecting) { const i = e.target; if (i.dataset.src) { i.src = i.dataset.src; } i.addEventListener('load', () => i.classList.add('loaded')); obs.unobserve(i); }}), {rootMargin: '200px'});
-        document.querySelectorAll('img.lazy[data-src]').forEach(i => li.observe(i));
-        // prefetch on hover for snappier nav
-        document.body.addEventListener('mouseover', (e) => {
-            const a = e.target.closest('a[href]');
-            if (!a || a.dataset.prefetched) return;
-            const u = new URL(a.href, location.href);
-            if (u.origin !== location.origin) return;
-            a.dataset.prefetched = '1';
-            const l = document.createElement('link'); l.rel = 'prefetch'; l.href = a.href; document.head.appendChild(l);
-        });
-    ">
+    x-init="initStorefront($el); $watch('miniCartOpen', v => v && loadCart())">
 
     {{-- ═════════════════ Announcement bar ═════════════════ --}}
     <div class="text-white text-xs font-medium" style="background:var(--brand-navy);">
@@ -216,6 +223,7 @@
             <div class="ml-auto flex items-center gap-2">
                 <button @click="searchOpen = !searchOpen" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center text-gray-700"><i class="fas fa-search"></i></button>
 
+                <a href="{{ route('shop.track') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="Track order"><i class="fas fa-truck"></i></a>
                 @auth('customer')
                     <a href="{{ route('shop.account') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="My account"><i class="fas fa-user"></i></a>
                     <a href="{{ route('shop.wishlist') }}" class="hidden sm:inline-flex w-10 h-10 rounded-full hover:bg-gray-100 items-center justify-center text-gray-700" title="Wishlist"><i class="fas fa-heart"></i></a>
@@ -277,6 +285,7 @@
             <div>
                 <h4 class="text-white font-semibold mb-3 text-sm uppercase tracking-wider">Help</h4>
                 <ul class="space-y-2 text-sm">
+                    <li><a href="{{ route('shop.track') }}" class="hover:text-white">Track an order</a></li>
                     <li><a href="{{ route('shop.about') }}" class="hover:text-white">About us</a></li>
                     <li><a href="{{ route('shop.contact') }}" class="hover:text-white">Contact</a></li>
                     <li><a href="{{ route('shop.returns') }}" class="hover:text-white">Returns &amp; refunds</a></li>
@@ -329,36 +338,37 @@
                 <a href="{{ route('shop.register') }}" class="block py-2"><i class="fas fa-user-plus mr-2 text-gray-400"></i> Create account</a>
             @endauth
             <hr class="border-gray-200 my-3">
+            <a href="{{ route('shop.track') }}"   class="block py-2"><i class="fas fa-truck mr-2 text-gray-400"></i> Track an order</a>
             <a href="{{ route('shop.about') }}"   class="block py-2">About</a>
             <a href="{{ route('shop.contact') }}" class="block py-2">Contact</a>
         </nav>
     </div>
 
-    {{-- ═════════════════ Mini cart drawer ═════════════════ --}}
+    {{-- ═════════════════ Mini cart drawer (uses body's x-data scope) ═════════════════ --}}
     <div class="drawer-overlay" :class="miniCartOpen ? 'open' : ''" @click="miniCartOpen = false"></div>
-    <div class="drawer" :class="miniCartOpen ? 'open' : ''" x-data="miniCart()" x-init="$watch('$root.miniCartOpen', v => v && load())">
+    <div class="drawer" :class="miniCartOpen ? 'open' : ''">
         <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <span class="font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Your bag <span class="text-xs text-gray-500" x-text="'(' + items.length + ')'"></span></span>
-            <button @click="$root.miniCartOpen = false" class="text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
+            <span class="font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Your bag <span class="text-xs text-gray-500" x-text="'(' + cartItems.length + ')'"></span></span>
+            <button type="button" @click="miniCartOpen = false" class="text-gray-400 hover:text-gray-700 w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto p-5">
-            <template x-if="loading">
+            <template x-if="cartLoading">
                 <div class="space-y-3">
                     <div class="skel h-20"></div>
                     <div class="skel h-20"></div>
                 </div>
             </template>
-            <template x-if="!loading && items.length === 0">
+            <template x-if="!cartLoading && cartItems.length === 0">
                 <div class="text-center py-12 text-gray-500">
                     <i class="fas fa-shopping-bag text-4xl text-gray-300 mb-3 block"></i>
                     <p class="font-semibold">Your bag is empty</p>
                     <p class="text-xs mt-1">Add some beautiful pieces to it.</p>
-                    <a href="{{ route('shop.catalog') }}" @click="$root.miniCartOpen = false" class="btn btn-dark mt-4 !text-xs">Start shopping</a>
+                    <a href="{{ route('shop.catalog') }}" @click="miniCartOpen = false" class="btn btn-dark mt-4 !text-xs">Start shopping</a>
                 </div>
             </template>
-            <template x-if="!loading && items.length > 0">
+            <template x-if="!cartLoading && cartItems.length > 0">
                 <div class="space-y-3">
-                    <template x-for="it in items" :key="it.id">
+                    <template x-for="it in cartItems" :key="it.id">
                         <div class="flex gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 bg-white">
                             <img :src="it.image" alt="" class="w-16 h-20 object-cover rounded-lg" style="background:#f5f1e8;">
                             <div class="flex-1 min-w-0">
@@ -366,16 +376,16 @@
                                 <div class="text-[11px] text-gray-500 mt-0.5" x-text="'Qty ' + it.qty"></div>
                                 <div class="text-sm font-bold mt-1" style="color:var(--brand-cyan);" x-text="'Rs. ' + (it.qty * it.unit_price).toLocaleString()"></div>
                             </div>
-                            <button @click="remove(it.id)" class="text-gray-300 hover:text-rose-500 self-start"><i class="fas fa-times-circle"></i></button>
+                            <button type="button" @click="removeFromCart(it.id)" class="text-gray-300 hover:text-rose-500 self-start"><i class="fas fa-times-circle"></i></button>
                         </div>
                     </template>
                 </div>
             </template>
         </div>
-        <div class="border-t border-gray-200 p-5" x-show="items.length > 0">
+        <div class="border-t border-gray-200 p-5" x-show="cartItems.length > 0">
             <div class="flex items-center justify-between mb-4">
                 <span class="text-gray-500 text-sm">Subtotal</span>
-                <span class="font-bold text-lg" style="color:var(--brand-navy);" x-text="'Rs. ' + subtotal.toLocaleString()"></span>
+                <span class="font-bold text-lg" style="color:var(--brand-navy);" x-text="'Rs. ' + cartSubtotal.toLocaleString()"></span>
             </div>
             <a href="{{ route('shop.cart') }}" class="btn btn-ghost btn-block mb-2">View bag</a>
             <a href="{{ route('shop.checkout') }}" class="btn btn-primary btn-block">Checkout <i class="fas fa-arrow-right text-xs"></i></a>
@@ -388,6 +398,56 @@
     @stack('scripts')
 
     <script>
+        // ── Storefront init (animations + lazy images + link prefetch) ───
+        // Only adds the .js-reveal opacity-hide-then-fade-in if IO is supported,
+        // so if anything fails the page remains visible.
+        window.initStorefront = function (root) {
+            if (!('IntersectionObserver' in window)) return;
+            document.documentElement.classList.add('js-reveal');
+
+            const io = new IntersectionObserver((es) => es.forEach(e => {
+                if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+            }), { threshold: 0.12 });
+            document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => io.observe(el));
+
+            // Force-mark anything already in viewport as visible immediately
+            requestAnimationFrame(() => {
+                document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => {
+                    const r = el.getBoundingClientRect();
+                    if (r.top < window.innerHeight && r.bottom > 0) el.classList.add('in');
+                });
+            });
+
+            // Lazy images
+            const li = new IntersectionObserver((es, obs) => es.forEach(e => {
+                if (e.isIntersecting) {
+                    const i = e.target;
+                    if (i.dataset.src) i.src = i.dataset.src;
+                    i.addEventListener('load', () => i.classList.add('loaded'));
+                    obs.unobserve(i);
+                }
+            }), { rootMargin: '200px' });
+            document.querySelectorAll('img.lazy[data-src]').forEach(i => li.observe(i));
+
+            // Prefetch on hover
+            document.body.addEventListener('mouseover', (e) => {
+                const a = e.target.closest('a[href]');
+                if (!a || a.dataset.prefetched) return;
+                try {
+                    const u = new URL(a.href, location.href);
+                    if (u.origin !== location.origin) return;
+                    a.dataset.prefetched = '1';
+                    const l = document.createElement('link'); l.rel = 'prefetch'; l.href = a.href; document.head.appendChild(l);
+                } catch (err) {}
+            });
+        };
+
+        // ── Hard fallback: after 2s, force-show everything no matter what ──
+        // Guarantees content is visible even if IO never fires.
+        setTimeout(() => {
+            document.querySelectorAll('.reveal, .reveal-stagger').forEach(el => el.classList.add('in'));
+        }, 2000);
+
         // ── Toast helper ─────────────────────────────────────────────────
         window.toast = function (msg, type = 'info') {
             const stack = document.getElementById('toastStack');
@@ -401,32 +461,9 @@
             setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 350); }, 3500);
         };
 
-        // ── Mini cart Alpine component ───────────────────────────────────
-        function miniCart() {
-            return {
-                items: [], subtotal: 0, loading: false,
-                async load() {
-                    this.loading = true;
-                    try {
-                        const res = await fetch('{{ route('shop.cart.json') }}', {headers: {'Accept': 'application/json'}});
-                        const data = await res.json();
-                        this.items = data.items || [];
-                        this.subtotal = data.subtotal || 0;
-                        this.$root.cartCount = (data.items || []).reduce((s, i) => s + Number(i.qty), 0);
-                    } finally { this.loading = false; }
-                },
-                async remove(id) {
-                    const res = await fetch('/shop/cart/remove/' + id, {
-                        method: 'DELETE',
-                        headers: {'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json'}
-                    });
-                    if (res.ok) { window.toast('Removed from bag', 'success'); this.load(); }
-                    else        { window.toast('Could not remove', 'error'); }
-                },
-            };
-        }
-
         // ── Add-to-cart helper (used from product cards / detail page) ───
+        // Reaches into the body's Alpine scope to bump the cart count and
+        // open / refresh the mini-cart drawer.
         window.addToCart = async function (productId, qty = 1, opts = {}) {
             const fd = new FormData();
             fd.append('product_id', productId);
@@ -436,21 +473,22 @@
             try {
                 const res = await fetch('{{ route('shop.cart.add') }}', {
                     method: 'POST', body: fd,
-                    headers: {'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json'}
+                    headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
                 });
                 const data = await res.json();
                 if (!res.ok || !data.ok) { window.toast(data.message || 'Could not add', 'error'); return false; }
                 window.toast(data.message || 'Added to bag', 'success');
-                document.dispatchEvent(new CustomEvent('cart:changed', { detail: data }));
+
+                // Update body's Alpine state (cartCount + reload mini-cart)
+                const bodyData = window.Alpine ? window.Alpine.$data(document.body) : null;
+                if (bodyData) {
+                    bodyData.cartCount = data.cart_count;
+                    if (typeof bodyData.loadCart === 'function') bodyData.loadCart();
+                    if (opts.openDrawer !== false) bodyData.miniCartOpen = true;
+                }
                 return true;
             } catch (e) { window.toast('Network error', 'error'); return false; }
         };
-        document.addEventListener('cart:changed', (e) => {
-            const root = document.body.__x?.$data;
-            if (root && e.detail && typeof e.detail.cart_count !== 'undefined') {
-                root.cartCount = e.detail.cart_count;
-            }
-        });
 
         // ── Wishlist toggle helper ───────────────────────────────────────
         window.toggleWishlist = async function (productId, btn) {

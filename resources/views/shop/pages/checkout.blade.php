@@ -9,25 +9,49 @@
             <p class="text-gray-500 text-sm mt-2">A few details and your order is on the way.</p>
         </div>
 
+        @if ($isGuest)
+            <div class="bg-cyan-50 border border-cyan-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 reveal">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-circle-info text-lg" style="color:var(--brand-cyan);"></i>
+                    <div>
+                        <div class="font-semibold text-gray-800 text-sm">Checking out as a guest</div>
+                        <div class="text-xs text-gray-600">Track your order any time at <strong>/track-order</strong> using the order number we'll email you. Or <a href="{{ route('shop.login') }}" class="font-semibold underline" style="color:var(--brand-cyan);">sign in</a> for faster checkout next time.</div>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('shop.checkout.place') }}" x-data="{ method: 'cod', dispatch: '{{ $dispatchMethods->first()?->name }}' }" class="grid lg:grid-cols-[1fr_360px] gap-8">
             @csrf
 
             <div class="space-y-6 reveal">
+                @if ($isGuest)
+                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                        <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-envelope" style="color:var(--brand-cyan);"></i> Contact info</h2>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Email *</label>
+                            <input type="email" name="guest_email" required value="{{ old('guest_email') }}" placeholder="you@example.com"
+                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <p class="text-[11px] text-gray-500 mt-1">We'll send your order confirmation here.</p>
+                        </div>
+                    </div>
+                @endif
+
                 {{-- Shipping address --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
                     <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-truck" style="color:var(--brand-cyan);"></i> Shipping address</h2>
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">First name *</label>
-                            <input type="text" name="shipping_first_name" required value="{{ old('shipping_first_name', explode(' ', $customer->name)[0] ?? '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <input type="text" name="shipping_first_name" required value="{{ old('shipping_first_name', $customer ? (explode(' ', $customer->name)[0] ?? '') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Last name</label>
-                            <input type="text" name="shipping_last_name" value="{{ old('shipping_last_name', \Str::after($customer->name, ' ')) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <input type="text" name="shipping_last_name" value="{{ old('shipping_last_name', $customer ? \Str::after($customer->name, ' ') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Phone *</label>
-                            <input type="text" name="shipping_phone" required value="{{ old('shipping_phone', $customer->phone) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <input type="text" name="shipping_phone" required value="{{ old('shipping_phone', $customer?->phone) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">City *</label>
@@ -35,7 +59,7 @@
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Address line 1 *</label>
-                            <input type="text" name="shipping_address1" required value="{{ old('shipping_address1', $customer->address) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                            <input type="text" name="shipping_address1" required value="{{ old('shipping_address1', $customer?->address) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Address line 2</label>

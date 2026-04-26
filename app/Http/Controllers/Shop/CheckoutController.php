@@ -12,6 +12,7 @@ use App\Services\Shop\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
 
 class CheckoutController extends Controller
 {
@@ -25,51 +26,57 @@ class CheckoutController extends Controller
         $totals = $this->cart->totals();
         $coupon = $this->cart->activeCoupon();
         $customer = Auth::guard('customer')->user();
+        $isGuest = !$customer;
         $dispatchMethods = DispatchMethod::active()->get();
         $weight = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
 
-        return view('shop.pages.checkout', compact('items', 'totals', 'coupon', 'customer', 'dispatchMethods', 'weight'));
+        return view('shop.pages.checkout', compact('items', 'totals', 'coupon', 'customer', 'isGuest', 'dispatchMethods', 'weight'));
     }
 
     public function place(Request $request)
     {
-        $data = $request->validate([
-            'shipping_first_name' => 'required|string|max:191',
-            'shipping_last_name'  => 'nullable|string|max:191',
-            'shipping_phone'      => 'required|string|max:30',
-            'shipping_address1'   => 'required|string|max:500',
-            'shipping_address2'   => 'nullable|string|max:500',
-            'shipping_city'       => 'required|string|max:100',
-            'shipping_post_code'  => 'nullable|string|max:20',
-            'dispatch_method'     => 'required|string|max:100',
-            'payment_method'      => 'required|in:cod,bank_transfer',
-            'order_notes_customer'=> 'nullable|string|max:1000',
-        ]);
+        $isGuest = !Auth::guard('customer')->check();
+
+        $rules = [
+            'shipping_first_name'  => 'required|string|max:191',
+            'shipping_last_name'   => 'nullable|string|max:191',
+            'shipping_phone'       => 'required|string|max:30',
+            'shipping_address1'    => 'required|string|max:500',
+            'shipping_address2'    => 'nullable|string|max:500',
+            'shipping_city'        => 'required|string|max:100',
+            'shipping_post_code'   => 'nullable|string|max:20',
+            'dispatch_method'      => 'required|string|max:100',
+            'payment_method'       => 'required|in:cod,bank_transfer',
+            'order_notes_customer' => 'nullable|string|max:1000',
+        ];
+        if ($isGuest) {
+            $rules['guest_email'] = 'required|email|max:191';
+        }
+
+        $data = $request->validate($rules);
 
         $items = $this->cart->items();
         if ($items->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your bag is empty.');
 
         $customer = Auth::guard('customer')->user();
-        $totals = $this->cart->totals();
-        $coupon = $this->cart->activeCoupon();
-        $weight = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
-
-        // Weight-based delivery (reuses existing POS slabs)
+        $totals   = $this->cart->totals();
+        $coupon   = $this->cart->activeCoupon();
+        $weight   = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
         $delivery = $this->resolveDelivery($data['dispatch_method'], $weight);
         $grandTotal = max(0, $totals['total'] + $delivery);
 
-        $order = DB::transaction(function () use ($items, $customer, $data, $totals, $coupon, $delivery, $grandTotal, $weight) {
+        $order = DB::transaction(function () use ($items, $customer, $isGuest, $data, $totals, $coupon, $delivery, $grandTotal, $weight) {
 
-            // Pick a fulfilment branch — first item's branch_id (or default branch)
+            // Pick a fulfilment branch — first item's branch_id (or any branch)
             $branchId = $items->first()->branch_id ?? \App\Models\Branch::query()->value('id');
 
             $order = Order::create([
                 'order_number'     => Order::generateOrderNumber($branchId),
                 'order_source'     => 'online',
                 'order_type'       => 'online',
-                'customer_id'      => $customer->id,
-                'customer_email'   => $customer->email,
-                'customer_type'    => $customer->customer_type ?? 'customer',
+                'customer_id'      => $customer?->id,
+                'customer_email'   => $customer?->email ?? ($data['guest_email'] ?? null),
+                'customer_type'    => $customer?->customer_type ?? 'customer',
                 'user_id'          => null,
                 'branch_id'        => $branchId,
                 'subtotal'         => $totals['subtotal'],
@@ -83,7 +90,7 @@ class CheckoutController extends Controller
                 'weight'           => $weight,
                 'total'            => $grandTotal,
                 'paid_amount'      => 0,
-                'previous_balance' => (float) ($customer->current_balance ?? 0),
+                'previous_balance' => $customer ? (float) ($customer->current_balance ?? 0) : 0,
                 'balance_amount'   => $grandTotal,
                 'payment_method'   => $data['payment_method'],
                 'payment_status'   => 'unpaid',
@@ -117,12 +124,19 @@ class CheckoutController extends Controller
                 }
             }
 
-            // Customer khata grows by the unpaid amount (online orders are unpaid until COD/bank confirms)
-            $customer->update([
-                'current_balance' => round((float) ($customer->current_balance ?? 0) + $grandTotal, 2),
-            ]);
+            // Logged-in customer's khata grows by the unpaid amount.
+            if ($customer) {
+                $customer->update([
+                    'current_balance' => round((float) ($customer->current_balance ?? 0) + $grandTotal, 2),
+                ]);
+            }
 
             $this->cart->clear();
+
+            // Stash the receipt token in the session so guests can return to the
+            // thank-you page after a refresh without re-authentication.
+            Session::put('shop.last_guest_order_token', $order->receipt_token);
+
             return $order;
         });
 
@@ -131,7 +145,12 @@ class CheckoutController extends Controller
 
     public function thankYou(Order $order)
     {
-        abort_unless((int) $order->customer_id === (int) Auth::guard('customer')->id(), 404);
+        // Logged-in customer: must own the order. Guest: must match session token.
+        $authorised = (Auth::guard('customer')->check() && (int) $order->customer_id === (int) Auth::guard('customer')->id())
+                   || ($order->receipt_token && Session::get('shop.last_guest_order_token') === $order->receipt_token);
+
+        abort_unless($authorised, 404);
+
         $order->load('items.product');
         return view('shop.pages.thanks', compact('order'));
     }

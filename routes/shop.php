@@ -68,9 +68,8 @@ $registerShopRoutes = function () {
         });
         Route::post('/logout', [ShopAuthController::class, 'logout'])->middleware('auth:customer')->name('logout');
 
-        // ── Customer-only ──────────────────────────────────────────────────
+        // ── Customer-only (account, wishlist, write reviews) ──────────────
         Route::middleware('auth:customer')->group(function () {
-            // Account
             Route::get('/account',                 [AccountController::class, 'index'])->name('account');
             Route::get('/account/profile',         [AccountController::class, 'profile'])->name('account.profile');
             Route::put('/account/profile',         [AccountController::class, 'updateProfile'])->name('account.profile.update');
@@ -79,19 +78,24 @@ $registerShopRoutes = function () {
             Route::get('/account/orders',          [AccountController::class, 'orders'])->name('account.orders');
             Route::get('/account/orders/{order}',  [AccountController::class, 'orderShow'])->name('account.order');
 
-            // Wishlist
             Route::get('/wishlist',                       [WishlistController::class, 'index'])->name('wishlist');
             Route::post('/wishlist/toggle/{product}',     [WishlistController::class, 'toggle'])->name('wishlist.toggle');
             Route::delete('/wishlist/{wishlist}',         [WishlistController::class, 'remove'])->name('wishlist.remove');
 
-            // Reviews
             Route::post('/product/{product:slug}/review', [ReviewController::class, 'store'])->name('review.store');
-
-            // Checkout
-            Route::get('/checkout',         [CheckoutController::class, 'index'])->name('checkout');
-            Route::post('/checkout/place',  [CheckoutController::class, 'place'])->name('checkout.place');
-            Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankYou'])->name('checkout.thanks');
         });
+
+        // ── Checkout (guest + customer) ────────────────────────────────────
+        // Open to guests too. The CheckoutController fills customer_id when
+        // authenticated, otherwise stores email/phone on the order.
+        Route::get('/checkout',                   [CheckoutController::class, 'index'])->name('checkout');
+        Route::post('/checkout/place',            [CheckoutController::class, 'place'])->name('checkout.place');
+        Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankYou'])->name('checkout.thanks');
+
+        // ── Order tracking (anyone, no login) ──────────────────────────────
+        Route::get('/track-order',  [\App\Http\Controllers\Shop\TrackOrderController::class, 'show'])->name('track');
+        Route::post('/track-order', [\App\Http\Controllers\Shop\TrackOrderController::class, 'find'])->name('track.find');
+        Route::get('/track-order/{token}', [\App\Http\Controllers\Shop\TrackOrderController::class, 'view'])->name('track.view');
     });
 };
 

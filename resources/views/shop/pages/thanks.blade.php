@@ -27,10 +27,27 @@
             </div>
         </div>
 
-        <div class="flex flex-wrap justify-center gap-3 mt-8">
-            <a href="{{ route('shop.account.order', $order) }}" class="btn btn-dark"><i class="fas fa-receipt"></i> View order</a>
-            <a href="{{ route('shop.catalog') }}" class="btn btn-ghost">Continue shopping</a>
-        </div>
+        @auth('customer')
+            <div class="flex flex-wrap justify-center gap-3 mt-8">
+                <a href="{{ route('shop.account.order', $order) }}" class="btn btn-dark"><i class="fas fa-receipt"></i> View order</a>
+                <a href="{{ route('shop.catalog') }}" class="btn btn-ghost">Continue shopping</a>
+            </div>
+        @else
+            <div class="mt-8 bg-amber-50 border border-amber-200 rounded-2xl p-5 text-left">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-link text-amber-600 mt-1"></i>
+                    <div class="flex-1">
+                        <div class="font-bold text-gray-800 text-sm">Save this link to track your order any time</div>
+                        <div class="text-xs text-gray-600 mt-1 break-all">{{ url('/shop/track-order/' . $order->receipt_token) }}</div>
+                        <div class="flex flex-wrap gap-2 mt-3">
+                            <a href="{{ url('/shop/track-order/' . $order->receipt_token) }}" class="btn btn-dark !text-xs"><i class="fas fa-truck"></i> Track this order</a>
+                            <a href="{{ route('shop.track') }}" class="btn btn-ghost !text-xs">Track another order</a>
+                            <a href="{{ route('shop.catalog') }}" class="btn btn-ghost !text-xs">Continue shopping</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endauth
     </div>
 </section>
 @endsection
