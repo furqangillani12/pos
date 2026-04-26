@@ -24,24 +24,44 @@ class TrackOrderController extends Controller
             'contact'      => 'required|string|max:191',
         ]);
 
-        $contact = trim($data['contact']);
-        $isEmail = filter_var($contact, FILTER_VALIDATE_EMAIL) !== false;
+        $contact   = trim($data['contact']);
+        $isEmail   = filter_var($contact, FILTER_VALIDATE_EMAIL) !== false;
+        $orderNum  = trim($data['order_number']);
 
-        $order = Order::where('order_number', trim($data['order_number']))
+        $order = Order::where('order_number', $orderNum)
             ->where(function ($q) use ($contact, $isEmail) {
                 if ($isEmail) {
-                    $q->where('customer_email', $contact);
+                    // Either the order's stashed customer_email (online orders) ...
+                    $q->where('customer_email', $contact)
+                      // ... or the linked customer's email (POS-created or older orders where customer_email is null)
+                      ->orWhereExists(function ($sub) use ($contact) {
+                          $sub->selectRaw(1)
+                              ->from('customers')
+                              ->whereColumn('customers.id', 'orders.customer_id')
+                              ->where('customers.email', $contact);
+                      });
                 } else {
-                    // Match by shipping phone (digits-only comparison so spacing differences forgive)
+                    // Phone match: digits-only so spacing / dashes / country code prefix forgive.
                     $digits = preg_replace('/\D+/', '', $contact);
-                    $q->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(shipping_phone,' ',''),'-',''),'(',''),')','') = ?", [$digits])
-                      ->orWhereRaw("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE((SELECT phone FROM customers WHERE customers.id=orders.customer_id),''),' ',''),'-',''),'(',''),')','') = ?", [$digits]);
+                    if ($digits === '') return;
+                    $q->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(shipping_phone,''),' ',''),'-',''),'(',''),')','') LIKE ?", ['%' . $digits])
+                      ->orWhereExists(function ($sub) use ($digits) {
+                          $sub->selectRaw(1)
+                              ->from('customers')
+                              ->whereColumn('customers.id', 'orders.customer_id')
+                              ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(customers.phone,''),' ',''),'-',''),'(',''),')','') LIKE ?", ['%' . $digits]);
+                      });
                 }
             })
             ->first();
 
         if (!$order) {
             return back()->withInput()->with('shop_error', 'No order found with those details. Double-check your order number and email/phone.');
+        }
+
+        // Older POS-created orders may not have a receipt token. Mint one so the public page works.
+        if (empty($order->receipt_token)) {
+            $order->update(['receipt_token' => bin2hex(random_bytes(16))]);
         }
 
         return redirect()->route('shop.track.view', ['token' => $order->receipt_token]);
