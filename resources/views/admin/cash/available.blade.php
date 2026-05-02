@@ -23,19 +23,19 @@
 
     {{-- Grand total banner --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-        <div class="bg-gradient-to-br from-green-500 to-green-600 text-white rounded-xl p-5 shadow">
-            <p class="text-xs font-semibold uppercase tracking-wide text-green-100">Total Received (آمد)</p>
-            <p class="text-3xl font-black mt-1">Rs. {{ number_format($totalIn, 0) }}</p>
+        <div style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;" class="rounded-xl p-5 shadow">
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Total Received (آمد)</p>
+            <p style="font-size:1.875rem;font-weight:900;margin-top:4px;">Rs. {{ number_format($totalIn, 0) }}</p>
         </div>
-        <div class="bg-gradient-to-br from-red-500 to-red-600 text-white rounded-xl p-5 shadow">
-            <p class="text-xs font-semibold uppercase tracking-wide text-red-100">Total Paid Out (ادائیگی)</p>
-            <p class="text-3xl font-black mt-1">Rs. {{ number_format($totalOut, 0) }}</p>
+        <div style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;" class="rounded-xl p-5 shadow">
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Total Paid Out (ادائیگی)</p>
+            <p style="font-size:1.875rem;font-weight:900;margin-top:4px;">Rs. {{ number_format($totalOut, 0) }}</p>
         </div>
-        <div class="bg-gradient-to-br {{ $totalBal >= 0 ? 'from-blue-600 to-blue-700' : 'from-orange-600 to-orange-700' }} text-white rounded-xl p-5 shadow">
-            <p class="text-xs font-semibold uppercase tracking-wide text-blue-100">Net Balance (بقیہ)</p>
-            <p class="text-3xl font-black mt-1">Rs. {{ number_format(abs($totalBal), 0) }}</p>
+        <div style="background:linear-gradient(135deg,{{ $totalBal >= 0 ? '#2563eb,#1d4ed8' : '#ea580c,#c2410c' }});color:#fff;" class="rounded-xl p-5 shadow">
+            <p style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;opacity:.85;">Net Balance (بقیہ)</p>
+            <p style="font-size:1.875rem;font-weight:900;margin-top:4px;">Rs. {{ number_format(abs($totalBal), 0) }}</p>
             @if($totalBal < 0)
-            <p class="text-xs text-orange-100 mt-1">⚠️ More paid out than received</p>
+            <p style="font-size:11px;opacity:.85;margin-top:4px;">⚠️ More paid out than received</p>
             @endif
         </div>
     </div>
