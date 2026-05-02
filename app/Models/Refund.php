@@ -8,8 +8,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class Refund extends Model
 {
     protected $fillable = [
-        'order_id', 'user_id', 'amount', 'reason', 'status'
+        'order_id', 'user_id', 'refund_number', 'amount', 'reason', 'items', 'status',
     ];
+
+    protected $casts = [
+        'items' => 'array',
+    ];
+
+    public static function generateRefundNumber(): string
+    {
+        $last = static::latest()->first();
+        $next = $last ? (intval(substr($last->refund_number ?? 'RFN-0000', 4)) + 1) : 1;
+        return 'RFN-' . str_pad($next, 4, '0', STR_PAD_LEFT);
+    }
 
     public function order()
     {

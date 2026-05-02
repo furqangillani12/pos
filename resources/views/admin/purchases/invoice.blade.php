@@ -401,6 +401,25 @@
 
             {{-- Totals --}}
             <div class="inv-totals">
+                @php $itemsSubtotal = $purchase->items->sum('total_price'); @endphp
+                @if(!empty($purchase->expenses) || ($purchase->discount ?? 0) > 0)
+                    <div class="total-row">
+                        <span class="label" style="color:#6b7280">Items Subtotal</span>
+                        <span class="value" style="color:#6b7280">Rs. {{ number_format($itemsSubtotal, 0) }}</span>
+                    </div>
+                    @foreach(($purchase->expenses ?? []) as $exp)
+                        <div class="total-row">
+                            <span class="label" style="color:#b45309">+ {{ $exp['label'] ?? 'Expense' }} (اخراجات)</span>
+                            <span class="value" style="color:#b45309">Rs. {{ number_format($exp['amount'], 0) }}</span>
+                        </div>
+                    @endforeach
+                    @if(($purchase->discount ?? 0) > 0)
+                        <div class="total-row">
+                            <span class="label" style="color:#16a34a">− Discount (ڈسکاؤنٹ)</span>
+                            <span class="value" style="color:#16a34a">Rs. {{ number_format($purchase->discount, 0) }}</span>
+                        </div>
+                    @endif
+                @endif
                 @if(($previousBalance ?? 0) > 0)
                     <div class="total-row" style="color:#c2410c;">
                         <span class="label">Previous Balance (سابقہ بقایا)</span>

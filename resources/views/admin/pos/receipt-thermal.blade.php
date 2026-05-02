@@ -246,7 +246,12 @@
 
     @foreach ($order->items as $item)
         <div class="item-row">
-            <span class="col-name">{{ $item->product?->name ?? 'Deleted' }}</span>
+            <span class="col-name">
+                {{ $item->product?->name ?? 'Deleted' }}
+                @if($item->hasLineDiscount())
+                    <br><small style="font-size:9px;color:#888;">was {{ number_format($item->original_price,0) }}, disc -{{ number_format($item->line_discount,0) }}</small>
+                @endif
+            </span>
             <span class="col-qty">{{ $item->quantity }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</span>
             <span class="col-price">{{ number_format($item->unit_price, 0) }}</span>
             <span class="col-total">{{ number_format($item->total_price, 0) }}</span>

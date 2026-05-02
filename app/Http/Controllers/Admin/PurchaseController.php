@@ -48,6 +48,7 @@ class PurchaseController extends Controller
             'items.*.quantity'       => 'required|integer|min:1',
             'items.*.unit_price'     => 'required|numeric|min:0',
             'payment_status'         => 'required|in:paid,partial,unpaid',
+            'payment_method'         => 'nullable|string|max:50',
             'paid_amount'            => 'required|numeric|min:0',
             'discount'               => 'nullable|numeric|min:0',
             'expenses'               => 'nullable|array',
@@ -62,23 +63,13 @@ class PurchaseController extends Controller
             return $item['quantity'] * $item['unit_price'];
         });
 
-        // Calculate expenses and discount
-        $expenses = collect($request->expenses ?? [])->filter(fn($e) => !empty($e['amount']) && $e['amount'] > 0);
-        $totalExpenses = $expenses->sum('amount');
+        $expensesRaw = collect($request->expenses ?? [])->filter(fn($e) => !empty($e['amount']) && $e['amount'] > 0)->values();
+        $totalExpenses = $expensesRaw->sum('amount');
         $discount = (float) ($request->discount ?? 0);
         $totalAmount = $itemsTotal + $totalExpenses - $discount;
 
-        // Calculate total quantity for cost distribution
         $totalQty = collect($request->items)->sum('quantity');
         $expensePerUnit = $totalQty > 0 ? ($totalExpenses - $discount) / $totalQty : 0;
-
-        // Build expenses note
-        $expenseNotes = $expenses->map(fn($e) => ($e['label'] ?? 'Expense') . ': Rs.' . number_format($e['amount'], 0))->implode(', ');
-        $notes = $request->notes;
-        if ($expenseNotes) {
-            $notes = ($notes ? $notes . ' | ' : '') . 'Expenses: ' . $expenseNotes;
-            if ($discount > 0) $notes .= ' | Discount: Rs.' . number_format($discount, 0);
-        }
 
         $purchase = Purchase::create([
             'supplier_id'    => $request->supplier_id,
@@ -87,8 +78,11 @@ class PurchaseController extends Controller
             'total_amount'   => $totalAmount,
             'paid_amount'    => $request->paid_amount,
             'payment_status' => $request->payment_status,
+            'payment_method' => $request->payment_method ?? 'cash',
             'purchase_date'  => $request->purchase_date,
-            'notes'          => $notes,
+            'notes'          => $request->notes,
+            'expenses'       => $expensesRaw->toArray(),
+            'discount'       => $discount,
         ]);
 
         foreach ($request->items as $item) {
@@ -158,6 +152,7 @@ class PurchaseController extends Controller
             'items.*.quantity'       => 'required|integer|min:1',
             'items.*.unit_price'     => 'required|numeric|min:0',
             'payment_status'         => 'required|in:paid,partial,unpaid',
+            'payment_method'         => 'nullable|string|max:50',
             'paid_amount'            => 'required|numeric|min:0',
             'discount'               => 'nullable|numeric|min:0',
             'expenses'               => 'nullable|array',
@@ -185,31 +180,24 @@ class PurchaseController extends Controller
             return $item['quantity'] * $item['unit_price'];
         });
 
-        // Calculate expenses and discount
-        $expenses = collect($request->expenses ?? [])->filter(fn($e) => !empty($e['amount']) && $e['amount'] > 0);
-        $totalExpenses = $expenses->sum('amount');
+        $expensesRaw = collect($request->expenses ?? [])->filter(fn($e) => !empty($e['amount']) && $e['amount'] > 0)->values();
+        $totalExpenses = $expensesRaw->sum('amount');
         $discount = (float) ($request->discount ?? 0);
         $totalAmount = $itemsTotal + $totalExpenses - $discount;
 
-        // Calculate total quantity for cost distribution
         $totalQty = collect($request->items)->sum('quantity');
         $expensePerUnit = $totalQty > 0 ? ($totalExpenses - $discount) / $totalQty : 0;
-
-        // Build expenses note
-        $expenseNotes = $expenses->map(fn($e) => ($e['label'] ?? 'Expense') . ': Rs.' . number_format($e['amount'], 0))->implode(', ');
-        $notes = $request->notes;
-        if ($expenseNotes) {
-            $notes = ($notes ? $notes . ' | ' : '') . 'Expenses: ' . $expenseNotes;
-            if ($discount > 0) $notes .= ' | Discount: Rs.' . number_format($discount, 0);
-        }
 
         $purchase->update([
             'supplier_id'    => $request->supplier_id,
             'total_amount'   => $totalAmount,
             'paid_amount'    => $request->paid_amount,
             'payment_status' => $request->payment_status,
+            'payment_method' => $request->payment_method ?? $purchase->payment_method ?? 'cash',
             'purchase_date'  => $request->purchase_date,
-            'notes'          => $notes,
+            'notes'          => $request->notes,
+            'expenses'       => $expensesRaw->toArray(),
+            'discount'       => $discount,
         ]);
 
         foreach ($request->items as $item) {

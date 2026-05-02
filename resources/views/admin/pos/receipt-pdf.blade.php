@@ -65,9 +65,21 @@
         <tbody>
         @foreach($order->items as $item)
             <tr>
-                <td>{{ $item->product?->name ?? 'Deleted' }}</td>
+                <td>
+                    {{ $item->product?->name ?? 'Deleted' }}
+                    @if($item->hasLineDiscount())
+                        <br><small style="color:#dc2626;">−Rs.{{ number_format($item->line_discount,0) }}/unit disc.</small>
+                    @endif
+                </td>
                 <td>{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
-                <td>{{ number_format($item->unit_price ?? 0, 2) }}</td>
+                <td>
+                    @if($item->hasLineDiscount())
+                        <span style="text-decoration:line-through;color:#9ca3af;">{{ number_format($item->original_price,0) }}</span>
+                        {{ number_format($item->unit_price,0) }}
+                    @else
+                        {{ number_format($item->unit_price ?? 0, 2) }}
+                    @endif
+                </td>
                 <td>{{ number_format($item->total_price ?? 0, 2) }}</td>
             </tr>
         @endforeach

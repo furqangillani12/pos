@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\LedgerAccountController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\CashTransactionController;
 use App\Http\Controllers\Admin\LinkedPartyController;
+use App\Http\Controllers\Admin\PackageController;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
@@ -133,12 +134,25 @@ Route::middleware(['auth', 'branch', 'permission:access pos'])->prefix('admin')-
     Route::post('/pos', [PosController::class, 'storeOrder'])->name('pos.store');
     Route::get('/pos/receipt/{order}', [PosController::class, 'showReceipt'])->name('pos.receipt');
     Route::post('/pos/refund/{order}', [PosController::class, 'processRefund'])->name('pos.refund');
+    Route::get('/pos/returns', [PosController::class, 'returnsList'])->name('pos.returns');
     Route::get('/pos/receipt/{order}/download', [PosController::class, 'downloadReceipt'])->name('pos.receipt.download');
     Route::get('/pos/receipt/{order}/thermal', [PosController::class, 'thermalReceipt'])->name('pos.receipt.thermal');
     Route::get('/pos/edit/{order}', [PosController::class, 'editOrder'])->name('pos.edit');
     Route::put('/pos/edit/{order}', [PosController::class, 'updateOrder'])->name('pos.update');
     Route::post('/pos/cancel/{order}', [PosController::class, 'cancelOrder'])->name('pos.cancel');
     Route::delete('/pos/delete/{order}', [PosController::class, 'deleteOrder'])->name('pos.delete');
+});
+
+// ── Packages ──
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/packages', [PackageController::class, 'index'])->name('packages.index');
+    Route::get('/packages/create', [PackageController::class, 'create'])->name('packages.create');
+    Route::post('/packages', [PackageController::class, 'store'])->name('packages.store');
+    Route::get('/packages/{package}/edit', [PackageController::class, 'edit'])->name('packages.edit');
+    Route::put('/packages/{package}', [PackageController::class, 'update'])->name('packages.update');
+    Route::patch('/packages/{package}/toggle', [PackageController::class, 'toggle'])->name('packages.toggle');
+    Route::delete('/packages/{package}', [PackageController::class, 'destroy'])->name('packages.destroy');
+    Route::get('/api/packages', [PackageController::class, 'apiList'])->name('packages.api');
 });
 
 // ── Reports ──
@@ -265,9 +279,10 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
 
 // ── Cash In / Out ──
 Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/cash',         [CashTransactionController::class, 'index'])->name('cash.index');
-    Route::post('/cash',        [CashTransactionController::class, 'store'])->name('cash.store');
-    Route::get('/cash/history', [CashTransactionController::class, 'history'])->name('cash.history');
+    Route::get('/cash',                   [CashTransactionController::class, 'index'])->name('cash.index');
+    Route::post('/cash',                  [CashTransactionController::class, 'store'])->name('cash.store');
+    Route::get('/cash/history',           [CashTransactionController::class, 'history'])->name('cash.history');
+    Route::get('/cash/available',         [CashTransactionController::class, 'availableCash'])->name('cash.available');
 });
 
 // ── Manage Website (Brands + Banners + Online Orders) ──

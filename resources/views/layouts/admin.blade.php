@@ -632,8 +632,12 @@
                 {{-- ── POS ── --}}
                 @can('access pos')
                     <a href="{{ route('admin.pos.index') }}"
-                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.pos.*') ? 'bg-green-100 text-green-700 font-semibold dark:bg-green-900 dark:text-green-300' : 'hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300' }}">
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.pos.index') ? 'bg-green-100 text-green-700 font-semibold dark:bg-green-900 dark:text-green-300' : 'hover:bg-green-100 dark:hover:bg-green-900 hover:text-green-700 dark:hover:text-green-300' }}">
                         <i class="fas fa-cash-register mr-2 text-xs"></i> POS System
+                    </a>
+                    <a href="{{ route('admin.pos.returns') }}"
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.pos.returns') ? 'bg-red-100 text-red-700 font-semibold dark:bg-red-900 dark:text-red-300' : 'hover:bg-red-100 dark:hover:bg-red-900 hover:text-red-700 dark:hover:text-red-300' }}">
+                        <i class="fas fa-undo mr-2 text-xs"></i> Returns
                     </a>
                 @endcan
 
@@ -683,6 +687,10 @@
                             <i class="fas fa-ruler mr-2 text-xs"></i> Units
                         </a>
                     @endcan
+                    <a href="{{ route('admin.packages.index') }}"
+                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.packages.*') ? 'bg-purple-100 text-purple-700 font-semibold' : 'hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700' }}">
+                        <i class="fas fa-box mr-2 text-xs"></i> Packages
+                    </a>
                     @can('manage inventory')
                         <a href="{{ route('inventory.index') }}"
                             class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
@@ -752,12 +760,20 @@
                 @endcan
 
                 {{-- ── Cash In / Out ── --}}
+                <a href="{{ route('admin.cash.available') }}"
+                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.cash.available') ? 'bg-emerald-100 text-emerald-700 font-semibold' : 'hover:bg-emerald-100 hover:text-emerald-700' }}">
+                    <i class="fas fa-wallet mr-2 text-xs"></i> Available Cash
+                </a>
                 <a href="{{ route('admin.cash.index') }}"
-                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.cash.*') ? 'bg-emerald-100 text-emerald-700 font-semibold dark:bg-emerald-900 dark:text-emerald-300' : 'hover:bg-emerald-100 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300' }}">
+                    class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.cash.index') || request()->routeIs('admin.cash.store') ? 'bg-emerald-100 text-emerald-700 font-semibold dark:bg-emerald-900 dark:text-emerald-300' : 'hover:bg-emerald-100 dark:hover:bg-emerald-900 hover:text-emerald-700 dark:hover:text-emerald-300' }}">
                     <i class="fas fa-money-bill-wave mr-2 text-xs"></i> Cash In / Out
                 </a>
 
-                {{-- ── Manage Website (storefront brands / banners / online orders) ── --}}
+                {{--
+                    ── Manage Website (storefront: brands / banners / online orders) ──
+                    HIDDEN: Feature is complete but not shown until client agreement is finalised.
+                    To re-enable, remove this comment block and uncomment the section below.
+
                 @php
                     $websiteOpen = request()->routeIs('admin.brands.*')
                         || request()->routeIs('admin.banners.*')
@@ -796,6 +812,7 @@
                         <i class="fas fa-external-link-alt mr-2 text-xs"></i> View site
                     </a>
                 </div>
+                --}}
 
                 {{-- ── HR: Employees, Attendance, Payroll ── --}}
                 <button @click="hrOpen = !hrOpen"

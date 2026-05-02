@@ -78,7 +78,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div>
                             <label for="payment_status" class="block text-sm font-medium text-gray-700">Payment Status *</label>
                             <select name="payment_status" id="payment_status" required
@@ -95,7 +95,18 @@
                                    value="{{ old('paid_amount', 0) }}">
                         </div>
                         <div>
-                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total (Items + Expenses - Discount)</label>
+                            <label for="payment_method" class="block text-sm font-medium text-gray-700">Paid From Account</label>
+                            <select name="payment_method" id="payment_method"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                <option value="cash" {{ old('payment_method') === 'cash' ? 'selected' : '' }}>💵 Cash</option>
+                                <option value="bank" {{ old('payment_method') === 'bank' ? 'selected' : '' }}>🏦 Bank Transfer</option>
+                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>📱 Mobile Money</option>
+                                <option value="cheque" {{ old('payment_method') === 'cheque' ? 'selected' : '' }}>📄 Cheque</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Which account is this payment coming from?</p>
+                        </div>
+                        <div>
+                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total</label>
                             <input type="text" id="total_amount" readonly
                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-bold text-lg"
                                    value="0.00">

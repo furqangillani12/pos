@@ -9,7 +9,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Purchase extends Model
 {
     protected $fillable = [
-        'supplier_id', 'branch_id', 'invoice_number', 'total_amount', 'paid_amount', 'payment_status', 'purchase_date', 'notes'
+        'supplier_id', 'branch_id', 'invoice_number', 'total_amount', 'paid_amount', 'payment_status', 'payment_method', 'purchase_date', 'notes', 'expenses', 'discount',
+    ];
+
+    protected $casts = [
+        'expenses' => 'array',
+        'discount' => 'float',
     ];
 
     // Relationship with Supplier

@@ -305,7 +305,7 @@
             .info-box { padding: 10px; }
             .info-row { font-size: 11px; }
 
-            .items-section { padding: 0 10px 8px; }
+            .items-section { padding: 0 10px 8px; overflow-x: auto; }
 
             .items-table thead th {
                 padding: 6px 4px;
@@ -755,10 +755,22 @@
                                 @if ($item->product && $item->product->sku)
                                     <div class="product-sku">SKU: {{ $item->product->sku }}</div>
                                 @endif
+                                @if($item->hasLineDiscount())
+                                    <div style="font-size:10px;color:#dc2626;margin-top:2px;">
+                                        −Rs.{{ number_format($item->line_discount, 0) }} discount/unit
+                                    </div>
+                                @endif
                             </td>
                             <td>{{ $item->quantity }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                             <td>
-                                @if ($item->unit_price == floor($item->unit_price))
+                                @if($item->hasLineDiscount())
+                                    <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;display:block;">
+                                        {{ number_format($item->original_price, 0) }}
+                                    </span>
+                                    <span style="color:#16a34a;font-weight:700;">
+                                        {{ number_format($item->unit_price, 0) }}
+                                    </span>
+                                @elseif ($item->unit_price == floor($item->unit_price))
                                     {{ number_format($item->unit_price, 0) }}
                                 @else
                                     {{ number_format($item->unit_price, 2) }}

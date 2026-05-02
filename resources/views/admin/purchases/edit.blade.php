@@ -69,7 +69,7 @@
                             <label for="purchase_discount" class="block text-sm font-medium text-gray-700">Discount (ڈسکاؤنٹ)</label>
                             <input type="number" step="0.01" min="0" name="discount" id="purchase_discount"
                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                   value="0" oninput="calculateTotal()">
+                                   value="{{ old('discount', $purchase->discount ?? 0) }}" oninput="calculateTotal()">
                             <p class="text-xs text-gray-400 mt-1">Discount will be subtracted from items' cost price</p>
                         </div>
                         <div>
@@ -80,7 +80,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
                         <div>
                             <label for="payment_status" class="block text-sm font-medium text-gray-700">Payment Status *</label>
                             <select name="payment_status" id="payment_status" required
@@ -97,7 +97,19 @@
                                    value="{{ old('paid_amount', $purchase->paid_amount) }}">
                         </div>
                         <div>
-                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total (Items + Expenses - Discount)</label>
+                            <label for="payment_method" class="block text-sm font-medium text-gray-700">Paid From Account</label>
+                            <select name="payment_method" id="payment_method"
+                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                @php $pm = old('payment_method', $purchase->payment_method ?? 'cash'); @endphp
+                                <option value="cash" {{ $pm === 'cash' ? 'selected' : '' }}>💵 Cash</option>
+                                <option value="bank" {{ $pm === 'bank' ? 'selected' : '' }}>🏦 Bank Transfer</option>
+                                <option value="mobile_money" {{ $pm === 'mobile_money' ? 'selected' : '' }}>📱 Mobile Money</option>
+                                <option value="cheque" {{ $pm === 'cheque' ? 'selected' : '' }}>📄 Cheque</option>
+                            </select>
+                            <p class="text-xs text-gray-400 mt-1">Which account is this payment coming from?</p>
+                        </div>
+                        <div>
+                            <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total</label>
                             <input type="text" id="total_amount" readonly
                                    class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-100 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm font-bold text-lg"
                                    value="{{ number_format($purchase->total_amount, 2) }}">
@@ -220,18 +232,27 @@
             updateSupplierBalance();
 
             // ── Expense rows ──
+            const existingExpenses = @json($purchase->expenses ?? []);
             let expenseCount = 0;
-            document.getElementById('add-expense').addEventListener('click', function() {
+
+            function addExpenseRow(label = '', amount = '') {
                 expenseCount++;
                 const html = `
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-2 expense-row">
                     <input type="text" name="expenses[${expenseCount}][label]" placeholder="e.g. Bilty, Packing, Labor..."
-                        class="border border-gray-300 rounded-md px-3 py-2 text-sm">
+                        class="border border-gray-300 rounded-md px-3 py-2 text-sm" value="${label}">
                     <input type="number" name="expenses[${expenseCount}][amount]" placeholder="Amount" min="0" step="0.01"
-                        class="expense-amount border border-gray-300 rounded-md px-3 py-2 text-sm" oninput="calculateTotal()">
+                        class="expense-amount border border-gray-300 rounded-md px-3 py-2 text-sm" value="${amount}" oninput="calculateTotal()">
                     <button type="button" class="text-red-500 hover:text-red-700 text-sm" onclick="this.closest('.expense-row').remove();calculateTotal();">Remove</button>
                 </div>`;
                 document.getElementById('expense-rows').insertAdjacentHTML('beforeend', html);
+            }
+
+            // Pre-populate saved expenses
+            existingExpenses.forEach(e => addExpenseRow(e.label || '', e.amount || ''));
+
+            document.getElementById('add-expense').addEventListener('click', function() {
+                addExpenseRow();
             });
 
             function addItemRow(data = null) {

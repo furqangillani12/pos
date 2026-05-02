@@ -66,6 +66,7 @@
     .receipt-items {
         padding: 0 20px 14px;
         border-bottom: 2px dashed #e5e7eb;
+        overflow-x: auto;
     }
 
     .items-table {
@@ -442,11 +443,29 @@
                     </thead>
                     <tbody>
                         @foreach ($order->items as $item)
+                            @php
+                                $hasLineDisc = $item->hasLineDiscount();
+                                $displayPrice = $hasLineDisc ? $item->original_price : $item->unit_price;
+                            @endphp
                             <tr>
-                                <td>{{ $item->product?->name ?? 'Deleted Product' }}</td>
+                                <td>
+                                    {{ $item->product?->name ?? 'Deleted Product' }}
+                                    @if($hasLineDisc)
+                                        <div style="font-size:10px;color:#dc2626;margin-top:1px;">
+                                            −Rs.{{ number_format($item->line_discount, 0) }}/unit discount
+                                        </div>
+                                    @endif
+                                </td>
                                 <td>{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                                 <td>
-                                    @if (is_numeric($item->unit_price) && floor($item->unit_price) == $item->unit_price)
+                                    @if($hasLineDisc)
+                                        <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;">
+                                            {{ number_format($item->original_price, 0) }}
+                                        </span><br>
+                                        <span style="color:#16a34a;font-weight:700;">
+                                            {{ number_format($item->unit_price, 0) }}
+                                        </span>
+                                    @elseif(is_numeric($item->unit_price) && floor($item->unit_price) == $item->unit_price)
                                         {{ number_format($item->unit_price, 0) }}
                                     @else
                                         {{ number_format($item->unit_price ?? 0, 2) }}
@@ -504,7 +523,7 @@
 
                 @if (($order->discount ?? 0) > 0)
                     <div class="total-row discount">
-                        <span class="label">Discount</span>
+                        <span class="label">{{ $order->discount_label ?? 'Discount' }}</span>
                         <span class="value">
                             -@if (is_numeric($order->discount) && floor($order->discount) == $order->discount)
                                 {{ number_format($order->discount, 0) }}
@@ -624,6 +643,64 @@
         </div>
     </div>
 
+    {{-- ── Flash Messages ── --}}
+    @if(session('success'))
+    <div class="receipt-wrap no-print" id="flash-msg" style="margin-top:12px;">
+        <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-check-circle" style="color:#16a34a;font-size:20px;flex-shrink:0;"></i>
+            <span style="font-size:14px;font-weight:600;color:#166534;">{{ session('success') }}</span>
+        </div>
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="receipt-wrap no-print" id="flash-msg" style="margin-top:12px;">
+        <div style="background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:10px;">
+            <i class="fas fa-exclamation-circle" style="color:#dc2626;font-size:20px;flex-shrink:0;"></i>
+            <span style="font-size:14px;font-weight:600;color:#991b1b;">{{ session('error') }}</span>
+        </div>
+    </div>
+    @endif
+    @if($errors->any())
+    <div class="receipt-wrap no-print" id="flash-msg" style="margin-top:12px;">
+        <div style="background:#fef2f2;border:2px solid #ef4444;border-radius:10px;padding:14px 18px;">
+            <p style="font-size:13px;font-weight:700;color:#991b1b;margin-bottom:6px;"><i class="fas fa-exclamation-circle mr-1"></i> Please fix the following:</p>
+            <ul style="margin:0;padding-left:18px;">
+                @foreach($errors->all() as $error)
+                    <li style="font-size:13px;color:#dc2626;">{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
+    {{-- ── Existing Refunds ── --}}
+    @if($order->refunds->isNotEmpty())
+    <div class="receipt-wrap no-print" style="margin-top:16px;">
+        <div class="receipt-card" style="border:2px solid #fca5a5;">
+            <div style="padding:14px 20px;background:#fef2f2;border-bottom:1px solid #fca5a5;">
+                <h3 style="margin:0;font-size:14px;font-weight:700;color:#dc2626;">
+                    <i class="fas fa-undo" style="margin-right:6px;"></i>Returns / Refunds
+                </h3>
+            </div>
+            @foreach($order->refunds as $refund)
+            <div style="padding:12px 20px;border-bottom:1px solid #fee2e2;font-size:13px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+                    <span style="font-weight:700;color:#dc2626;">{{ $refund->refund_number ?? 'Refund' }} — Rs. {{ number_format($refund->amount, 0) }}</span>
+                    <span style="font-size:11px;color:#9ca3af;">{{ $refund->created_at->format('d M Y') }}</span>
+                </div>
+                <div style="color:#6b7280;margin-bottom:4px;">Reason: {{ $refund->reason }}</div>
+                @if($refund->items)
+                <div style="color:#374151;font-size:12px;">
+                    Items returned: {{ collect($refund->items)->map(fn($i) => ($i['name'] ?? 'Item') . ' × ' . $i['quantity'])->implode(', ') }}
+                </div>
+                @endif
+                <div style="font-size:11px;color:#9ca3af;margin-top:4px;">By: {{ $refund->user?->name ?? 'Staff' }}</div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
     {{-- ── Action Buttons ── --}}
     <div class="receipt-actions no-print">
         <div class="action-grid">
@@ -648,11 +725,189 @@
             <a href="{{ route('admin.pos.edit', $order) }}" class="action-btn edit">
                 <i class="fas fa-edit"></i> Edit
             </a>
+            @if($order->isRefundable())
+            <button onclick="document.getElementById('refund-modal').style.display='flex'"
+                class="action-btn" style="background:#dc2626;">
+                <i class="fas fa-undo"></i> Return Items
+            </button>
+            @endif
             <a href="{{ route('admin.pos.index') }}" class="action-btn new-sale" style="grid-column: span 2;">
                 <i class="fas fa-plus"></i> New Sale
             </a>
         </div>
     </div>
+
+    {{-- ── Return/Refund Modal ── --}}
+    @if($order->isRefundable())
+    <div id="refund-modal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:flex-start;justify-content:center;padding:12px;overflow-y:auto;">
+        <div style="background:#fff;border-radius:12px;width:100%;max-width:500px;margin:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+
+            <div style="padding:18px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+                <h3 style="margin:0;font-size:16px;font-weight:700;color:#1e293b;">
+                    <i class="fas fa-undo" style="color:#dc2626;margin-right:8px;"></i>Process Return
+                </h3>
+                <button onclick="document.getElementById('refund-modal').style.display='none'"
+                    style="background:none;border:none;font-size:18px;cursor:pointer;color:#6b7280;">✕</button>
+            </div>
+
+            <form action="{{ route('admin.pos.refund', $order) }}" method="POST" id="refund-form">
+                @csrf
+                <div style="padding:20px;">
+
+                    {{-- Item selection --}}
+                    <p style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+                        Select Items to Return
+                    </p>
+                    <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:16px;">
+                        @foreach($order->items as $idx => $item)
+                        <div class="refund-item-row" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;">
+                            <input type="checkbox" name="items[{{ $idx }}][selected]" value="1"
+                                class="refund-item-check" data-idx="{{ $idx }}" data-price="{{ $item->unit_price }}"
+                                style="width:16px;height:16px;cursor:pointer;"
+                                onchange="updateRefundTotal()">
+                            <div style="flex:1;">
+                                <div style="font-size:13px;font-weight:600;color:#1e293b;">
+                                    {{ $item->product?->name ?? 'Unknown' }}
+                                </div>
+                                <div style="font-size:11px;color:#9ca3af;">
+                                    Rs. {{ number_format($item->unit_price, 0) }} × {{ $item->quantity }}
+                                    = Rs. {{ number_format($item->total_price, 0) }}
+                                </div>
+                            </div>
+                            <div>
+                                <input type="hidden" name="items[{{ $idx }}][product_id]" value="{{ $item->product_id }}">
+                                <input type="hidden" name="items[{{ $idx }}][name]" value="{{ $item->product?->name }}">
+                                <input type="hidden" name="items[{{ $idx }}][unit_price]" value="{{ $item->unit_price }}">
+                                <input type="number" name="items[{{ $idx }}][quantity]"
+                                    class="refund-qty-input" data-idx="{{ $idx }}"
+                                    value="{{ $item->quantity }}" min="0.01" max="{{ $item->quantity }}"
+                                    step="0.01"
+                                    style="width:60px;padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;text-align:center;opacity:0.4;"
+                                    oninput="updateRefundTotal()">
+                            </div>
+                        </div>
+                        @endforeach
+                    </div>
+
+                    {{-- Refund summary --}}
+                    <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px 14px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-size:13px;font-weight:600;color:#dc2626;">Refund Amount</span>
+                        <span id="refund-total-display" style="font-size:18px;font-weight:800;color:#dc2626;">Rs. 0</span>
+                    </div>
+                    <div id="refund-proportional-note" style="display:none;font-size:11px;color:#9ca3af;text-align:right;margin-bottom:16px;"></div>
+                    <div id="refund-no-discount-spacer" style="margin-bottom:16px;"></div>
+
+                    {{-- Reason --}}
+                    <div style="margin-bottom:14px;">
+                        <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">
+                            Reason for Return <span style="color:#ef4444;">*</span>
+                        </label>
+                        <textarea name="reason" required rows="2"
+                            placeholder="e.g. Defective item, Wrong size, Customer changed mind..."
+                            style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+                    </div>
+
+                    {{-- Return to inventory --}}
+                    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:20px;">
+                        <input type="checkbox" name="return_to_inventory" value="1" style="width:16px;height:16px;">
+                        <div>
+                            <span style="font-size:13px;font-weight:600;color:#374151;">Return items to inventory</span>
+                            <p style="margin:0;font-size:11px;color:#9ca3af;">Stock will be restored for selected items</p>
+                        </div>
+                    </label>
+
+                    <div style="display:flex;gap:10px;">
+                        <button type="button"
+                            onclick="document.getElementById('refund-modal').style.display='none'"
+                            style="flex:1;padding:10px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;color:#6b7280;">
+                            Cancel
+                        </button>
+                        <button type="submit" id="refund-submit-btn"
+                            style="flex:2;padding:10px;background:#dc2626;color:#fff;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
+                            <i class="fas fa-undo"></i> Process Return
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const _orderSubtotal = {{ $order->subtotal ?? 0 }};
+        const _orderTotal    = {{ $order->total ?? 0 }};
+        const _orderDiscount = {{ $order->discount ?? 0 }};
+
+        function updateRefundTotal() {
+            let rawTotal = 0;
+            document.querySelectorAll('.refund-item-check').forEach(cb => {
+                const idx = cb.dataset.idx;
+                const qtyInput = document.querySelector(`.refund-qty-input[data-idx="${idx}"]`);
+                if (cb.checked && qtyInput) {
+                    const qty = parseFloat(qtyInput.value) || 0;
+                    const price = parseFloat(cb.dataset.price) || 0;
+                    rawTotal += qty * price;
+                    qtyInput.style.opacity = '1';
+                    qtyInput.style.pointerEvents = 'auto';
+                } else if (qtyInput) {
+                    qtyInput.style.opacity = '0.35';
+                    qtyInput.style.pointerEvents = 'none';
+                }
+            });
+
+            // Proportional refund when order has a level discount (e.g. package discount)
+            let refundAmount = rawTotal;
+            if (_orderDiscount > 0 && _orderSubtotal > 0) {
+                refundAmount = Math.round(rawTotal / _orderSubtotal * _orderTotal);
+            }
+
+            document.getElementById('refund-total-display').textContent =
+                'Rs. ' + refundAmount.toLocaleString('en-PK', {maximumFractionDigits: 0});
+
+            const noteEl   = document.getElementById('refund-proportional-note');
+            const spacerEl = document.getElementById('refund-no-discount-spacer');
+            if (_orderDiscount > 0 && rawTotal > 0) {
+                noteEl.style.display   = 'block';
+                spacerEl.style.display = 'none';
+                noteEl.textContent     = 'Items subtotal Rs. ' +
+                    rawTotal.toLocaleString('en', {maximumFractionDigits: 0}) +
+                    ' — adjusted proportionally for discount (Rs. ' +
+                    _orderDiscount.toLocaleString('en', {maximumFractionDigits: 0}) + ')';
+            } else {
+                noteEl.style.display   = 'none';
+                spacerEl.style.display = 'block';
+            }
+        }
+
+        // Auto-scroll to flash message if present
+        const flashMsg = document.getElementById('flash-msg');
+        if (flashMsg) {
+            setTimeout(() => flashMsg.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+        }
+
+        document.getElementById('refund-form').addEventListener('submit', function(e) {
+            const anyChecked = [...document.querySelectorAll('.refund-item-check')].some(cb => cb.checked);
+            if (!anyChecked) {
+                e.preventDefault();
+                alert('Please select at least one item to return.');
+                return;
+            }
+            const reason = this.querySelector('textarea[name=reason]').value.trim();
+            if (!reason) {
+                e.preventDefault();
+                alert('Please enter a reason for the return.');
+                return;
+            }
+            // Show loading state
+            const btn = document.getElementById('refund-submit-btn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            }
+        });
+    </script>
+    @endif
+
 @endsection
 
 @push('scripts')

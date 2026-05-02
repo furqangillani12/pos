@@ -61,12 +61,6 @@ class Product extends Model
         });
     }
 
-    public function getRouteKeyName()
-    {
-        // The storefront resolves products by slug, while admin can still use id explicitly via Route::model bindings.
-        return 'slug';
-    }
-
     // Relationship with Category
     public function category(): BelongsTo
     {

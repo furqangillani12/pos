@@ -3,6 +3,16 @@
 @section('title', 'Cash In / Out')
 
 @section('content')
+<div class="px-4 pt-4 pb-0 flex items-center gap-3">
+    <a href="{{ route('admin.cash.available') }}"
+        class="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-emerald-100 transition">
+        <i class="fas fa-wallet"></i> View Available Cash / دستیاب رقم
+    </a>
+    <a href="{{ route('admin.cash.history') }}"
+        class="inline-flex items-center gap-2 bg-gray-100 border border-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm hover:bg-gray-200 transition">
+        <i class="fas fa-history"></i> Transaction History
+    </a>
+</div>
 <div class="p-3 sm:p-6"
      x-data="cashForm({
         customers: @js($customers->map(fn($c) => [

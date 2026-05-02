@@ -114,11 +114,13 @@ class PosController extends Controller
             $validated = $request->validate([
                 'customer_id'        => 'nullable|exists:customers,id',
                 'items'              => 'required|array',
-                'items.*.product_id' => 'required|exists:products,id',
-                'items.*.quantity'   => 'required|numeric|min:0.01',
-                'items.*.unit_price' => 'nullable|numeric|min:0',
-                'payment_method'     => 'required|string',
-                'notes'              => 'nullable|string|max:1000',
+                'items.*.product_id'     => 'required|exists:products,id',
+                'items.*.quantity'       => 'required|numeric|min:0.01',
+                'items.*.unit_price'     => 'nullable|numeric|min:0',
+                'items.*.original_price' => 'nullable|numeric|min:0',
+                'items.*.line_discount'  => 'nullable|numeric|min:0',
+                'payment_method'         => 'required|string',
+                'notes'                  => 'nullable|string|max:1000',
                 'paid_amount'        => 'nullable|numeric|min:0',
                 'dispatch_method'    => 'nullable|string',
                 'tracking_id'        => 'nullable|string',
@@ -126,6 +128,7 @@ class PosController extends Controller
                 'tax_rate'           => 'nullable|numeric|min:0',
                 'tax_type'           => 'nullable|string|in:percent,fixed',
                 'discount'           => 'nullable|numeric|min:0',
+                'discount_label'     => 'nullable|string|max:255',
                 'order_date'         => 'nullable|date',
             ]);
 
@@ -164,10 +167,12 @@ class PosController extends Controller
                 }
 
                 $orderItems[] = [
-                    'product'    => $product,
-                    'quantity'   => $item['quantity'],
-                    'unit_price' => $unitPrice,
-                    'total'      => $itemTotal,
+                    'product'        => $product,
+                    'quantity'       => $item['quantity'],
+                    'unit_price'     => $unitPrice,
+                    'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
+                    'line_discount'  => !empty($item['line_discount'])  ? (float)$item['line_discount']  : 0,
+                    'total'          => $itemTotal,
                 ];
             }
 
@@ -212,6 +217,7 @@ class PosController extends Controller
                 'dispatch_method'  => $validated['dispatch_method'] ?? null,
                 'tracking_id'      => $validated['tracking_id'] ?? null,
                 'discount'         => $discount,
+                'discount_label'   => $validated['discount_label'] ?? null,
                 'delivery_charges' => $deliveryCharges,
                 'weight'           => $totalWeight,
                 'subtotal'         => $subtotal,
@@ -233,11 +239,13 @@ class PosController extends Controller
                 $product = $itemData['product'];
 
                 OrderItem::create([
-                    'order_id'    => $order->id,
-                    'product_id'  => $product->id,
-                    'quantity'    => $itemData['quantity'],
-                    'unit_price'  => $itemData['unit_price'],
-                    'total_price' => $itemData['total'],
+                    'order_id'       => $order->id,
+                    'product_id'     => $product->id,
+                    'quantity'       => $itemData['quantity'],
+                    'unit_price'     => $itemData['unit_price'],
+                    'original_price' => $itemData['original_price'],
+                    'line_discount'  => $itemData['line_discount'],
+                    'total_price'    => $itemData['total'],
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
@@ -429,16 +437,19 @@ class PosController extends Controller
             $validated = $request->validate([
                 'customer_id'        => 'nullable|exists:customers,id',
                 'items'              => 'required|array',
-                'items.*.product_id' => 'required|exists:products,id',
-                'items.*.quantity'   => 'required|numeric|min:0.01',
-                'items.*.unit_price' => 'nullable|numeric|min:0',
-                'payment_method'     => 'required|string',
-                'paid_amount'        => 'nullable|numeric|min:0',
+                'items.*.product_id'     => 'required|exists:products,id',
+                'items.*.quantity'       => 'required|numeric|min:0.01',
+                'items.*.unit_price'     => 'nullable|numeric|min:0',
+                'items.*.original_price' => 'nullable|numeric|min:0',
+                'items.*.line_discount'  => 'nullable|numeric|min:0',
+                'payment_method'         => 'required|string',
+                'paid_amount'            => 'nullable|numeric|min:0',
                 'dispatch_method'    => 'nullable|string',
                 'tracking_id'        => 'nullable|string',
                 'delivery_charges'   => 'nullable|numeric|min:0',
                 'tax_rate'           => 'nullable|numeric|min:0',
                 'discount'           => 'nullable|numeric|min:0',
+                'discount_label'     => 'nullable|string|max:255',
                 'order_date'         => 'nullable|date',
                 'notes'              => 'nullable|string|max:1000',
             ]);
@@ -498,10 +509,12 @@ class PosController extends Controller
                 }
 
                 $orderItems[] = [
-                    'product'    => $product,
-                    'quantity'   => $item['quantity'],
-                    'unit_price' => $unitPrice,
-                    'total'      => $itemTotal,
+                    'product'        => $product,
+                    'quantity'       => $item['quantity'],
+                    'unit_price'     => $unitPrice,
+                    'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
+                    'line_discount'  => !empty($item['line_discount'])  ? (float)$item['line_discount']  : 0,
+                    'total'          => $itemTotal,
                 ];
             }
 
@@ -530,6 +543,7 @@ class PosController extends Controller
                 'dispatch_method'  => $validated['dispatch_method'] ?? null,
                 'tracking_id'      => $validated['tracking_id'] ?? null,
                 'discount'         => $discount,
+                'discount_label'   => $validated['discount_label'] ?? null,
                 'delivery_charges' => $deliveryCharges,
                 'weight'           => $totalWeight,
                 'subtotal'         => $subtotal,
@@ -554,11 +568,13 @@ class PosController extends Controller
                 $product = $itemData['product'];
 
                 OrderItem::create([
-                    'order_id'    => $order->id,
-                    'product_id'  => $product->id,
-                    'quantity'    => $itemData['quantity'],
-                    'unit_price'  => $itemData['unit_price'],
-                    'total_price' => $itemData['total'],
+                    'order_id'       => $order->id,
+                    'product_id'     => $product->id,
+                    'quantity'       => $itemData['quantity'],
+                    'unit_price'     => $itemData['unit_price'],
+                    'original_price' => $itemData['original_price'],
+                    'line_discount'  => $itemData['line_discount'],
+                    'total_price'    => $itemData['total'],
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
@@ -609,7 +625,7 @@ class PosController extends Controller
 
     public function showReceipt(Order $order)
     {
-        $order->load(['branch', 'items.product.unit']);
+        $order->load(['branch', 'items.product.unit', 'refunds.user']);
         return view('admin.pos.receipt', compact('order'));
     }
 
@@ -622,49 +638,99 @@ class PosController extends Controller
     public function processRefund(Request $request, Order $order)
     {
         if (!$order->isRefundable()) {
-            return back()->with('error', 'This order cannot be refunded');
+            return redirect()->route('admin.pos.receipt', $order)
+                ->with('error', 'This order cannot be refunded. It must be completed and within 30 days.');
         }
 
-        $request->validate([
-            'amount' => 'required|numeric|min:0.01|max:' . $order->total,
-            'reason' => 'required|string|max:500',
+        $validator = \Validator::make($request->all(), [
+            'items'              => 'required|array|min:1',
+            'items.*.product_id' => 'required|exists:products,id',
+            'items.*.unit_price' => 'required|numeric|min:0',
+            'items.*.name'       => 'nullable|string',
+            'reason'             => 'required|string|max:500',
         ]);
+
+        if ($validator->fails()) {
+            return redirect()->route('admin.pos.receipt', $order)
+                ->withErrors($validator)
+                ->withInput();
+        }
 
         $branchId = $order->branch_id;
 
-        DB::transaction(function () use ($request, $order, $branchId) {
+        // Only process items that were checked (have selected=1 AND a quantity)
+        $refundItems = collect($request->items)
+            ->filter(fn($item) => !empty($item['selected']) && !empty($item['quantity']) && (float)$item['quantity'] > 0)
+            ->map(function ($item) {
+                return [
+                    'product_id' => $item['product_id'],
+                    'name'       => $item['name'] ?? '',
+                    'quantity'   => (float) $item['quantity'],
+                    'unit_price' => (float) $item['unit_price'],
+                    'total'      => round((float) $item['quantity'] * (float) $item['unit_price'], 2),
+                ];
+            })
+            ->values();
+
+        if ($refundItems->isEmpty()) {
+            return redirect()->route('admin.pos.receipt', $order)
+                ->with('error', 'Please select at least one item to return.');
+        }
+
+        $rawRefundTotal = $refundItems->sum('total');
+
+        // When an order-level discount exists (e.g. package discount), refund proportionally
+        // so the customer gets back what they actually paid, not the retail item total.
+        if (($order->discount ?? 0) > 0 && ($order->subtotal ?? 0) > 0) {
+            $refundAmount = round($rawRefundTotal / $order->subtotal * $order->total, 2);
+        } else {
+            $refundAmount = $rawRefundTotal;
+        }
+
+        if ($refundAmount <= 0 || $refundAmount > $order->total) {
+            return redirect()->route('admin.pos.receipt', $order)
+                ->with('error', 'Invalid refund amount (Rs. ' . number_format($refundAmount, 0) . '). Cannot exceed order total.');
+        }
+
+        DB::transaction(function () use ($request, $order, $branchId, $refundItems, $refundAmount) {
             Refund::create([
-                'order_id' => $order->id,
-                'user_id'  => auth()->id(),
-                'amount'   => $request->amount,
-                'reason'   => $request->reason,
-                'status'   => 'completed',
+                'refund_number' => Refund::generateRefundNumber(),
+                'order_id'      => $order->id,
+                'user_id'       => auth()->id(),
+                'amount'        => $refundAmount,
+                'reason'        => $request->reason,
+                'items'         => $refundItems->toArray(),
+                'status'        => 'completed',
             ]);
 
+            // Mark order as refunded if full amount returned, otherwise stays completed
+            $totalRefunded = $order->refunds()->where('status', 'completed')->sum('amount') + $refundAmount;
             $order->update([
-                'status' => $request->amount >= $order->total
+                'status' => $totalRefunded >= $order->total
                     ? Order::STATUS_REFUNDED
                     : Order::STATUS_COMPLETED,
             ]);
 
+            // Reduce customer balance
             if ($order->customer_id) {
                 $customer = Customer::find($order->customer_id);
                 if ($customer) {
-                    $customer->current_balance = max(0, $customer->current_balance - $request->amount);
+                    $customer->current_balance = max(0, $customer->current_balance - $refundAmount);
                     $customer->save();
                 }
             }
 
-            if ($request->has('return_to_inventory')) {
-                foreach ($order->items as $item) {
-                    if ($item->product && $item->product->track_inventory && $branchId) {
-                        $item->product->incrementBranchStock($branchId, $item->quantity);
-
-                        $item->product->inventoryLogs()->create([
+            // Return selected items to inventory
+            if ($request->boolean('return_to_inventory')) {
+                foreach ($refundItems as $ri) {
+                    $product = Product::find($ri['product_id']);
+                    if ($product && $product->track_inventory && $branchId) {
+                        $product->incrementBranchStock($branchId, $ri['quantity']);
+                        $product->inventoryLogs()->create([
                             'action'          => 'refund_return',
-                            'quantity_change' => $item->quantity,
+                            'quantity_change' => $ri['quantity'],
                             'branch_id'       => $branchId,
-                            'notes'           => 'Restocked due to refund of Order #' . $order->order_number,
+                            'notes'           => 'Returned via refund of Order #' . $order->order_number,
                             'user_id'         => auth()->id(),
                         ]);
                     }
@@ -672,7 +738,33 @@ class PosController extends Controller
             }
         });
 
-        return back()->with('success', 'Refund processed successfully');
+        return redirect()->route('admin.pos.receipt', $order)
+            ->with('success', 'Return processed. Refund amount: Rs. ' . number_format($refundAmount, 0) . '. ' . ($request->boolean('return_to_inventory') ? 'Items returned to inventory.' : ''));
+    }
+
+    public function returnsList(Request $request)
+    {
+        $query = Refund::with(['order.customer', 'user'])
+            ->latest();
+
+        if ($search = $request->input('search')) {
+            $query->whereHas('order', function ($q) use ($search) {
+                $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhereHas('customer', fn($q2) => $q2->where('name', 'like', "%{$search}%"));
+            })->orWhere('refund_number', 'like', "%{$search}%");
+        }
+
+        if ($start = $request->input('start_date')) {
+            $query->whereDate('created_at', '>=', $start);
+        }
+        if ($end = $request->input('end_date')) {
+            $query->whereDate('created_at', '<=', $end);
+        }
+
+        $refunds = $query->paginate(25)->withQueryString();
+        $totalAmount = Refund::where('status', 'completed')->sum('amount');
+
+        return view('admin.pos.returns', compact('refunds', 'totalAmount'));
     }
 
     public function cancelOrder(Order $order)

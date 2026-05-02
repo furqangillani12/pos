@@ -9,7 +9,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_number', 'customer_id','customer_type', 'user_id', 'order_type',
-        'subtotal', 'tax', 'discount', 'delivery_charges', 'weight', 'total',
+        'subtotal', 'tax', 'discount', 'discount_label', 'delivery_charges', 'weight', 'total',
         'payment_method', 'payment_status', 'status', 'notes', 'tax_rate', 'tax_type',
         'dispatch_method', 'tracking_id', 'receipt_token','credit_status',
         'credit_ledger_id',

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Purchase;
 use App\Models\User;
 use App\Models\Product;
 use App\Models\OrderItem;
@@ -72,36 +73,70 @@ class ReportController extends Controller
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
         $end   = $request->input('end_date', now()->toDateString());
 
-        $orders = $this->scopeBranch(Order::with('items.product'))
+        // Completed + refunded orders (exclude cancelled/pending)
+        $orders = $this->scopeBranch(
+                Order::with(['items.product', 'refunds'])
+            )
+            ->whereIn('status', [Order::STATUS_COMPLETED, Order::STATUS_REFUNDED])
             ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->latest()
             ->get();
 
-        $totalRevenue = 0;
-        $totalCost    = 0;
-        $totalDiscount = 0;
-        $totalDelivery = 0;
-        $totalTax = 0;
+        $totalRevenue  = 0; // sum of item sales (unit_price already reflects line discounts)
+        $totalCost     = 0; // COGS from product cost_price
+        $totalDiscount = 0; // order-level discounts (packages, manual)
+        $totalRefunds  = 0; // completed refunds
+        $totalDelivery = 0; // delivery fees charged to customers (income)
+        $totalTax      = 0;
+        $orderCount    = 0;
 
         foreach ($orders as $order) {
+            $orderCount++;
             $totalDiscount += $order->discount ?? 0;
             $totalDelivery += $order->delivery_charges ?? 0;
-            $totalTax += $order->tax ?? 0;
+            $totalTax      += $order->tax ?? 0;
+            $totalRefunds  += $order->refunds->where('status', 'completed')->sum('amount');
+
             foreach ($order->items as $item) {
                 $product       = $item->product;
-                $revenue       = $item->quantity * $item->unit_price;
-                $cost          = $product ? $item->quantity * ($product->cost_price ?? 0) : 0;
-                $totalRevenue += $revenue;
-                $totalCost    += $cost;
+                // unit_price already embeds per-line discount (effective price)
+                $totalRevenue += $item->quantity * $item->unit_price;
+                $totalCost    += $product ? $item->quantity * (float)($product->cost_price ?? 0) : 0;
             }
         }
 
-        // Revenue = item sales - discount (delivery & tax are not product revenue)
-        $netRevenue = $totalRevenue - $totalDiscount;
-        $profit = $netRevenue > $totalCost ? $netRevenue - $totalCost : 0;
-        $loss   = $totalCost > $netRevenue ? $totalCost - $netRevenue : 0;
+        // Purchase expenses in the period (courier, customs, handling paid when buying stock)
+        $purchasesQuery = $this->scopeBranch(
+                Purchase::whereBetween('purchase_date', [$start, $end])
+            );
+        $purchases = $purchasesQuery->get();
+        $totalPurchaseExpenses = $purchases->sum(function ($p) {
+            return collect($p->expenses ?? [])->sum(fn($e) => (float)($e['amount'] ?? 0));
+        });
 
-        return view('admin.reports.profit_loss', compact('start', 'end', 'profit', 'loss', 'totalRevenue', 'totalCost', 'totalDiscount', 'totalDelivery', 'totalTax', 'netRevenue'));
+        // ── P&L Formula ──
+        // Gross Income  = item sales + delivery charges (both are money received from customers)
+        // Net Revenue   = Gross Income − order discounts − refunds
+        // Gross Profit  = Net Revenue − COGS
+        // Net Profit    = Gross Profit − purchase expenses (operating costs)
+        $totalGrossIncome = $totalRevenue + $totalDelivery;
+        $totalDeductions  = $totalDiscount + $totalRefunds;
+        $netRevenue       = $totalGrossIncome - $totalDeductions;
+        $grossProfit      = $netRevenue - $totalCost;
+        $netProfit        = $grossProfit - $totalPurchaseExpenses;
+        $profit           = max(0,  $netProfit);
+        $loss             = max(0, -$netProfit);
+
+        return view('admin.reports.profit_loss', compact(
+            'start', 'end',
+            'profit', 'loss', 'netProfit', 'grossProfit',
+            'totalRevenue', 'totalCost',
+            'totalDiscount', 'totalRefunds', 'totalDeductions',
+            'totalDelivery', 'totalTax',
+            'totalGrossIncome', 'netRevenue',
+            'totalPurchaseExpenses',
+            'orderCount'
+        ));
     }
 
     public function categorySales(Request $request)

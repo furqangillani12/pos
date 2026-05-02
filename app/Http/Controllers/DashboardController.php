@@ -69,8 +69,11 @@ class DashboardController extends Controller
         }
 
         // ── Financial ──
-        $totalReceivables = $this->scopeBranch(Customer::query())->where('current_balance', '>', 0)->sum('current_balance');
-        $totalAdvances    = $this->scopeBranch(Customer::query())->where('current_balance', '<', 0)->sum(DB::raw('ABS(current_balance)'));
+        // Receivables: sum of actual outstanding order balances (more accurate than current_balance)
+        $totalReceivables = $this->scopeBranch(
+            Order::whereNotIn('status', ['cancelled', 'refunded'])->where('balance_amount', '>', 0)
+        )->sum('balance_amount');
+        $totalAdvances = $this->scopeBranch(Customer::query())->where('current_balance', '<', 0)->sum(DB::raw('ABS(current_balance)'));
         // Expenses from ledger accounts of type 'expense' (debit = expense incurred)
         $expenseAccountIds = \App\Models\LedgerAccount::where('type', 'expense')->pluck('id');
         $monthlyExpenses = \App\Models\LedgerAccountEntry::whereIn('ledger_account_id', $expenseAccountIds)
@@ -81,18 +84,15 @@ class DashboardController extends Controller
             ->sum('debit');
 
         // ── Profit estimate (this month) ──
+        // $monthlySales = sum(order.total) which ALREADY has order-level discounts deducted
+        // and includes delivery charges as income. So: profit = sales - COGS - expenses.
         $monthlyCostQuery = OrderItem::whereHas('order', function ($q) use ($monthStart) {
             $q->where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled');
             $this->scopeBranch($q);
         })->join('products', 'order_items.product_id', '=', 'products.id')
           ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost');
         $monthlyCost   = $monthlyCostQuery->value('cost') ?? 0;
-        // Exclude delivery charges and tax from profit — profit = sales revenue - cost - expenses - non-product charges
-        $monthlyOrdersQuery = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'));
-        $monthlyDeliveryCharges = (clone $monthlyOrdersQuery)->sum('delivery_charges');
-        $monthlyTax = (clone $monthlyOrdersQuery)->sum('tax');
-        $monthlyDiscount = (clone $monthlyOrdersQuery)->sum('discount');
-        $monthlyProfit = $monthlySales - $monthlyCost - $monthlyExpenses - $monthlyDeliveryCharges - $monthlyTax + $monthlyDiscount;
+        $monthlyProfit = $monthlySales - $monthlyCost - $monthlyExpenses;
 
         // ── Employees ──
         $presentEmployees = $this->scopeBranch(Attendance::whereDate('date', $today)->where('status', 'present'))->count();
@@ -163,11 +163,8 @@ class DashboardController extends Controller
           ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost')
           ->value('cost') ?? 0;
 
-        $todayOrdersQuery = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'));
-        $todayDelivery = (clone $todayOrdersQuery)->sum('delivery_charges');
-        $todayTax = (clone $todayOrdersQuery)->sum('tax');
-        $todayDiscount = (clone $todayOrdersQuery)->sum('discount');
-        $todayProfit = $todaySales - $todayCost - $todayExpenses - $todayDelivery - $todayTax + $todayDiscount;
+        // todaySales = sum(order.total) already has discounts deducted, so: profit = sales - COGS - expenses
+        $todayProfit = $todaySales - $todayCost - $todayExpenses;
 
         $todayPurchases = Purchase::whereDate('purchase_date', $today)
             ->when(!$this->isAllBranches(), fn($q) => $q->where('branch_id', $this->branchId()))
@@ -191,14 +188,43 @@ class DashboardController extends Controller
     // Customers who owe us money (receivables / wusooli)
     public function receivables()
     {
-        $customers = $this->scopeBranch(Customer::query())
-            ->where('current_balance', '>', 0)
-            ->orderByDesc('current_balance')
-            ->get();
+        $branchId = $this->branchId();
 
-        $total = $customers->sum('current_balance');
+        // Base query: non-cancelled/refunded orders with outstanding balance
+        $baseQuery = Order::with('customer')
+            ->whereIn('status', [Order::STATUS_COMPLETED, Order::STATUS_PENDING ?? 'pending', 'processing', 'shipped', 'partial'])
+            ->where('balance_amount', '>', 0);
 
-        return view('admin.dashboard-detail.receivables', compact('customers', 'total'));
+        if (!$this->isAllBranches()) {
+            $baseQuery->where('branch_id', $branchId);
+        }
+
+        $orders = $baseQuery->latest()->get();
+
+        // Group by customer_id (null = walk-in)
+        $customerGroups = $orders->groupBy(fn($o) => $o->customer_id ?? 'walkin');
+
+        // Build structured list: named customers
+        $customerRows = [];
+        foreach ($customerGroups as $customerId => $custOrders) {
+            if ($customerId === 'walkin') continue;
+            $customer = $custOrders->first()->customer;
+            $customerRows[] = [
+                'customer'     => $customer,
+                'orders'       => $custOrders,
+                'total_due'    => $custOrders->sum('balance_amount'),
+                'order_count'  => $custOrders->count(),
+            ];
+        }
+        // Sort by total_due descending
+        usort($customerRows, fn($a, $b) => $b['total_due'] <=> $a['total_due']);
+
+        // Walk-in orders with pending balance
+        $walkinOrders = $customerGroups->get('walkin', collect());
+
+        $total = $orders->sum('balance_amount');
+
+        return view('admin.dashboard-detail.receivables', compact('customerRows', 'walkinOrders', 'total'));
     }
 
     // Customers who have advance with us (we owe them)

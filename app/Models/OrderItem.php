@@ -8,13 +8,20 @@ class OrderItem extends Model
 {
     protected $fillable = [
         'order_id', 'product_id',
-        'quantity', 'unit_price', 'total_price'
+        'quantity', 'unit_price', 'original_price', 'line_discount', 'total_price',
     ];
 
     protected $casts = [
-        'unit_price' => 'decimal:2',
-        'total_price' => 'decimal:2',
+        'unit_price'     => 'decimal:2',
+        'original_price' => 'decimal:2',
+        'line_discount'  => 'decimal:2',
+        'total_price'    => 'decimal:2',
     ];
+
+    public function hasLineDiscount(): bool
+    {
+        return ($this->line_discount ?? 0) > 0 && ($this->original_price ?? 0) > 0;
+    }
 
     public function order()
     {

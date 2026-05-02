@@ -1461,8 +1461,26 @@
                         </span>
                         <span class="val tax">Rs. 0.00</span>
                     </div>
+                    {{-- Package search --}}
+                    <div style="margin-bottom:4px;">
+                        <div style="position:relative;">
+                            <input type="text" id="packageSearch" placeholder="Apply package (type name/code)..."
+                                autocomplete="off"
+                                style="width:100%;padding:4px 8px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:6px;font-size:11px;color:#166534;outline:none;box-sizing:border-box;"
+                                onfocus="this.style.borderColor='#22c55e'" onblur="this.style.borderColor='#bbf7d0'">
+                            <div id="packageDropdown"
+                                style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1.5px solid #22c55e;border-radius:6px 6px 0 0;max-height:180px;overflow-y:auto;z-index:200;box-shadow:0 -4px 12px rgba(0,0,0,.1);">
+                            </div>
+                        </div>
+                        <div id="activePackageBadge" style="display:none;margin-top:3px;font-size:10px;color:#16a34a;background:#dcfce7;padding:2px 6px;border-radius:4px;display:flex;justify-content:space-between;align-items:center;">
+                            <span id="activePackageName"></span>
+                            <button onclick="clearPackage()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;padding:0 2px;">✕</button>
+                        </div>
+                    </div>
+
                     <div class="trow">
-                        <span class="lbl">Discount
+                        <span class="lbl">
+                            <span id="discount-label-display">Discount</span>
                             <select id="discount_type" class="inline-num"
                                 style="width:50px;padding:2px 4px;font-size:11px;"
                                 onchange="updateCartDisplay();updateBalanceSummary()">
@@ -1471,8 +1489,9 @@
                             </select>
                         </span>
                         <input type="number" id="discount" class="inline-num" value="0" min="0"
-                            step="0.01" oninput="updateCartDisplay();updateBalanceSummary()">
+                            step="0.01" oninput="clearPackageLabel();updateCartDisplay();updateBalanceSummary()">
                     </div>
+                    <input type="hidden" id="discount_label" value="">
                     <div class="trow">
                         <span class="lbl">Weight</span>
                         <span class="val total-weight" style="color:#94a3b8;font-size:11.5px;">0.00 kg</span>
@@ -1502,7 +1521,13 @@
                         <span style="color:#c2410c;font-weight:800;" id="previousBalanceDisplay">Rs. 0</span>
                     </div>
 
-                    <label>Amount Received</label>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <label>Amount Received</label>
+                        <button type="button" onclick="fillExactTotal()"
+                            style="font-size:11px;color:#2563eb;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-weight:600;">
+                            = Fill Total
+                        </button>
+                    </div>
                     <input type="number" id="paid_amount" name="paid_amount" class="payment-big-input" min="0"
                         step="0.01" placeholder="0.00" oninput="updateBalanceSummary()">
 
@@ -1816,6 +1841,8 @@
                     salePrice: parseFloat(card.dataset.salePrice),
                     resalePrice: parseFloat(card.dataset.resalePrice) || parseFloat(card.dataset.salePrice),
                     wholesalePrice: parseFloat(card.dataset.wholesalePrice) || parseFloat(card.dataset.salePrice),
+                    line_discount: 0,
+                    line_discount_type: 'percent',
                 });
             }
 
@@ -1935,10 +1962,14 @@
                 totalWeight = 0,
                 html = '';
             window.cart.forEach((item, idx) => {
-                const itemTotal = item.price * item.quantity;
+                const lineDiscAmt = (item.line_discount_type === 'percent')
+                    ? item.price * ((item.line_discount || 0) / 100)
+                    : (item.line_discount || 0);
+                const effectivePrice = Math.max(0, item.price - lineDiscAmt);
+                const itemTotal = effectivePrice * item.quantity;
                 subtotal += itemTotal;
                 totalWeight += (item.weight || 0) * item.quantity;
-                html += buildCartItemHTML(item, idx, itemTotal);
+                html += buildCartItemHTML(item, idx, itemTotal, effectivePrice, lineDiscAmt);
             });
             cartEl.innerHTML = html;
 
@@ -1963,16 +1994,45 @@
             updateMobileCartOverlay();
         };
 
-        function buildCartItemHTML(item, idx, itemTotal) {
+        function buildCartItemHTML(item, idx, itemTotal, effectivePrice, lineDiscAmt) {
+            const hasDiscount = (item.line_discount || 0) > 0;
+            const discType = item.line_discount_type || 'percent';
+            const discVal = item.line_discount || 0;
+            const discLabel = hasDiscount
+                ? (discType === 'percent'
+                    ? `−${discVal}% = Rs.${formatNumber(lineDiscAmt)}/unit → Rs.${formatNumber(effectivePrice)}`
+                    : `−Rs.${formatNumber(discVal)}/unit → Rs.${formatNumber(effectivePrice)}`)
+                : '';
+
             return `
             <div class="cart-item">
                 <div class="cart-item-meta">
                     <div class="name">${item.name}${item.unit ? ' <small style="color:#9ca3af">('+item.unit+')</small>' : ''}</div>
-                    <div class="unit" style="display:flex;align-items:center;gap:4px;">
+                    <div class="unit" style="display:flex;align-items:center;gap:4px;flex-wrap:wrap;">
                         Rs.<input type="number" value="${item.price}" step="0.01" min="0"
                             style="width:65px;padding:1px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;"
                             onchange="updateItemPrice(${idx}, this.value)">
                         x ${item.quantity}
+                        <button onclick="toggleLineDiscount(${idx}, this)" title="Line discount"
+                            style="background:${hasDiscount ? '#dcfce7' : '#f1f5f9'};color:${hasDiscount ? '#16a34a' : '#64748b'};border:1px solid ${hasDiscount ? '#bbf7d0' : '#e2e8f0'};border-radius:4px;padding:1px 5px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap;">
+                            ${hasDiscount ? '% ✓' : '%'}</button>
+                    </div>
+                    ${hasDiscount ? `<div style="font-size:10px;color:#16a34a;margin-top:2px;">${discLabel}</div>` : ''}
+                    <div class="ld-row" data-ld-idx="${idx}" style="display:${hasDiscount ? 'flex' : 'none'};align-items:center;gap:4px;margin-top:4px;">
+                        <select onchange="updateLineDiscType(${idx}, this.value)"
+                            style="padding:2px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;">
+                            <option value="percent" ${discType==='percent'?'selected':''}>%</option>
+                            <option value="fixed" ${discType==='fixed'?'selected':''}>Rs.</option>
+                        </select>
+                        <input type="number" value="${discVal > 0 ? discVal : ''}" min="0" step="0.01"
+                            placeholder="0"
+                            onchange="updateLineDiscount(${idx}, this.value)"
+                            onkeydown="if(event.key==='Enter'){updateLineDiscount(${idx}, this.value);this.blur();}"
+                            style="width:60px;padding:2px 4px;border:1px solid #e5e7eb;border-radius:4px;font-size:11px;text-align:right;">
+                        <span style="font-size:10px;color:#9ca3af;">per unit</span>
+                        <button onclick="clearLineDiscount(${idx})"
+                            style="background:none;border:none;color:#ef4444;font-size:11px;cursor:pointer;padding:0 2px;"
+                            title="Remove discount">✕</button>
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:5px;">
@@ -1988,6 +2048,34 @@
                 </div>
             </div>`;
         }
+
+        window.toggleLineDiscount = function(idx, btn) {
+            // Use the button's parent cart-item to find the right ld-row
+            // (avoids duplicate-ID problem when desktop + mobile are both in DOM)
+            const container = btn ? btn.closest('.cart-item') : null;
+            const row = container
+                ? container.querySelector('.ld-row[data-ld-idx="' + idx + '"]')
+                : document.querySelector('.ld-row[data-ld-idx="' + idx + '"]');
+            if (!row) return;
+            const isHidden = row.style.display === 'none';
+            row.style.display = isHidden ? 'flex' : 'none';
+            if (isHidden) {
+                const input = row.querySelector('input[type=number]');
+                if (input) { input.focus(); input.select(); }
+            }
+        };
+        window.updateLineDiscount = function(idx, val) {
+            window.cart[idx].line_discount = parseFloat(val) || 0;
+            updateCartDisplay();
+        };
+        window.updateLineDiscType = function(idx, type) {
+            window.cart[idx].line_discount_type = type;
+            updateCartDisplay();
+        };
+        window.clearLineDiscount = function(idx) {
+            window.cart[idx].line_discount = 0;
+            updateCartDisplay();
+        };
 
         window.changeQty = function(idx, delta) {
             window.cart[idx].quantity += delta;
@@ -2016,6 +2104,16 @@
             updateCartDisplay();
         };
 
+        window.fillExactTotal = function() {
+            const d = getBalanceData();
+            const total = parseFloat(d.total.toFixed(2));
+            const paidInput  = document.getElementById('paid_amount');
+            const mPaidInput = document.getElementById('m_paid_amount');
+            if (paidInput)  { paidInput.value  = total; }
+            if (mPaidInput) { mPaidInput.value = total; }
+            updateBalanceSummary();
+        };
+
         // ── Balance summary (updates BOTH desktop & mobile) ──────
         function getBalanceData() {
             const cart = window.cart || [];
@@ -2023,7 +2121,12 @@
             const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
             const discountType = document.getElementById('discount_type')?.value || 'fixed';
             const delivery = parseFloat(document.getElementById('delivery_charges')?.value || 0);
-            const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const subtotal = cart.reduce((s, i) => {
+                const dAmt = (i.line_discount_type === 'percent')
+                    ? i.price * ((i.line_discount || 0) / 100)
+                    : (i.line_discount || 0);
+                return s + Math.max(0, i.price - dAmt) * i.quantity;
+            }, 0);
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
             const afterDiscount = subtotal - discount;
             const total = afterDiscount + calcTaxAmount(afterDiscount + delivery, taxRate) + delivery;
@@ -2169,7 +2272,12 @@
         }
 
         function updateMobileCartTotalsOnly() {
-            const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const subtotal = window.cart.reduce((s, i) => {
+                const dAmt = (i.line_discount_type === 'percent')
+                    ? i.price * ((i.line_discount || 0) / 100)
+                    : (i.line_discount || 0);
+                return s + Math.max(0, i.price - dAmt) * i.quantity;
+            }, 0);
             const totalWeight = window.cart.reduce((s, i) => s + (i.weight || 0) * i.quantity, 0);
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
             const discountRaw = parseFloat(document.getElementById('discount')?.value || 0);
@@ -2213,13 +2321,22 @@
                     </div>`;
             } else {
                 window.cart.forEach((item, idx) => {
-                    const itemTotal = item.price * item.quantity;
-                    cartItemsHTML += buildCartItemHTML(item, idx, itemTotal);
+                    const lineDiscAmt = (item.line_discount_type === 'percent')
+                        ? item.price * ((item.line_discount || 0) / 100)
+                        : (item.line_discount || 0);
+                    const effectivePrice = Math.max(0, item.price - lineDiscAmt);
+                    const itemTotal = effectivePrice * item.quantity;
+                    cartItemsHTML += buildCartItemHTML(item, idx, itemTotal, effectivePrice, lineDiscAmt);
                 });
             }
 
             // Calculate totals (tax applies on subtotal - discount + delivery)
-            const subtotal = window.cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const subtotal = window.cart.reduce((s, i) => {
+                const dAmt = (i.line_discount_type === 'percent')
+                    ? i.price * ((i.line_discount || 0) / 100)
+                    : (i.line_discount || 0);
+                return s + Math.max(0, i.price - dAmt) * i.quantity;
+            }, 0);
             const totalWeight = window.cart.reduce((s, i) => s + (i.weight || 0) * i.quantity, 0);
             const taxRate = parseFloat(document.getElementById('custom_tax')?.value || 0);
             const taxType = document.getElementById('tax_type')?.value || 'percent';
@@ -2274,8 +2391,25 @@
                             </span>
                             <span class="val" id="m_tax">Rs. ${formatNumber(taxAmt)}</span>
                         </div>
+                        <!-- Mobile Package Search -->
+                        <div style="margin:4px 0 6px;">
+                            <input type="text" id="m_packageSearch" placeholder="Apply package..."
+                                autocomplete="off"
+                                style="width:100%;padding:4px 8px;background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:6px;font-size:11px;color:#166534;outline:none;box-sizing:border-box;"
+                                oninput="handleMobilePackageSearch(this.value)"
+                                onfocus="handleMobilePackageSearch(this.value)">
+                            <div id="m_packageDropdown"
+                                style="display:none;background:#fff;border:1.5px solid #22c55e;border-radius:6px;max-height:150px;overflow-y:auto;margin-top:2px;">
+                            </div>
+                            ${document.getElementById('discount_label')?.value ? `
+                            <div style="font-size:10px;color:#16a34a;background:#dcfce7;padding:2px 6px;border-radius:4px;margin-top:3px;display:flex;justify-content:space-between;">
+                                <span>${document.getElementById('discount_label')?.value || ''}</span>
+                                <button onclick="clearPackage()" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:11px;padding:0;">✕</button>
+                            </div>` : ''}
+                        </div>
                         <div class="trow">
-                            <span class="lbl">Discount
+                            <span class="lbl">
+                                <span>${document.getElementById('discount_label')?.value || 'Discount'}</span>
                                 <select id="m_discount_type" class="inline-num" style="width:50px;padding:2px 4px;font-size:11px;"
                                     onchange="document.getElementById('discount_type').value=this.value;updateCartDisplay();">
                                     <option value="fixed" ${discountType==='fixed'?'selected':''}>Rs.</option>
@@ -2283,7 +2417,7 @@
                                 </select>
                             </span>
                             <input type="number" id="m_discount" class="inline-num" value="${discountRaw}" min="0" step="0.01"
-                                oninput="document.getElementById('discount').value=this.value;updateCartDisplay();">
+                                oninput="document.getElementById('discount').value=this.value;clearPackageLabel();updateCartDisplay();">
                         </div>
                         <div class="trow"><span class="lbl">Weight</span><span class="val" id="m_weight" style="color:#94a3b8;font-size:11.5px;">${formatNumber(totalWeight)} kg</span></div>
                         <div class="trow grand"><span class="lbl">Total Bill</span><span class="val" id="m_total" style="font-size:16px;font-weight:900;color:#2563eb;">Rs. ${formatNumber(total)}</span></div>
@@ -2305,7 +2439,13 @@
                                     <span style="color:#c2410c;font-weight:700;">Prev. Balance:</span>
                                     <span style="color:#c2410c;font-weight:800;">Rs. ${formatNumber(prevBal)}</span>
                                 </div>` : ''}
-                            <label>Amount Received</label>
+                            <div style="display:flex;justify-content:space-between;align-items:center;">
+                                <label>Amount Received</label>
+                                <button type="button" onclick="fillExactTotal()"
+                                    style="font-size:11px;color:#2563eb;background:none;border:none;cursor:pointer;padding:0;text-decoration:underline;font-weight:600;">
+                                    = Fill Total
+                                </button>
+                            </div>
                             <input type="number" id="m_paid_amount" class="payment-big-input" min="0" step="0.01"
                                 placeholder="0.00" value="${document.getElementById('paid_amount')?.value || ''}"
                                 oninput="document.getElementById('paid_amount').value=this.value;updateBalanceSummary();updateMobileCartBar();">
@@ -2698,6 +2838,168 @@
         });
 
         // ── Process Order ──────────────────────────────────────────
+        // ── Package Search ─────────────────────────────────────────
+        const packageSearchInput = document.getElementById('packageSearch');
+        const packageDropdown    = document.getElementById('packageDropdown');
+        const packagesApiUrl     = '{{ route("admin.packages.api") }}';
+        let packagesCache        = null;
+
+        async function loadPackages() {
+            if (packagesCache) return packagesCache;
+            try {
+                const res = await fetch(packagesApiUrl);
+                packagesCache = await res.json();
+            } catch(e) { packagesCache = []; }
+            return packagesCache;
+        }
+
+        async function filterPackages(term) {
+            const pkgs = await loadPackages();
+            const t = term.toLowerCase();
+            return pkgs.filter(p =>
+                p.name.toLowerCase().includes(t) || (p.code || '').toLowerCase().includes(t)
+            );
+        }
+
+        packageSearchInput?.addEventListener('focus', async function() {
+            const pkgs = await filterPackages('');
+            renderPackageDropdown(pkgs);
+        });
+        packageSearchInput?.addEventListener('input', async function() {
+            const pkgs = await filterPackages(this.value);
+            renderPackageDropdown(pkgs);
+        });
+
+        function renderPackageDropdown(pkgs) {
+            if (!pkgs.length) {
+                packageDropdown.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:#9ca3af;">No packages found</div>';
+            } else {
+                packageDropdown.innerHTML = pkgs.map(p => `
+                    <div class="pkg-option" data-id="${p.id}"
+                        style="padding:8px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0fdf4;"
+                        onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"
+                        onclick="applyPackage(${p.id})">
+                        <div style="font-weight:700;color:#166534;">${p.name}${p.code ? ' <span style="color:#9ca3af;font-weight:400;">['+p.code+']</span>' : ''}</div>
+                        <div style="color:#6b7280;font-size:10px;">
+                            ${p.items.length} items · Retail: Rs.${p.retail_total.toLocaleString('en',{maximumFractionDigits:0})}
+                            · Sale: Rs.${p.sale_price.toLocaleString('en',{maximumFractionDigits:0})}
+                            · Saves: Rs.${p.discount_amount.toLocaleString('en',{maximumFractionDigits:0})}
+                        </div>
+                    </div>`).join('');
+            }
+            packageDropdown.style.display = 'block';
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#packageSearch') && !e.target.closest('#packageDropdown')) {
+                packageDropdown.style.display = 'none';
+            }
+        });
+
+        window.applyPackage = async function(pkgId) {
+            const pkgs = await loadPackages();
+            const pkg = pkgs.find(p => p.id === pkgId);
+            if (!pkg) return;
+
+            packageDropdown.style.display = 'none';
+            packageSearchInput.value = '';
+
+            // Add each package item to cart (or increase qty if already there)
+            const typeSelect = document.querySelector('.customer-type-select');
+            const type = typeSelect?.value || 'walkin';
+
+            pkg.items.forEach(item => {
+                let price = item.sale_price;
+                if (type === 'reseller') price = item.resale_price || price;
+                if (type === 'wholesale') price = item.wholesale_price || price;
+
+                const existing = window.cart.find(c => c.id == item.product_id);
+                if (existing) {
+                    existing.quantity += item.quantity;
+                } else {
+                    window.cart.push({
+                        id: String(item.product_id),
+                        name: item.name,
+                        price: price,
+                        weight: item.weight || 0,
+                        unit: item.unit || '',
+                        quantity: item.quantity,
+                        salePrice: item.sale_price,
+                        resalePrice: item.resale_price || item.sale_price,
+                        wholesalePrice: item.wholesale_price || item.sale_price,
+                        line_discount: 0,
+                        line_discount_type: 'percent',
+                    });
+                }
+            });
+
+            // Calculate discount based on ACTUAL prices in cart at customer type
+            // (retail/resale/wholesale) so the final total always equals pkg.sale_price
+            let actualItemsTotal = 0;
+            pkg.items.forEach(item => {
+                let price = item.sale_price;
+                if (type === 'reseller') price = item.resale_price || price;
+                if (type === 'wholesale') price = item.wholesale_price || price;
+                actualItemsTotal += price * item.quantity;
+            });
+            const actualDiscount = Math.max(0, actualItemsTotal - pkg.sale_price);
+
+            // Set package discount (fixed amount) and label
+            const discountInput = document.getElementById('discount');
+            const discountType  = document.getElementById('discount_type');
+            const discountLabel = document.getElementById('discount_label');
+            const discountLabelDisplay = document.getElementById('discount-label-display');
+            const badge = document.getElementById('activePackageBadge');
+            const badgeName = document.getElementById('activePackageName');
+
+            if (discountInput) discountInput.value = actualDiscount.toFixed(2);
+            if (discountType) discountType.value = 'fixed';
+            if (discountLabel) discountLabel.value = pkg.name + ' Discount';
+            if (discountLabelDisplay) discountLabelDisplay.textContent = pkg.name + ' Discount';
+            if (badge) badge.style.display = 'flex';
+            if (badgeName) badgeName.textContent = pkg.name + ' — Rs.' + actualDiscount.toLocaleString('en', {maximumFractionDigits:0}) + ' off';
+
+            updateCartDisplay();
+            updateBalanceSummary();
+        };
+
+        window.handleMobilePackageSearch = async function(term) {
+            const pkgs = await filterPackages(term);
+            const dd = document.getElementById('m_packageDropdown');
+            if (!dd) return;
+            if (!pkgs.length) {
+                dd.innerHTML = '<div style="padding:8px;font-size:12px;color:#9ca3af;">No packages found</div>';
+            } else {
+                dd.innerHTML = pkgs.map(p => `
+                    <div style="padding:8px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #f0fdf4;"
+                        onmouseover="this.style.background='#f0fdf4'" onmouseout="this.style.background=''"
+                        onclick="applyPackage(${p.id});document.getElementById('m_packageSearch').value='';document.getElementById('m_packageDropdown').style.display='none';">
+                        <div style="font-weight:700;color:#166534;">${p.name}${p.code ? ' ['+p.code+']' : ''}</div>
+                        <div style="color:#6b7280;font-size:10px;">Sale: Rs.${p.sale_price.toLocaleString('en',{maximumFractionDigits:0})} · Saves: Rs.${p.discount_amount.toLocaleString('en',{maximumFractionDigits:0})}</div>
+                    </div>`).join('');
+            }
+            dd.style.display = 'block';
+        };
+
+        window.clearPackage = function() {
+            const discountLabel = document.getElementById('discount_label');
+            const discountLabelDisplay = document.getElementById('discount-label-display');
+            const badge = document.getElementById('activePackageBadge');
+            if (discountLabel) discountLabel.value = '';
+            if (discountLabelDisplay) discountLabelDisplay.textContent = 'Discount';
+            if (badge) badge.style.display = 'none';
+        };
+
+        window.clearPackageLabel = function() {
+            const discountLabel = document.getElementById('discount_label');
+            const discountLabelDisplay = document.getElementById('discount-label-display');
+            const badge = document.getElementById('activePackageBadge');
+            if (discountLabel) discountLabel.value = '';
+            if (discountLabelDisplay) discountLabelDisplay.textContent = 'Discount';
+            if (badge) badge.style.display = 'none';
+        };
+
+        // ── Process Order ──────────────────────────────────────────
         async function processOrder() {
             const cart = window.cart || [];
             if (cart.length === 0) {
@@ -2718,16 +3020,32 @@
             const trackingId = document.getElementById('tracking_id')?.value || null;
             const notes = document.getElementById('order_notes')?.value || null;
 
-            const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
+            const subtotal = cart.reduce((s, i) => {
+                const dAmt = (i.line_discount_type === 'percent')
+                    ? i.price * ((i.line_discount || 0) / 100)
+                    : (i.line_discount || 0);
+                return s + Math.max(0, i.price - dAmt) * i.quantity;
+            }, 0);
             const discount = discountType === 'percent' ? subtotal * (discountRaw / 100) : discountRaw;
+
+            const discountLabel = document.getElementById('discount_label')?.value || null;
 
             const orderData = {
                 customer_id: customerId ? parseInt(customerId) : null,
-                items: cart.map(i => ({
-                    product_id: parseInt(i.id),
-                    quantity: parseFloat(i.quantity),
-                    unit_price: parseFloat(i.price)
-                })),
+                discount_label: discountLabel || null,
+                items: cart.map(i => {
+                    const dAmt = (i.line_discount_type === 'percent')
+                        ? i.price * ((i.line_discount || 0) / 100)
+                        : (i.line_discount || 0);
+                    const effectivePrice = Math.max(0, parseFloat(i.price) - dAmt);
+                    return {
+                        product_id: parseInt(i.id),
+                        quantity: parseFloat(i.quantity),
+                        unit_price: effectivePrice,
+                        original_price: dAmt > 0 ? parseFloat(i.price) : null,
+                        line_discount: dAmt > 0 ? parseFloat(dAmt.toFixed(2)) : 0,
+                    };
+                }),
                 payment_method: paymentMethod,
                 paid_amount: paidAmount,
                 dispatch_method: dispatchMethod,

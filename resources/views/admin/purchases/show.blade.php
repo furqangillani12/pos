@@ -102,11 +102,30 @@
                         @endforeach
                         </tbody>
                         <tfoot>
+                        @php
+                            $itemsSubtotal = $purchase->items->sum('total_price');
+                        @endphp
                         <tr>
-                            <td colspan="3" class="px-6 py-4 text-right font-medium">Subtotal</td>
-                            <td class="px-6 py-4 text-sm font-medium">
-                                {{ config('settings.currency_symbol') }}{{ number_format($purchase->total_amount, 2) }}
-                            </td>
+                            <td colspan="3" class="px-6 py-4 text-right font-medium text-gray-600">Items Subtotal</td>
+                            <td class="px-6 py-4 text-sm font-medium">Rs. {{ number_format($itemsSubtotal, 2) }}</td>
+                        </tr>
+                        @if(!empty($purchase->expenses))
+                            @foreach($purchase->expenses as $exp)
+                            <tr>
+                                <td colspan="3" class="px-6 py-4 text-right text-sm text-yellow-700">+ {{ $exp['label'] ?? 'Expense' }}</td>
+                                <td class="px-6 py-4 text-sm text-yellow-700">Rs. {{ number_format($exp['amount'], 2) }}</td>
+                            </tr>
+                            @endforeach
+                        @endif
+                        @if(($purchase->discount ?? 0) > 0)
+                        <tr>
+                            <td colspan="3" class="px-6 py-4 text-right text-sm text-green-700">− Discount</td>
+                            <td class="px-6 py-4 text-sm text-green-700">Rs. {{ number_format($purchase->discount, 2) }}</td>
+                        </tr>
+                        @endif
+                        <tr class="bg-gray-50">
+                            <td colspan="3" class="px-6 py-4 text-right font-bold text-gray-800">Grand Total</td>
+                            <td class="px-6 py-4 text-sm font-bold text-gray-800">Rs. {{ number_format($purchase->total_amount, 2) }}</td>
                         </tr>
                         </tfoot>
                     </table>
