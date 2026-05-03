@@ -98,12 +98,14 @@
                             <label for="payment_method" class="block text-sm font-medium text-gray-700">Paid From Account</label>
                             <select name="payment_method" id="payment_method"
                                     class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                                <option value="cash" {{ old('payment_method') === 'cash' ? 'selected' : '' }}>💵 Cash</option>
-                                <option value="bank" {{ old('payment_method') === 'bank' ? 'selected' : '' }}>🏦 Bank Transfer</option>
-                                <option value="mobile_money" {{ old('payment_method') === 'mobile_money' ? 'selected' : '' }}>📱 Mobile Money</option>
-                                <option value="cheque" {{ old('payment_method') === 'cheque' ? 'selected' : '' }}>📄 Cheque</option>
+                                @foreach($paymentMethods as $pm)
+                                    @php $bal = $accountBals[strtolower($pm->name)]['balance'] ?? 0; @endphp
+                                    <option value="{{ $pm->name }}" {{ old('payment_method', 'cash') === $pm->name ? 'selected' : '' }}>
+                                        {{ $pm->label }} — Available: Rs. {{ number_format($bal, 0) }}
+                                    </option>
+                                @endforeach
                             </select>
-                            <p class="text-xs text-gray-400 mt-1">Which account is this payment coming from?</p>
+                            <p class="text-xs text-gray-400 mt-1">Which account is this payment coming from? Balance shown is current available.</p>
                         </div>
                         <div>
                             <label for="total_amount" class="block text-sm font-medium text-gray-700">Grand Total</label>

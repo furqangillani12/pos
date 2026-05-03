@@ -39,11 +39,13 @@ class PackageController extends Controller
         $branchId = $this->branchId();
 
         $package = Package::create([
-            'branch_id'  => $branchId !== 'all' ? $branchId : null,
-            'name'       => $request->name,
-            'code'       => $request->code,
-            'sale_price' => $request->sale_price,
-            'is_active'  => true,
+            'branch_id'       => $branchId !== 'all' ? $branchId : null,
+            'name'            => $request->name,
+            'code'            => $request->code,
+            'sale_price'      => $request->sale_price,
+            'resale_price'    => $request->filled('resale_price') ? $request->resale_price : null,
+            'wholesale_price' => $request->filled('wholesale_price') ? $request->wholesale_price : null,
+            'is_active'       => true,
         ]);
 
         foreach ($request->items as $item) {
@@ -77,9 +79,11 @@ class PackageController extends Controller
         ]);
 
         $package->update([
-            'name'       => $request->name,
-            'code'       => $request->code,
-            'sale_price' => $request->sale_price,
+            'name'            => $request->name,
+            'code'            => $request->code,
+            'sale_price'      => $request->sale_price,
+            'resale_price'    => $request->filled('resale_price') ? $request->resale_price : null,
+            'wholesale_price' => $request->filled('wholesale_price') ? $request->wholesale_price : null,
         ]);
 
         $package->items()->delete();
@@ -117,12 +121,14 @@ class PackageController extends Controller
 
         return response()->json($packages->map(function ($pkg) {
             return [
-                'id'         => $pkg->id,
-                'name'       => $pkg->name,
-                'code'       => $pkg->code,
-                'sale_price' => $pkg->sale_price,
-                'cost_price' => $pkg->cost_price,
-                'retail_total' => $pkg->retail_total,
+                'id'              => $pkg->id,
+                'name'            => $pkg->name,
+                'code'            => $pkg->code,
+                'sale_price'      => $pkg->sale_price,
+                'resale_price'    => $pkg->resale_price ?? $pkg->sale_price,
+                'wholesale_price' => $pkg->wholesale_price ?? $pkg->sale_price,
+                'cost_price'      => $pkg->cost_price,
+                'retail_total'    => $pkg->retail_total,
                 'discount_amount' => $pkg->discount_amount,
                 'items'      => $pkg->items->map(fn($i) => [
                     'product_id'   => $i->product_id,

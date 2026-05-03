@@ -47,29 +47,55 @@
         </div>
     </div>
 
-    {{-- Sale price --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 items-end">
-        <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Package Sale Price <span class="text-red-500">*</span></label>
-            <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rs.</span>
-                <input type="number" name="sale_price" id="pkg-sale-price"
-                    value="{{ old('sale_price', $package->sale_price ?? '') }}"
-                    min="0" step="0.01" required
-                    oninput="updatePkgSummary()"
-                    class="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-lg font-bold focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="0">
+    {{-- Sale prices per customer type --}}
+    <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Package Price per Customer Type <span class="text-red-500">*</span></label>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Retail Price (عام گاہک) <span class="text-red-500">*</span></label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rs.</span>
+                    <input type="number" name="sale_price" id="pkg-sale-price"
+                        value="{{ old('sale_price', $package->sale_price ?? '') }}"
+                        min="0" step="0.01" required oninput="updatePkgSummary()"
+                        class="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-base font-bold focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="0">
+                </div>
             </div>
-            <p class="text-xs text-gray-400 mt-1">The price the customer pays for the whole package. The difference from retail total becomes the named discount on the receipt.</p>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Reseller Price (ریسیلر)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rs.</span>
+                    <input type="number" name="resale_price" id="pkg-resale-price"
+                        value="{{ old('resale_price', $package->resale_price ?? '') }}"
+                        min="0" step="0.01" oninput="updatePkgSummary()"
+                        class="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-base font-bold focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Leave blank = same as retail">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs text-gray-500 mb-1">Wholesale Price (ہول سیل)</label>
+                <div class="relative">
+                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 font-semibold text-sm">Rs.</span>
+                    <input type="number" name="wholesale_price" id="pkg-wholesale-price"
+                        value="{{ old('wholesale_price', $package->wholesale_price ?? '') }}"
+                        min="0" step="0.01" oninput="updatePkgSummary()"
+                        class="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-base font-bold focus:ring-orange-500 focus:border-orange-500"
+                        placeholder="Leave blank = same as retail">
+                </div>
+            </div>
         </div>
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p class="text-xs text-gray-500 mb-1">Receipt will show</p>
-            <p class="text-sm font-semibold text-blue-800" id="pkg-receipt-preview">
-                Items total: Rs. 0<br>
-                Package Discount: −Rs. 0<br>
-                <strong>Customer pays: Rs. 0</strong>
-            </p>
-        </div>
+        <p class="text-xs text-gray-400 mt-1">Set different prices per customer type. POS will auto-apply the correct price based on selected customer.</p>
+    </div>
+
+    {{-- Receipt preview --}}
+    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-xs text-gray-500 mb-1">Receipt preview (retail customer)</p>
+        <p class="text-sm font-semibold text-blue-800" id="pkg-receipt-preview">
+            Items total: Rs. 0<br>
+            Package Discount: −Rs. 0<br>
+            <strong>Customer pays: Rs. 0</strong>
+        </p>
     </div>
 
 </div>

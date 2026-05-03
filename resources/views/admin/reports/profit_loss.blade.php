@@ -55,20 +55,10 @@
             <div class="flex justify-between items-center py-1.5">
                 <div>
                     <span class="text-sm text-gray-700">Gross Sales Revenue (کل فروخت)</span>
-                    <span class="ml-2 text-xs text-gray-400">items sold — line discounts already applied</span>
+                    <span class="ml-2 text-xs text-gray-400">line discounts already applied in unit price</span>
                 </div>
                 <span class="text-sm font-semibold text-gray-800">Rs. {{ number_format($totalRevenue, 0) }}</span>
             </div>
-
-            @if($totalDelivery > 0)
-            <div class="flex justify-between items-center py-1.5">
-                <div>
-                    <span class="text-sm text-gray-700">Delivery Charges (ڈلیوری)</span>
-                    <span class="ml-2 text-xs text-gray-400">charged to customers</span>
-                </div>
-                <span class="text-sm font-semibold text-gray-800">Rs. {{ number_format($totalDelivery, 0) }}</span>
-            </div>
-            @endif
 
             @if($totalTax > 0)
             <div class="flex justify-between items-center py-1.5">
@@ -76,11 +66,6 @@
                 <span class="text-sm text-gray-500">Rs. {{ number_format($totalTax, 0) }}</span>
             </div>
             @endif
-
-            <div class="flex justify-between items-center py-2 mt-1 border-t border-gray-200">
-                <span class="text-sm font-bold text-gray-700">Total Gross Income</span>
-                <span class="text-sm font-bold text-gray-800">Rs. {{ number_format($totalGrossIncome, 0) }}</span>
-            </div>
         </div>
 
         {{-- DEDUCTIONS --}}
@@ -129,17 +114,29 @@
         </div>
 
         {{-- OPERATING EXPENSES --}}
-        @if($totalPurchaseExpenses > 0)
+        @if($totalDelivery > 0 || $totalPurchaseExpenses > 0)
         <div class="px-5 py-4 border-b border-gray-100 bg-yellow-50/40">
             <p class="text-xs font-bold text-yellow-600 uppercase tracking-wider mb-3">Operating Expenses (آپریشنل اخراجات)</p>
 
+            @if($totalDelivery > 0)
+            <div class="flex justify-between items-center py-1.5">
+                <div>
+                    <span class="text-sm text-gray-700">Delivery / Courier Charges (ڈلیوری)</span>
+                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">collected & paid to courier</span>
+                </div>
+                <span class="text-sm font-semibold text-yellow-700">− Rs. {{ number_format($totalDelivery, 0) }}</span>
+            </div>
+            @endif
+
+            @if($totalPurchaseExpenses > 0)
             <div class="flex justify-between items-center py-1.5">
                 <div>
                     <span class="text-sm text-gray-700">Purchase Expenses (خریداری اخراجات)</span>
-                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">courier, customs, etc.</span>
+                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">customs, handling, etc.</span>
                 </div>
                 <span class="text-sm font-semibold text-yellow-700">− Rs. {{ number_format($totalPurchaseExpenses, 0) }}</span>
             </div>
+            @endif
         </div>
         @endif
 
@@ -181,12 +178,12 @@
             @php
                 $rows = [
                     ['label' => 'Item Sales Revenue',    'value' => $totalRevenue,          'color' => 'text-gray-800'],
-                    ['label' => 'Delivery Charges',       'value' => $totalDelivery,          'color' => 'text-gray-800'],
                     ['label' => 'Order Discounts',        'value' => -$totalDiscount,         'color' => 'text-orange-600'],
                     ['label' => 'Refunds',                'value' => -$totalRefunds,          'color' => 'text-red-600'],
                     ['label' => 'Net Revenue',            'value' => $netRevenue,             'color' => 'text-blue-700',   'bold' => true],
                     ['label' => 'Cost of Goods (COGS)',  'value' => -$totalCost,             'color' => 'text-yellow-700'],
                     ['label' => 'Gross Profit',           'value' => $grossProfit,            'color' => $grossProfit >= 0 ? 'text-green-700' : 'text-red-700', 'bold' => true],
+                    ['label' => 'Delivery / Courier',     'value' => -$totalDelivery,         'color' => 'text-yellow-600'],
                     ['label' => 'Purchase Expenses',      'value' => -$totalPurchaseExpenses, 'color' => 'text-yellow-600'],
                     ['label' => 'NET PROFIT',             'value' => $netProfit,              'color' => $netProfit >= 0 ? 'text-green-700' : 'text-red-700', 'bold' => true, 'large' => true],
                 ];

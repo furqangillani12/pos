@@ -2933,8 +2933,12 @@
                 }
             });
 
-            // Calculate discount based on ACTUAL prices in cart at customer type
-            // (retail/resale/wholesale) so the final total always equals pkg.sale_price
+            // Pick package sale price based on customer type
+            let pkgSalePrice = pkg.sale_price;
+            if (type === 'reseller' && pkg.resale_price) pkgSalePrice = pkg.resale_price;
+            if (type === 'wholesale' && pkg.wholesale_price) pkgSalePrice = pkg.wholesale_price;
+
+            // Calculate discount: actual items total at customer-type prices minus package price
             let actualItemsTotal = 0;
             pkg.items.forEach(item => {
                 let price = item.sale_price;
@@ -2942,7 +2946,7 @@
                 if (type === 'wholesale') price = item.wholesale_price || price;
                 actualItemsTotal += price * item.quantity;
             });
-            const actualDiscount = Math.max(0, actualItemsTotal - pkg.sale_price);
+            const actualDiscount = Math.max(0, actualItemsTotal - pkgSalePrice);
 
             // Set package discount (fixed amount) and label
             const discountInput = document.getElementById('discount');
@@ -2952,7 +2956,7 @@
             const badge = document.getElementById('activePackageBadge');
             const badgeName = document.getElementById('activePackageName');
 
-            if (discountInput) discountInput.value = actualDiscount.toFixed(2);
+            if (discountInput) discountInput.value = actualDiscount > 0 ? actualDiscount.toFixed(2) : 0;
             if (discountType) discountType.value = 'fixed';
             if (discountLabel) discountLabel.value = pkg.name + ' Discount';
             if (discountLabelDisplay) discountLabelDisplay.textContent = pkg.name + ' Discount';

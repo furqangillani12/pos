@@ -806,7 +806,7 @@
 
             @if ($order->discount > 0)
                 <div class="summary-row discount">
-                    <span class="label">Discount</span>
+                    <span class="label">{{ $order->discount_label ?? 'Discount' }}</span>
                     <span class="value">- Rs. {{ number_format($order->discount, 2) }}</span>
                 </div>
             @endif

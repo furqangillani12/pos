@@ -7,12 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Package extends Model
 {
     protected $fillable = [
-        'branch_id', 'name', 'code', 'sale_price', 'is_active',
+        'branch_id', 'name', 'code', 'sale_price', 'resale_price', 'wholesale_price', 'is_active',
     ];
 
     protected $casts = [
-        'sale_price' => 'float',
-        'is_active'  => 'boolean',
+        'sale_price'      => 'float',
+        'resale_price'    => 'float',
+        'wholesale_price' => 'float',
+        'is_active'       => 'boolean',
     ];
 
     public function items()

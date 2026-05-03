@@ -204,9 +204,19 @@ class Order extends Model
     /**
      * Check if order is refundable
      */
-    public function isRefundable()
+    public function isRefundable(): bool
     {
-        return $this->status === self::STATUS_COMPLETED &&
-            $this->created_at->gt(now()->subDays(30));
+        // Fully refunded orders cannot be returned again
+        if ($this->status === self::STATUS_REFUNDED) return false;
+        // Only completed (or partially refunded) orders
+        if (!in_array($this->status, [self::STATUS_COMPLETED])) return false;
+        // Allow returns within 90 days
+        return $this->created_at->gt(now()->subDays(90));
+    }
+
+    public function remainingRefundable(): float
+    {
+        $alreadyRefunded = $this->refunds()->where('status', 'completed')->sum('amount');
+        return max(0, $this->total - $alreadyRefunded);
     }
 }

@@ -675,23 +675,35 @@
 
     {{-- ── Existing Refunds ── --}}
     @if($order->refunds->isNotEmpty())
+    @php
+        $totalRefunded   = $order->refunds->where('status','completed')->sum('amount');
+        $remainingReturn = max(0, $order->total - $totalRefunded);
+    @endphp
     <div class="receipt-wrap no-print" style="margin-top:16px;">
         <div class="receipt-card" style="border:2px solid #fca5a5;">
-            <div style="padding:14px 20px;background:#fef2f2;border-bottom:1px solid #fca5a5;">
+            <div style="padding:14px 20px;background:#fef2f2;border-bottom:1px solid #fca5a5;display:flex;justify-content:space-between;align-items:center;">
                 <h3 style="margin:0;font-size:14px;font-weight:700;color:#dc2626;">
                     <i class="fas fa-undo" style="margin-right:6px;"></i>Returns / Refunds
                 </h3>
+                <div style="text-align:right;">
+                    <div style="font-size:12px;color:#dc2626;font-weight:700;">Total Returned: Rs. {{ number_format($totalRefunded, 0) }}</div>
+                    @if($remainingReturn > 0)
+                    <div style="font-size:11px;color:#6b7280;">Remaining returnable: Rs. {{ number_format($remainingReturn, 0) }}</div>
+                    @else
+                    <div style="font-size:11px;color:#16a34a;font-weight:600;">✓ Fully Returned</div>
+                    @endif
+                </div>
             </div>
             @foreach($order->refunds as $refund)
             <div style="padding:12px 20px;border-bottom:1px solid #fee2e2;font-size:13px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
                     <span style="font-weight:700;color:#dc2626;">{{ $refund->refund_number ?? 'Refund' }} — Rs. {{ number_format($refund->amount, 0) }}</span>
-                    <span style="font-size:11px;color:#9ca3af;">{{ $refund->created_at->format('d M Y') }}</span>
+                    <span style="font-size:11px;color:#9ca3af;">{{ $refund->created_at->format('d M Y h:i A') }}</span>
                 </div>
                 <div style="color:#6b7280;margin-bottom:4px;">Reason: {{ $refund->reason }}</div>
                 @if($refund->items)
                 <div style="color:#374151;font-size:12px;">
-                    Items returned: {{ collect($refund->items)->map(fn($i) => ($i['name'] ?? 'Item') . ' × ' . $i['quantity'])->implode(', ') }}
+                    Items: {{ collect($refund->items)->map(fn($i) => ($i['name'] ?? 'Item') . ' × ' . $i['quantity'])->implode(', ') }}
                 </div>
                 @endif
                 <div style="font-size:11px;color:#9ca3af;margin-top:4px;">By: {{ $refund->user?->name ?? 'Staff' }}</div>

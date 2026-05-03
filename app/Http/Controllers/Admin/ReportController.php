@@ -115,15 +115,15 @@ class ReportController extends Controller
         });
 
         // ── P&L Formula ──
-        // Gross Income  = item sales + delivery charges (both are money received from customers)
+        // Gross Income  = item sales only (delivery is pass-through — collected & paid to courier)
         // Net Revenue   = Gross Income − order discounts − refunds
         // Gross Profit  = Net Revenue − COGS
-        // Net Profit    = Gross Profit − purchase expenses (operating costs)
-        $totalGrossIncome = $totalRevenue + $totalDelivery;
+        // Net Profit    = Gross Profit − delivery charges (courier expense) − purchase expenses
+        $totalGrossIncome = $totalRevenue;
         $totalDeductions  = $totalDiscount + $totalRefunds;
         $netRevenue       = $totalGrossIncome - $totalDeductions;
         $grossProfit      = $netRevenue - $totalCost;
-        $netProfit        = $grossProfit - $totalPurchaseExpenses;
+        $netProfit        = $grossProfit - $totalDelivery - $totalPurchaseExpenses;
         $profit           = max(0,  $netProfit);
         $loss             = max(0, -$netProfit);
 

@@ -84,15 +84,16 @@ class DashboardController extends Controller
             ->sum('debit');
 
         // ── Profit estimate (this month) ──
-        // $monthlySales = sum(order.total) which ALREADY has order-level discounts deducted
-        // and includes delivery charges as income. So: profit = sales - COGS - expenses.
+        // profit = item sales revenue - COGS - expenses - delivery (delivery is pass-through to courier)
+        // order.total includes delivery, so we subtract it back out
         $monthlyCostQuery = OrderItem::whereHas('order', function ($q) use ($monthStart) {
             $q->where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled');
             $this->scopeBranch($q);
         })->join('products', 'order_items.product_id', '=', 'products.id')
           ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost');
-        $monthlyCost   = $monthlyCostQuery->value('cost') ?? 0;
-        $monthlyProfit = $monthlySales - $monthlyCost - $monthlyExpenses;
+        $monthlyCost             = $monthlyCostQuery->value('cost') ?? 0;
+        $monthlyDeliveryCharges  = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->sum('delivery_charges');
+        $monthlyProfit           = $monthlySales - $monthlyCost - $monthlyExpenses - $monthlyDeliveryCharges;
 
         // ── Employees ──
         $presentEmployees = $this->scopeBranch(Attendance::whereDate('date', $today)->where('status', 'present'))->count();
@@ -163,8 +164,8 @@ class DashboardController extends Controller
           ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost')
           ->value('cost') ?? 0;
 
-        // todaySales = sum(order.total) already has discounts deducted, so: profit = sales - COGS - expenses
-        $todayProfit = $todaySales - $todayCost - $todayExpenses;
+        $todayDelivery = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'))->sum('delivery_charges');
+        $todayProfit   = $todaySales - $todayCost - $todayExpenses - $todayDelivery;
 
         $todayPurchases = Purchase::whereDate('purchase_date', $today)
             ->when(!$this->isAllBranches(), fn($q) => $q->where('branch_id', $this->branchId()))

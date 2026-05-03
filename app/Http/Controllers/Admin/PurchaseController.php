@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\Payment;
+use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\PurchaseItem;
 use App\Models\Supplier;
+use App\Models\SupplierPayment;
 use App\Traits\BranchScoped;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -23,19 +27,20 @@ class PurchaseController extends Controller
 
     public function create()
     {
-        $suppliers = $this->scopeBranch(Supplier::query())->get();
-        $products  = $this->scopeBranch(Product::query())->with('category')->get();
+        $suppliers      = $this->scopeBranch(Supplier::query())->get();
+        $products       = $this->scopeBranch(Product::query())->with('category')->get();
+        $paymentMethods = PaymentMethod::active()->get();
+        $accountBals    = $this->accountBalances();
 
-        // Calculate each supplier's balance (total_amount - paid_amount across all purchases)
         $supplierBalances = [];
         foreach ($suppliers as $s) {
-            $totalPurchased = Purchase::where('supplier_id', $s->id)->sum('total_amount');
-            $totalPaid = Purchase::where('supplier_id', $s->id)->sum('paid_amount');
-            $supplierPayments = \App\Models\SupplierPayment::where('supplier_id', $s->id)->sum('amount');
+            $totalPurchased   = Purchase::where('supplier_id', $s->id)->sum('total_amount');
+            $totalPaid        = Purchase::where('supplier_id', $s->id)->sum('paid_amount');
+            $supplierPayments = SupplierPayment::where('supplier_id', $s->id)->sum('amount');
             $supplierBalances[$s->id] = $totalPurchased - $totalPaid - $supplierPayments;
         }
 
-        return view('admin.purchases.create', compact('suppliers', 'products', 'supplierBalances'));
+        return view('admin.purchases.create', compact('suppliers', 'products', 'supplierBalances', 'paymentMethods', 'accountBals'));
     }
 
     public function store(Request $request)
@@ -131,15 +136,18 @@ class PurchaseController extends Controller
             ];
         });
 
+        $paymentMethods = PaymentMethod::active()->get();
+        $accountBals    = $this->accountBalances();
+
         $supplierBalances = [];
         foreach ($suppliers as $s) {
-            $totalPurchased = Purchase::where('supplier_id', $s->id)->sum('total_amount');
-            $totalPaid = Purchase::where('supplier_id', $s->id)->sum('paid_amount');
-            $supplierPayments = \App\Models\SupplierPayment::where('supplier_id', $s->id)->sum('amount');
+            $totalPurchased   = Purchase::where('supplier_id', $s->id)->sum('total_amount');
+            $totalPaid        = Purchase::where('supplier_id', $s->id)->sum('paid_amount');
+            $supplierPayments = SupplierPayment::where('supplier_id', $s->id)->sum('amount');
             $supplierBalances[$s->id] = $totalPurchased - $totalPaid - $supplierPayments;
         }
 
-        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products', 'existingItems', 'supplierBalances'));
+        return view('admin.purchases.edit', compact('purchase', 'suppliers', 'products', 'existingItems', 'supplierBalances', 'paymentMethods', 'accountBals'));
     }
 
     public function update(Request $request, Purchase $purchase)
@@ -257,5 +265,33 @@ class PurchaseController extends Controller
         $purchase->delete();
         return redirect()->route('purchases.index')
             ->with('success', 'Purchase order deleted successfully');
+    }
+
+    // Returns current balance per payment method (cash in minus cash out)
+    private function accountBalances(): array
+    {
+        $methods = PaymentMethod::active()->get();
+        $balances = [];
+
+        foreach ($methods as $pm) {
+            $key = strtolower($pm->name);
+
+            // Cash IN: order payments + supplier refunds received
+            $in  = Order::where('payment_method', $key)->whereNotIn('status', ['cancelled'])->sum('paid_amount');
+            $in += SupplierPayment::where('payment_method', $key)->where('direction', 'in')->sum('amount');
+            $in += Payment::where('payment_method', $key)->where('payment_type', 'khata')->sum('amount');
+
+            // Cash OUT: purchases paid + supplier payments out + customer payouts
+            $out  = Purchase::where('payment_method', $key)->sum('paid_amount');
+            $out += SupplierPayment::where('payment_method', $key)->where('direction', 'out')->sum('amount');
+            $out += Payment::where('payment_method', $key)->where('payment_type', 'khata_payout')->sum('amount');
+
+            $balances[$key] = [
+                'label'   => $pm->label,
+                'balance' => round($in - $out, 2),
+            ];
+        }
+
+        return $balances;
     }
 }
