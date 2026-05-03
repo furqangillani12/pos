@@ -13,20 +13,19 @@ class PublicReceiptController extends Controller
      */
     public function show($token)
     {
-        // Find order by receipt token
-        $order = Order::with(['customer', 'items.product.unit', 'branch'])
+        $order = Order::with(['customer', 'items.product.unit', 'branch', 'refunds'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
-        
+
         return view('public.receipt', compact('order'));
     }
-    
+
     /**
      * Download receipt as PDF
      */
     public function download($token)
     {
-        $order = Order::with(['customer', 'items.product.unit', 'branch'])
+        $order = Order::with(['customer', 'items.product.unit', 'branch', 'refunds'])
                      ->where('receipt_token', $token)
                      ->firstOrFail();
         
