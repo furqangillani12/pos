@@ -431,6 +431,17 @@
             </div>
 
             {{-- Items Table --}}
+            @php
+                $retQtyMap = [];
+                foreach ($order->refunds->where('status','completed') as $ref) {
+                    foreach (($ref->items ?? []) as $ri) {
+                        $pid = $ri['product_id'] ?? null;
+                        if ($pid) $retQtyMap[$pid] = ($retQtyMap[$pid] ?? 0) + ($ri['quantity'] ?? 0);
+                    }
+                }
+                $adminTotalRefunded  = $order->refunds->where('status','completed')->sum('amount');
+                $adminEffectiveTotal = max(0, $order->total - $adminTotalRefunded);
+            @endphp
             <div class="receipt-items">
                 <table class="items-table">
                     <thead>
@@ -443,39 +454,59 @@
                     </thead>
                     <tbody>
                         @foreach ($order->items as $item)
+                        @php
+                            $rQty      = $retQtyMap[$item->product_id] ?? 0;
+                            $isFull    = $rQty >= $item->quantity;
+                            $isPartial = $rQty > 0 && !$isFull;
+                            $remQty    = max(0, $item->quantity - $rQty);
+                        @endphp
                             @php
-                                $hasLineDisc = $item->hasLineDiscount();
-                                $displayPrice = $hasLineDisc ? $item->original_price : $item->unit_price;
+                                $hasLineDisc  = $item->hasLineDiscount();
                             @endphp
-                            <tr>
+                            <tr style="{{ $isFull ? 'background:#fef2f2;' : '' }}">
                                 <td>
-                                    {{ $item->product?->name ?? 'Deleted Product' }}
+                                    @if($isFull)
+                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product?->name ?? 'Deleted Product' }}</span>
+                                        <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">RETURNED</span>
+                                    @else
+                                        {{ $item->product?->name ?? 'Deleted Product' }}
+                                        @if($isPartial)
+                                            <span style="background:#fff7ed;color:#c2410c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">{{ $rQty }} RETURNED</span>
+                                        @endif
+                                    @endif
                                     @if($hasLineDisc)
                                         <div style="font-size:10px;color:#dc2626;margin-top:1px;">
                                             −Rs.{{ number_format($item->line_discount, 0) }}/unit discount
                                         </div>
                                     @endif
                                 </td>
-                                <td>{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
+                                <td>
+                                    @if($isPartial)
+                                        <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;">{{ $item->quantity }}</span>
+                                        <span style="font-weight:700;display:block;">{{ $remQty }}</span>
+                                    @else
+                                        <span style="{{ $isFull ? 'text-decoration:line-through;color:#9ca3af;' : '' }}">{{ $item->quantity ?? 0 }}</span>
+                                    @endif
+                                    @if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif
+                                </td>
                                 <td>
                                     @if($hasLineDisc)
-                                        <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;">
-                                            {{ number_format($item->original_price, 0) }}
-                                        </span><br>
-                                        <span style="color:#16a34a;font-weight:700;">
-                                            {{ number_format($item->unit_price, 0) }}
-                                        </span>
+                                        <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;">{{ number_format($item->original_price, 0) }}</span><br>
+                                        <span style="{{ $isFull ? 'color:#9ca3af;' : 'color:#16a34a;font-weight:700;' }}">{{ number_format($item->unit_price, 0) }}</span>
                                     @elseif(is_numeric($item->unit_price) && floor($item->unit_price) == $item->unit_price)
-                                        {{ number_format($item->unit_price, 0) }}
+                                        <span style="{{ $isFull ? 'color:#9ca3af;' : '' }}">{{ number_format($item->unit_price, 0) }}</span>
                                     @else
-                                        {{ number_format($item->unit_price ?? 0, 2) }}
+                                        <span style="{{ $isFull ? 'color:#9ca3af;' : '' }}">{{ number_format($item->unit_price ?? 0, 2) }}</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if (is_numeric($item->total_price) && floor($item->total_price) == $item->total_price)
-                                        {{ number_format($item->total_price, 0) }}
+                                    @if($isFull)
+                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ number_format($item->total_price, 0) }}</span>
+                                    @elseif($isPartial)
+                                        <span style="text-decoration:line-through;color:#9ca3af;font-size:10px;display:block;">{{ number_format($item->total_price, 0) }}</span>
+                                        <span style="font-weight:700;">{{ number_format($remQty * $item->unit_price, 0) }}</span>
                                     @else
-                                        {{ number_format($item->total_price ?? 0, 2) }}
+                                        {{ number_format($item->total_price ?? 0, 0) }}
                                     @endif
                                 </td>
                             </tr>
@@ -538,6 +569,17 @@
                     <span class="label">Total Bill</span>
                     <span class="value">Rs. {{ number_format($order->total ?? 0, 0) }}</span>
                 </div>
+
+                @if($adminTotalRefunded > 0)
+                <div class="total-row" style="background:#fef2f2;padding:6px 8px;border-radius:6px;margin-top:6px;">
+                    <span class="label" style="color:#dc2626;font-weight:700;">Total Returned (واپسی)</span>
+                    <span class="value" style="color:#dc2626;font-weight:700;">− Rs. {{ number_format($adminTotalRefunded, 0) }}</span>
+                </div>
+                <div class="total-row" style="background:#f0fdf4;padding:6px 8px;border-radius:6px;margin-top:4px;border:1.5px solid #4ade80;">
+                    <span class="label" style="color:#16a34a;font-weight:800;">Amount Payable</span>
+                    <span class="value" style="color:#16a34a;font-weight:800;">Rs. {{ number_format($adminEffectiveTotal, 0) }}</span>
+                </div>
+                @endif
 
                 {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
                 @php
