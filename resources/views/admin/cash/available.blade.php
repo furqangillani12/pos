@@ -98,6 +98,98 @@
     </div>
     @endif
 
+    {{-- Flash --}}
+    @if(session('success'))
+    <div style="background:#f0fdf4;border:2px solid #22c55e;border-radius:10px;padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;">
+        <i class="fas fa-check-circle" style="color:#16a34a;font-size:18px;"></i>
+        <span style="font-size:14px;font-weight:600;color:#166534;">{{ session('success') }}</span>
+    </div>
+    @endif
+
+    {{-- Balance Transfer --}}
+    <div class="bg-white rounded-xl shadow-sm border border-blue-100 overflow-hidden mb-6">
+        <div class="px-5 py-3 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
+            <h3 class="font-semibold text-blue-800 text-sm">
+                <i class="fas fa-exchange-alt mr-2"></i>Transfer Between Accounts (اکاؤنٹ ٹرانسفر)
+            </h3>
+            <button onclick="document.getElementById('transfer-form').classList.toggle('hidden')"
+                class="text-xs text-blue-600 hover:underline">Show / Hide</button>
+        </div>
+        <div id="transfer-form" class="hidden p-5">
+            <form action="{{ route('admin.cash.transfer') }}" method="POST">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">From Account (سے)</label>
+                        <select name="from_account" required
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            @foreach($paymentMethods as $pm)
+                                @php $bal = collect($summary)->firstWhere('method', $pm->name)['balance'] ?? 0; @endphp
+                                <option value="{{ $pm->name }}">
+                                    {{ $pm->label }} (Rs. {{ number_format($bal, 0) }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">To Account (کو)</label>
+                        <select name="to_account" required
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                            @foreach($paymentMethods as $pm)
+                                <option value="{{ $pm->name }}">{{ $pm->label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Amount (رقم) Rs.</label>
+                        <input type="number" name="amount" min="1" step="0.01" required placeholder="0"
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Date (تاریخ)</label>
+                        <input type="date" name="transferred_at" value="{{ date('Y-m-d') }}" required
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                </div>
+                <div class="mt-3 flex gap-3 items-end">
+                    <div class="flex-1">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Note (optional)</label>
+                        <input type="text" name="note" placeholder="e.g. Cash deposited to bank..."
+                            class="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button type="submit"
+                        class="px-5 py-2 bg-blue-600 text-white rounded-md text-sm font-semibold hover:bg-blue-700">
+                        <i class="fas fa-exchange-alt mr-1"></i> Record Transfer
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {{-- Recent transfers --}}
+        @if($recentTransfers->isNotEmpty())
+        <div class="border-t border-blue-100 px-5 py-3">
+            <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Recent Transfers</p>
+            <div class="space-y-1">
+                @foreach($recentTransfers as $t)
+                <div class="flex justify-between items-center text-xs text-gray-600 py-1 border-b border-gray-50">
+                    <span>
+                        <span class="font-semibold text-red-600">{{ ucfirst($t->from_account) }}</span>
+                        <i class="fas fa-arrow-right mx-1 text-gray-400"></i>
+                        <span class="font-semibold text-green-600">{{ ucfirst($t->to_account) }}</span>
+                        @if($t->note) <span class="text-gray-400 ml-1">— {{ $t->note }}</span> @endif
+                    </span>
+                    <span class="flex items-center gap-3">
+                        <span class="font-bold text-gray-700">Rs. {{ number_format($t->amount, 0) }}</span>
+                        <span class="text-gray-400">{{ $t->transferred_at->format('d M Y') }}</span>
+                        <span class="text-gray-400">{{ $t->user?->name ?? 'Staff' }}</span>
+                    </span>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+    </div>
+
     {{-- Receivables & Payables context --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="bg-white rounded-xl shadow-sm border border-red-100 p-5">

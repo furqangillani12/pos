@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AccountTransfer;
 use App\Models\Customer;
 use App\Models\LedgerAccount;
 use App\Models\LedgerAccountEntry;
@@ -420,6 +421,16 @@ class CashTransactionController extends Controller
             if (isset($accounts[$key])) $accounts[$key]['out'] += (float) $p->amount;
         }
 
+        // 7. Account transfers (e.g. cash deposited into bank)
+        $transferQ = AccountTransfer::query();
+        if (!$isAll) $transferQ->where('branch_id', $branchId);
+        foreach ($transferQ->get(['from_account', 'to_account', 'amount']) as $t) {
+            $from = $this->normaliseMethod($t->from_account);
+            $to   = $this->normaliseMethod($t->to_account);
+            if (isset($accounts[$from])) $accounts[$from]['out'] += (float) $t->amount;
+            if (isset($accounts[$to]))   $accounts[$to]['in']   += (float) $t->amount;
+        }
+
         // Compute balance and remove zero accounts
         $summary = collect($accounts)->map(function ($a, $method) {
             return array_merge($a, [
@@ -443,10 +454,43 @@ class CashTransactionController extends Controller
             ->selectRaw('SUM(total_amount - paid_amount) as balance')
             ->value('balance') ?? 0;
 
+        $paymentMethods  = PaymentMethod::active()->get();
+        $recentTransfers = AccountTransfer::with('user')
+            ->when(!$isAll, fn($q) => $q->where('branch_id', $branchId))
+            ->latest()->take(10)->get();
+
         return view('admin.cash.available', compact(
             'summary', 'totalIn', 'totalOut', 'totalBal',
-            'totalReceivables', 'totalPayables'
+            'totalReceivables', 'totalPayables',
+            'paymentMethods', 'recentTransfers'
         ));
+    }
+
+    public function transfer(Request $request)
+    {
+        $request->validate([
+            'from_account'    => 'required|string',
+            'to_account'      => 'required|string|different:from_account',
+            'amount'          => 'required|numeric|min:1',
+            'transferred_at'  => 'required|date',
+            'note'            => 'nullable|string|max:255',
+        ]);
+
+        $branchId = $this->branchId();
+
+        AccountTransfer::create([
+            'branch_id'      => $branchId !== 'all' ? $branchId : null,
+            'user_id'        => auth()->id(),
+            'from_account'   => $request->from_account,
+            'to_account'     => $request->to_account,
+            'amount'         => $request->amount,
+            'note'           => $request->note,
+            'transferred_at' => $request->transferred_at,
+        ]);
+
+        return redirect()->route('admin.cash.available')
+            ->with('success', 'Transfer recorded: Rs. ' . number_format($request->amount, 0) .
+                ' from ' . ucfirst($request->from_account) . ' to ' . ucfirst($request->to_account) . '.');
     }
 
     private function normaliseMethod(string $method): string

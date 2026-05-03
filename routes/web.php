@@ -283,6 +283,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::post('/cash',                  [CashTransactionController::class, 'store'])->name('cash.store');
     Route::get('/cash/history',           [CashTransactionController::class, 'history'])->name('cash.history');
     Route::get('/cash/available',         [CashTransactionController::class, 'availableCash'])->name('cash.available');
+    Route::post('/cash/transfer',         [CashTransactionController::class, 'transfer'])->name('cash.transfer');
 });
 
 // ── Manage Website (Brands + Banners + Online Orders) ──
