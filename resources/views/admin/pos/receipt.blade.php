@@ -810,23 +810,54 @@
                 <div style="padding:20px;">
 
                     {{-- Item selection --}}
-                    <p style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">
+                    @php
+                        $modalRetQty = [];
+                        foreach($order->refunds->where('status','completed') as $ref) {
+                            foreach(($ref->items ?? []) as $ri) {
+                                $pid = $ri['product_id'] ?? null;
+                                if($pid) $modalRetQty[$pid] = ($modalRetQty[$pid] ?? 0) + ($ri['quantity'] ?? 0);
+                            }
+                        }
+                    @endphp
+                    <p style="font-size:12px;font-weight:700;color:#374151;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">
                         Select Items to Return
                     </p>
+                    @if(array_sum($modalRetQty) > 0)
+                    <p style="font-size:11px;color:#9ca3af;margin-bottom:10px;">
+                        Already returned items are greyed out. You can only return remaining quantities.
+                    </p>
+                    @endif
                     <div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:16px;">
                         @foreach($order->items as $idx => $item)
-                        <div class="refund-item-row" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;">
+                        @php
+                            $alreadyRet  = $modalRetQty[$item->product_id] ?? 0;
+                            $remainingQt = max(0, $item->quantity - $alreadyRet);
+                            $fullyRet    = $remainingQt <= 0;
+                        @endphp
+                        <div class="refund-item-row" style="padding:10px 14px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;gap:10px;{{ $fullyRet ? 'background:#fef2f2;opacity:0.6;' : '' }}">
                             <input type="checkbox" name="items[{{ $idx }}][selected]" value="1"
                                 class="refund-item-check" data-idx="{{ $idx }}" data-price="{{ $item->unit_price }}"
-                                style="width:16px;height:16px;cursor:pointer;"
-                                onchange="updateRefundTotal()">
+                                style="width:16px;height:16px;{{ $fullyRet ? 'cursor:not-allowed;' : 'cursor:pointer;' }}"
+                                onchange="updateRefundTotal()"
+                                {{ $fullyRet ? 'disabled' : '' }}>
                             <div style="flex:1;">
-                                <div style="font-size:13px;font-weight:600;color:#1e293b;">
+                                <div style="font-size:13px;font-weight:600;color:{{ $fullyRet ? '#9ca3af' : '#1e293b' }};">
                                     {{ $item->product?->name ?? 'Unknown' }}
+                                    @if($fullyRet)
+                                        <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">FULLY RETURNED</span>
+                                    @elseif($alreadyRet > 0)
+                                        <span style="background:#fff7ed;color:#c2410c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">{{ $alreadyRet }} RETURNED</span>
+                                    @endif
                                 </div>
                                 <div style="font-size:11px;color:#9ca3af;">
-                                    Rs. {{ number_format($item->unit_price, 0) }} × {{ $item->quantity }}
-                                    = Rs. {{ number_format($item->total_price, 0) }}
+                                    Rs. {{ number_format($item->unit_price, 0) }} ×
+                                    @if($alreadyRet > 0 && !$fullyRet)
+                                        <span style="text-decoration:line-through;">{{ $item->quantity }}</span>
+                                        <span style="color:#1e293b;font-weight:600;">{{ $remainingQt }} remaining</span>
+                                    @else
+                                        {{ $item->quantity }}
+                                    @endif
+                                    = Rs. {{ number_format($remainingQt * $item->unit_price, 0) }}
                                 </div>
                             </div>
                             <div>
@@ -835,10 +866,11 @@
                                 <input type="hidden" name="items[{{ $idx }}][unit_price]" value="{{ $item->unit_price }}">
                                 <input type="number" name="items[{{ $idx }}][quantity]"
                                     class="refund-qty-input" data-idx="{{ $idx }}"
-                                    value="{{ $item->quantity }}" min="0.01" max="{{ $item->quantity }}"
+                                    value="{{ $remainingQt }}" min="0.01" max="{{ $remainingQt }}"
                                     step="0.01"
-                                    style="width:60px;padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;text-align:center;opacity:0.4;"
-                                    oninput="updateRefundTotal()">
+                                    style="width:60px;padding:3px 6px;border:1px solid #e5e7eb;border-radius:4px;font-size:12px;text-align:center;opacity:0.4;{{ $fullyRet ? 'cursor:not-allowed;' : '' }}"
+                                    oninput="updateRefundTotal()"
+                                    {{ $fullyRet ? 'disabled' : '' }}>
                             </div>
                         </div>
                         @endforeach
