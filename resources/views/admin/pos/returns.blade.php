@@ -109,13 +109,30 @@
                         <td class="px-4 py-3 text-xs text-gray-500">
                             {{ $refund->user?->name ?? 'Staff' }}
                         </td>
-                        <td class="px-4 py-3">
-                            @if($refund->order)
-                            <a href="{{ route('admin.pos.receipt', $refund->order) }}"
-                                class="text-blue-500 hover:text-blue-700 text-xs">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            @endif
+                        <td class="px-4 py-3 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                @if($refund->order)
+                                <a href="{{ route('admin.pos.receipt', $refund->order) }}"
+                                    class="text-blue-500 hover:text-blue-700" title="View Receipt">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                @endif
+                                @if($refund->status === 'completed')
+                                <button onclick="openEditModal({{ $refund->id }}, '{{ addslashes($refund->reason) }}')"
+                                    class="text-yellow-500 hover:text-yellow-700" title="Edit Reason">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <form action="{{ route('admin.pos.returns.void', $refund) }}" method="POST"
+                                    onsubmit="return confirm('Void this return? This will reverse the refund, restore inventory, and update customer balance.')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="text-red-400 hover:text-red-600" title="Void / Cancel Return">
+                                        <i class="fas fa-ban"></i>
+                                    </button>
+                                </form>
+                                @else
+                                <span class="text-xs text-gray-400 italic">Voided</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @empty
@@ -137,4 +154,45 @@
         @endif
     </div>
 </div>
+{{-- Edit Reason Modal --}}
+<div id="edit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;" class="flex">
+    <div style="background:#fff;border-radius:12px;width:100%;max-width:440px;margin:16px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+        <div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:center;">
+            <h3 style="margin:0;font-size:15px;font-weight:700;color:#1e293b;">
+                <i class="fas fa-edit" style="color:#eab308;margin-right:8px;"></i>Edit Return
+            </h3>
+            <button onclick="document.getElementById('edit-modal').style.display='none'"
+                style="background:none;border:none;font-size:18px;cursor:pointer;color:#6b7280;">✕</button>
+        </div>
+        <form id="edit-form" method="POST">
+            @csrf @method('PATCH')
+            <div style="padding:20px;">
+                <label style="display:block;font-size:12px;font-weight:600;color:#374151;margin-bottom:6px;">
+                    Reason for Return <span style="color:#ef4444;">*</span>
+                </label>
+                <textarea name="reason" id="edit-reason" rows="3" required
+                    style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:13px;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+            <div style="padding:0 20px 20px;display:flex;gap:10px;">
+                <button type="button" onclick="document.getElementById('edit-modal').style.display='none'"
+                    style="flex:1;padding:9px;border:1px solid #e5e7eb;border-radius:6px;background:#fff;font-size:13px;cursor:pointer;color:#6b7280;">
+                    Cancel
+                </button>
+                <button type="submit"
+                    style="flex:2;padding:9px;background:#eab308;color:#1e293b;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openEditModal(refundId, reason) {
+    document.getElementById('edit-form').action = `/admin/pos/returns/${refundId}`;
+    document.getElementById('edit-reason').value = reason;
+    document.getElementById('edit-modal').style.display = 'flex';
+    setTimeout(() => document.getElementById('edit-reason').focus(), 100);
+}
+</script>
 @endsection

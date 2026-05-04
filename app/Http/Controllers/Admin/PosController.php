@@ -687,9 +687,10 @@ class PosController extends Controller
             $refundAmount = $rawRefundTotal;
         }
 
-        if ($refundAmount <= 0 || $refundAmount > $order->total) {
+        $remainingRefundable = $order->remainingRefundable();
+        if ($refundAmount <= 0 || $refundAmount > $remainingRefundable + 1) {
             return redirect()->route('admin.pos.receipt', $order)
-                ->with('error', 'Invalid refund amount (Rs. ' . number_format($refundAmount, 0) . '). Cannot exceed order total.');
+                ->with('error', 'Invalid refund amount (Rs. ' . number_format($refundAmount, 0) . '). Maximum returnable is Rs. ' . number_format($remainingRefundable, 0) . '.');
         }
 
         DB::transaction(function () use ($request, $order, $branchId, $refundItems, $refundAmount) {
@@ -740,6 +741,58 @@ class PosController extends Controller
 
         return redirect()->route('admin.pos.receipt', $order)
             ->with('success', 'Return processed. Refund amount: Rs. ' . number_format($refundAmount, 0) . '. ' . ($request->boolean('return_to_inventory') ? 'Items returned to inventory.' : ''));
+    }
+
+    public function updateRefund(Request $request, Refund $refund)
+    {
+        $request->validate([
+            'reason' => 'required|string|max:500',
+        ]);
+
+        $refund->update(['reason' => $request->reason]);
+
+        return redirect()->route('admin.pos.returns')
+            ->with('success', 'Return ' . $refund->refund_number . ' updated.');
+    }
+
+    public function voidRefund(Request $request, Refund $refund)
+    {
+        if ($refund->status !== 'completed') {
+            return back()->with('error', 'Only completed refunds can be voided.');
+        }
+
+        DB::transaction(function () use ($refund) {
+            $order = $refund->order;
+
+            // Restore customer balance
+            if ($order?->customer_id) {
+                $customer = Customer::find($order->customer_id);
+                if ($customer) {
+                    $customer->current_balance += $refund->amount;
+                    $customer->save();
+                }
+            }
+
+            // Reverse inventory if items exist
+            if ($refund->items && $order) {
+                foreach ($refund->items as $ri) {
+                    $product = Product::find($ri['product_id'] ?? null);
+                    if ($product && $product->track_inventory && $order->branch_id) {
+                        $product->decrementBranchStock($order->branch_id, $ri['quantity'] ?? 0);
+                    }
+                }
+            }
+
+            // Restore order status to completed
+            if ($order && $order->status === Order::STATUS_REFUNDED) {
+                $order->update(['status' => Order::STATUS_COMPLETED]);
+            }
+
+            $refund->update(['status' => 'voided']);
+        });
+
+        return redirect()->route('admin.pos.returns')
+            ->with('success', 'Return ' . $refund->refund_number . ' has been voided and reversed.');
     }
 
     public function returnsList(Request $request)

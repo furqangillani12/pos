@@ -133,8 +133,10 @@ Route::middleware(['auth', 'branch', 'permission:access pos'])->prefix('admin')-
     Route::get('/pos/products', [PosController::class, 'searchProducts'])->name('pos.products');
     Route::post('/pos', [PosController::class, 'storeOrder'])->name('pos.store');
     Route::get('/pos/receipt/{order}', [PosController::class, 'showReceipt'])->name('pos.receipt');
-    Route::post('/pos/refund/{order}', [PosController::class, 'processRefund'])->name('pos.refund');
-    Route::get('/pos/returns', [PosController::class, 'returnsList'])->name('pos.returns');
+    Route::post('/pos/refund/{order}',      [PosController::class, 'processRefund'])->name('pos.refund');
+    Route::get('/pos/returns',              [PosController::class, 'returnsList'])->name('pos.returns');
+    Route::patch('/pos/returns/{refund}',   [PosController::class, 'updateRefund'])->name('pos.returns.update');
+    Route::delete('/pos/returns/{refund}',  [PosController::class, 'voidRefund'])->name('pos.returns.void');
     Route::get('/pos/receipt/{order}/download', [PosController::class, 'downloadReceipt'])->name('pos.receipt.download');
     Route::get('/pos/receipt/{order}/thermal', [PosController::class, 'thermalReceipt'])->name('pos.receipt.thermal');
     Route::get('/pos/edit/{order}', [PosController::class, 'editOrder'])->name('pos.edit');
