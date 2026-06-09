@@ -195,27 +195,63 @@
 </section>
 @endif
 
-{{-- ═════════════════ MID BANNER ═════════════════ --}}
+{{-- ═════════════════ MID BANNER (carousel) ═════════════════ --}}
 @if ($midBanners->isNotEmpty())
 <section class="py-16 sm:py-20">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 grid sm:grid-cols-2 gap-5 reveal-stagger">
-        @foreach ($midBanners as $b)
-            <a href="{{ $b->cta_url ?? route('shop.catalog') }}"
-               class="group relative rounded-3xl overflow-hidden block shadow-md hover:shadow-2xl transition" style="aspect-ratio:16/9;">
-                <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
-                     class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
-                <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(12,31,61,.8) 0%,rgba(12,31,61,.2) 60%);"></div>
-                <div class="absolute inset-0 p-8 sm:p-10 flex flex-col justify-center text-white">
-                    @if ($b->subtitle) <div class="text-xs font-bold uppercase tracking-widest" style="color:var(--gold);">{{ $b->subtitle }}</div> @endif
-                    <h3 class="display text-3xl sm:text-4xl font-bold mt-2 max-w-sm">{{ $b->title }}</h3>
-                    @if ($b->cta_text)
-                        <span class="inline-flex items-center gap-2 mt-4 text-sm font-semibold w-max group-hover:gap-3 transition-all">
-                            {{ $b->cta_text }} <i class="fas fa-arrow-right text-xs"></i>
-                        </span>
-                    @endif
-                </div>
-            </a>
-        @endforeach
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
+        <div x-data="{
+                active: 0,
+                count: {{ $midBanners->count() }},
+                timer: null,
+                start() { if (this.count > 1) { this.stop(); this.timer = setInterval(() => this.next(), 6000); } },
+                stop()  { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+                next()  { this.active = (this.active + 1) % this.count; },
+                prev()  { this.active = (this.active - 1 + this.count) % this.count; },
+                go(i)   { this.active = i; this.start(); }
+             }"
+             x-init="start()">
+            <div class="relative rounded-3xl overflow-hidden shadow-md aspect-video sm:aspect-[21/9]"
+                 @mouseenter="stop()" @mouseleave="start()">
+
+                @foreach ($midBanners as $i => $b)
+                    <a href="{{ $b->cta_url ?: route('shop.catalog') }}"
+                       class="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                       :class="active === {{ $i }} ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'"
+                       @if ($i !== 0) style="opacity:0" @endif>
+                        <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
+                             class="w-full h-full object-cover">
+                        <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(12,31,61,.8) 0%,rgba(12,31,61,.2) 60%);"></div>
+                        <div class="absolute inset-0 p-8 sm:p-12 flex flex-col justify-center text-white">
+                            @if ($b->subtitle) <div class="text-xs font-bold uppercase tracking-widest" style="color:var(--gold);">{{ $b->subtitle }}</div> @endif
+                            <h3 class="display text-2xl sm:text-4xl font-bold mt-2 max-w-md">{{ $b->title }}</h3>
+                            @if ($b->cta_text)
+                                <span class="inline-flex items-center gap-2 mt-4 text-sm font-semibold w-max">
+                                    {{ $b->cta_text }} <i class="fas fa-arrow-right text-xs"></i>
+                                </span>
+                            @endif
+                        </div>
+                    </a>
+                @endforeach
+
+                @if ($midBanners->count() > 1)
+                    <button type="button" @click.prevent="prev()" aria-label="Previous slide"
+                        class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow">
+                        <i class="fas fa-chevron-left text-sm"></i>
+                    </button>
+                    <button type="button" @click.prevent="next()" aria-label="Next slide"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow">
+                        <i class="fas fa-chevron-right text-sm"></i>
+                    </button>
+                    <div class="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                        @foreach ($midBanners as $i => $b)
+                            <button type="button" @click.prevent="go({{ $i }})" aria-label="Go to slide {{ $i + 1 }}"
+                                class="h-2.5 rounded-full transition-all"
+                                :class="active === {{ $i }} ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80 w-2.5'"></button>
+                        @endforeach
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 </section>
 @endif

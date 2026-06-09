@@ -13,7 +13,7 @@ class HomeController extends Controller
     public function index()
     {
         $heroBanners = Banner::active()->position('hero')->orderBy('sort_order')->get();
-        $midBanners  = Banner::active()->position('mid')->orderBy('sort_order')->limit(2)->get();
+        $midBanners  = Banner::active()->position('mid')->orderBy('sort_order')->limit(10)->get();
 
         $featuredCategories = Category::active()->where('is_featured', true)
             ->orderBy('sort_order')->limit(8)->get();
