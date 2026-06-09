@@ -34,15 +34,64 @@
         </div>
 
         @if ($heroBanners->isNotEmpty())
-            <div class="reveal grid grid-cols-2 gap-4">
-                @foreach ($heroBanners->take(4) as $i => $b)
-                    <a href="{{ $b->cta_url ?? route('shop.catalog') }}"
-                       class="rounded-3xl overflow-hidden block shadow-2xl group {{ $i === 0 ? 'col-span-2' : '' }}"
-                       style="aspect-ratio:{{ $i === 0 ? '16/9' : '1/1' }};">
-                        <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
-                             class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
-                    </a>
-                @endforeach
+            @php $hero = $heroBanners->take(6); @endphp
+            <div class="reveal"
+                 x-data="{
+                    active: 0,
+                    count: {{ $hero->count() }},
+                    timer: null,
+                    start() { if (this.count > 1) { this.stop(); this.timer = setInterval(() => this.next(), 5000); } },
+                    stop()  { if (this.timer) { clearInterval(this.timer); this.timer = null; } },
+                    next()  { this.active = (this.active + 1) % this.count; },
+                    prev()  { this.active = (this.active - 1 + this.count) % this.count; },
+                    go(i)   { this.active = i; this.start(); }
+                 }"
+                 x-init="start()">
+                <div class="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/5]"
+                     @mouseenter="stop()" @mouseleave="start()">
+
+                    @foreach ($hero as $i => $b)
+                        <a href="{{ $b->cta_url ?: route('shop.catalog') }}"
+                           class="absolute inset-0 transition-opacity duration-700 ease-in-out"
+                           :class="active === {{ $i }} ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'"
+                           @if ($i !== 0) style="opacity:0" @endif>
+                            <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
+                                 class="w-full h-full object-cover">
+                            @if ($b->title || $b->subtitle || $b->cta_text)
+                                <div class="absolute inset-x-0 bottom-0 p-5 sm:p-7 text-white"
+                                     style="background:linear-gradient(to top,rgba(0,0,0,.72),rgba(0,0,0,.28) 45%,transparent);">
+                                    @if ($b->subtitle)
+                                        <div class="text-[11px] uppercase tracking-wide font-semibold mb-1" style="color:var(--gold,#fbbf24);">{{ $b->subtitle }}</div>
+                                    @endif
+                                    @if ($b->title)
+                                        <div class="text-xl sm:text-2xl font-bold leading-snug">{{ $b->title }}</div>
+                                    @endif
+                                    @if ($b->cta_text)
+                                        <span class="inline-flex items-center gap-1.5 mt-3 text-sm font-semibold bg-white/90 text-gray-900 px-4 py-2 rounded-full">{{ $b->cta_text }} <i class="fas fa-arrow-right text-[10px]"></i></span>
+                                    @endif
+                                </div>
+                            @endif
+                        </a>
+                    @endforeach
+
+                    @if ($hero->count() > 1)
+                        <button type="button" @click.prevent="prev()" aria-label="Previous slide"
+                            class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow">
+                            <i class="fas fa-chevron-left text-xs"></i>
+                        </button>
+                        <button type="button" @click.prevent="next()" aria-label="Next slide"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/80 hover:bg-white text-gray-800 flex items-center justify-center shadow">
+                            <i class="fas fa-chevron-right text-xs"></i>
+                        </button>
+                        <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+                            @foreach ($hero as $i => $b)
+                                <button type="button" @click.prevent="go({{ $i }})" aria-label="Go to slide {{ $i + 1 }}"
+                                    class="h-2.5 rounded-full transition-all"
+                                    :class="active === {{ $i }} ? 'bg-white w-6' : 'bg-white/50 hover:bg-white/80 w-2.5'"></button>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
             </div>
         @else
             <div class="reveal relative">
