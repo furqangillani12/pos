@@ -1,8 +1,8 @@
 @csrf
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
     <div class="sm:col-span-2">
-        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Title <span class="text-rose-500">*</span></label>
-        <input type="text" name="title" required value="{{ old('title', $banner->title ?? '') }}" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Title <span class="text-gray-400 font-normal">(optional)</span></label>
+        <input type="text" name="title" value="{{ old('title', $banner->title ?? '') }}" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
     </div>
     <div class="sm:col-span-2">
         <label class="block text-xs font-semibold text-gray-700 mb-1.5">Subtitle</label>

@@ -59,7 +59,7 @@ class BannerController extends Controller
     private function validated(Request $r): array
     {
         $rules = [
-            'title'      => 'required|string|max:191',
+            'title'      => 'nullable|string|max:191',
             'subtitle'   => 'nullable|string|max:191',
             'cta_text'   => 'nullable|string|max:50',
             'cta_url'    => 'nullable|string|max:500',
