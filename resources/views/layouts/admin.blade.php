@@ -769,11 +769,7 @@
                     <i class="fas fa-money-bill-wave mr-2 text-xs"></i> Cash In / Out
                 </a>
 
-                {{--
-                    ── Manage Website (storefront: brands / banners / online orders) ──
-                    HIDDEN: Feature is complete but not shown until client agreement is finalised.
-                    To re-enable, remove this comment block and uncomment the section below.
-
+                {{-- ── Manage Website (storefront: brands / banners / online orders) ── --}}
                 @php
                     $websiteOpen = request()->routeIs('admin.brands.*')
                         || request()->routeIs('admin.banners.*')
@@ -812,7 +808,6 @@
                         <i class="fas fa-external-link-alt mr-2 text-xs"></i> View site
                     </a>
                 </div>
-                --}}
 
                 {{-- ── HR: Employees, Attendance, Payroll ── --}}
                 <button @click="hrOpen = !hrOpen"
