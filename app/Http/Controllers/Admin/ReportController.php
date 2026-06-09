@@ -73,11 +73,18 @@ class ReportController extends Controller
         $start = $request->input('start_date', now()->startOfMonth()->toDateString());
         $end   = $request->input('end_date', now()->toDateString());
 
-        // Completed + refunded orders (exclude cancelled/pending)
+        // Recognised sales: POS orders that are completed/refunded, PLUS
+        // online (storefront) orders that have been delivered. Cancelled and
+        // in-flight online orders (pending/confirmed/shipped) are excluded.
         $orders = $this->scopeBranch(
                 Order::with(['items.product', 'refunds'])
             )
-            ->whereIn('status', [Order::STATUS_COMPLETED, Order::STATUS_REFUNDED])
+            ->where(function ($q) {
+                $q->whereIn('status', [Order::STATUS_COMPLETED, Order::STATUS_REFUNDED])
+                  ->orWhere(function ($q2) {
+                      $q2->where('order_source', 'online')->where('status', 'delivered');
+                  });
+            })
             ->whereBetween('created_at', [$start . ' 00:00:00', $end . ' 23:59:59'])
             ->latest()
             ->get();
