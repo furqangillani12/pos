@@ -47,7 +47,7 @@
                     go(i)   { this.active = i; this.start(); }
                  }"
                  x-init="start()">
-                <div class="relative rounded-3xl overflow-hidden shadow-2xl aspect-[4/5]"
+                <div class="relative rounded-3xl overflow-hidden shadow-2xl aspect-video"
                      @mouseenter="stop()" @mouseleave="start()">
 
                     @foreach ($hero as $i => $b)
