@@ -10,8 +10,13 @@ use Spatie\Permission\Middleware\RoleOrPermissionMiddleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: [
-            __DIR__.'/../routes/web.php',
+            // shop.php first: when SHOP_DOMAIN is set its domain-scoped routes
+            // must be matched before web.php's host-agnostic '/' (POS welcome),
+            // otherwise the main domain root falls through to the POS landing.
+            // In local dev (no SHOP_DOMAIN) the shop mounts under /shop, so
+            // there is no collision and order is irrelevant.
             __DIR__.'/../routes/shop.php',
+            __DIR__.'/../routes/web.php',
         ],
         commands: __DIR__.'/../routes/console.php',
         health: '/up',

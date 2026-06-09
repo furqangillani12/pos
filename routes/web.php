@@ -31,6 +31,17 @@ use App\Http\Controllers\Admin\PackageController;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 
+/*
+|--------------------------------------------------------------------------
+| POS routes
+|--------------------------------------------------------------------------
+| When POS_DOMAIN is set (production, e.g. pos.almufeed.com.pk) every POS +
+| auth route answers ONLY on that host, keeping the admin panel off the
+| public storefront domain (almufeed.com.pk). Left unset in local dev, the
+| routes register host-agnostic exactly as before.
+*/
+$registerPosRoutes = function () {
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -322,3 +333,12 @@ Route::middleware(['auth', 'branch', 'permission:manage ledger'])->prefix('admin
 });
 
 require __DIR__ . '/auth.php';
+
+}; // end $registerPosRoutes
+
+$posDomain = env('POS_DOMAIN');
+if ($posDomain) {
+    Route::domain($posDomain)->group($registerPosRoutes);
+} else {
+    $registerPosRoutes();
+}
