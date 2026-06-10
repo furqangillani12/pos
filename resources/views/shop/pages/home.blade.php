@@ -52,9 +52,13 @@
 
                     @foreach ($hero as $i => $b)
                         <a href="{{ $b->cta_url ?: route('shop.catalog') }}"
-                           class="absolute inset-0 transition-opacity duration-700 ease-in-out"
-                           :class="active === {{ $i }} ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'"
-                           @if ($i !== 0) style="opacity:0" @endif>
+                           class="absolute inset-0"
+                           x-show="active === {{ $i }}"
+                           x-transition:enter="transition-opacity ease-in-out duration-700"
+                           x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                           x-transition:leave="transition-opacity ease-in-out duration-700"
+                           x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                           @if ($i !== 0) style="display:none" @endif>
                             <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
                                  class="w-full h-full object-cover">
                             @if ($b->title || $b->subtitle || $b->cta_text)
@@ -215,9 +219,13 @@
 
                 @foreach ($midBanners as $i => $b)
                     <a href="{{ $b->cta_url ?: route('shop.catalog') }}"
-                       class="absolute inset-0 transition-opacity duration-700 ease-in-out"
-                       :class="active === {{ $i }} ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'"
-                       @if ($i !== 0) style="opacity:0" @endif>
+                       class="absolute inset-0"
+                       x-show="active === {{ $i }}"
+                       x-transition:enter="transition-opacity ease-in-out duration-700"
+                       x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+                       x-transition:leave="transition-opacity ease-in-out duration-700"
+                       x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
+                       @if ($i !== 0) style="display:none" @endif>
                         <img src="{{ shop_image($b->image) }}" alt="{{ $b->title }}"
                              class="w-full h-full object-cover">
                         <div class="absolute inset-0" style="background:linear-gradient(90deg,rgba(12,31,61,.8) 0%,rgba(12,31,61,.2) 60%);"></div>
