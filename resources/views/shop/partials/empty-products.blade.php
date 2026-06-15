@@ -1,21 +1,14 @@
-{{-- Graceful placeholder shown when a product section has no items yet.
-     Keeps the landing-page grid full so no section ever looks broken. --}}
-<div class="reveal">
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
-        @for ($i = 0; $i < 4; $i++)
-            <div class="rounded-2xl border border-gray-100 bg-white overflow-hidden">
-                <div class="aspect-[4/5] skel"></div>
-                <div class="p-4 space-y-2">
-                    <div class="skel h-3 w-3/4"></div>
-                    <div class="skel h-3 w-1/2"></div>
-                </div>
-            </div>
-        @endfor
-    </div>
-    <div class="text-center mt-8">
-        <p class="text-gray-500 text-sm">More products are on the way.</p>
-        <a href="{{ route('shop.catalog') }}" class="inline-flex items-center gap-2 mt-2 text-sm font-semibold" style="color:var(--rose);">
-            Browse the catalog <i class="fas fa-arrow-right text-xs"></i>
-        </a>
-    </div>
+{{-- Static, friendly placeholder shown when a product section has no items.
+     Intentionally NOT an animated skeleton, so it never looks like it's
+     "stuck loading". --}}
+<div class="reveal rounded-2xl border border-dashed border-gray-300 bg-white py-14 text-center">
+    <span class="w-14 h-14 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+          style="background:linear-gradient(135deg,#e8f1fb,#d6ecfa);color:var(--brand-cyan);">
+        <i class="fas fa-box-open text-xl"></i>
+    </span>
+    <p class="font-bold text-gray-700">More products coming soon</p>
+    <p class="text-sm text-gray-500 mt-1">We're adding new items regularly — check back shortly.</p>
+    <a href="{{ route('shop.catalog') }}" class="inline-flex items-center gap-2 mt-4 text-sm font-semibold" style="color:var(--brand-cyan);">
+        Browse the catalog <i class="fas fa-arrow-right text-xs"></i>
+    </a>
 </div>

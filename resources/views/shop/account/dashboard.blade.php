@@ -10,7 +10,7 @@
             <div class="relative">
                 <div class="text-xs uppercase tracking-widest mb-2" style="color:var(--gold);">My account</div>
                 <h1 class="display text-3xl sm:text-4xl font-bold">As-salamu alaykum, {{ $customer->name }}</h1>
-                <p class="text-rose-100/80 mt-2 text-sm">Manage your orders, profile, and addresses from here.</p>
+                <p class="text-blue-100/80 mt-2 text-sm">Manage your orders, profile, and addresses from here.</p>
                 <div class="mt-5 flex flex-wrap gap-3">
                     <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);">
                         <i class="fas fa-receipt mr-1"></i> {{ \App\Models\Order::where('customer_id', $customer->id)->count() }} orders
@@ -19,7 +19,7 @@
                         <i class="fas fa-heart mr-1"></i> {{ \App\Models\Wishlist::where('customer_id', $customer->id)->count() }} in wishlist
                     </div>
                     @if (($customer->current_balance ?? 0) > 0)
-                        <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(212,175,55,.2);color:var(--gold);">
+                        <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(41,171,226,.2);color:var(--gold);">
                             <i class="fas fa-book-open mr-1"></i> Khata: {{ shop_price($customer->current_balance) }}
                         </div>
                     @endif
@@ -37,7 +37,7 @@
                 ['route'=>'shop.account.password','icon'=>'fa-lock',         'title'=>'Password',   'desc'=>'Change password'],
             ] as $card)
                 <a href="{{ route($card['route']) }}" class="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:-translate-y-1 transition group">
-                    <span class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:linear-gradient(135deg,#fdeef0,#fef3c7);color:var(--brand-navy);">
+                    <span class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:linear-gradient(135deg,#e8f1fb,#d6ecfa);color:var(--brand-navy);">
                         <i class="fas {{ $card['icon'] }} text-lg"></i>
                     </span>
                     <div class="font-bold text-gray-900">{{ $card['title'] }}</div>
@@ -76,10 +76,10 @@
                                     <td class="px-4 py-3 font-mono text-xs">{{ $o->order_number }}</td>
                                     <td class="px-4 py-3 text-gray-600">{{ $o->created_at->format('d M Y') }}</td>
                                     <td class="px-4 py-3">
-                                        <span class="chip capitalize" style="background:#fdeef0;color:var(--brand-cyan);">{{ str_replace('_', ' ', $o->status) }}</span>
+                                        <span class="chip capitalize" style="background:#e8f1fb;color:var(--brand-cyan);">{{ str_replace('_', ' ', $o->status) }}</span>
                                     </td>
                                     <td class="px-4 py-3 text-right font-bold">{{ shop_price($o->total) }}</td>
-                                    <td class="px-4 py-3 text-right"><a href="{{ route('shop.account.order', $o) }}" class="text-rose-700 hover:underline text-xs">View</a></td>
+                                    <td class="px-4 py-3 text-right"><a href="{{ route('shop.account.order', $o) }}" class="text-blue-700 hover:underline text-xs">View</a></td>
                                 </tr>
                             @endforeach
                         </tbody>

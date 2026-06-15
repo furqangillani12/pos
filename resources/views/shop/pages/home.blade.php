@@ -49,7 +49,7 @@
 
                         <div class="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
                             <div class="max-w-xl text-white reveal-stagger">
-                                <span class="chip" style="background:rgba(212,175,55,.16);color:#f3dca0;border:1px solid rgba(212,175,55,.35);">
+                                <span class="chip" style="background:rgba(41,171,226,.16);color:#f3dca0;border:1px solid rgba(41,171,226,.35);">
                                     <span style="width:6px;height:6px;background:var(--gold);border-radius:9999px;display:inline-block;animation:pulse 2s infinite;"></span>
                                     {{ $b->subtitle ?: "Pakistan's most trusted retail" }}
                                 </span>
@@ -72,14 +72,14 @@
                     <div class="hero-pattern absolute inset-0"></div>
                     <div class="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
                         <div class="max-w-xl text-white reveal-stagger">
-                            <span class="chip" style="background:rgba(212,175,55,.16);color:#f3dca0;border:1px solid rgba(212,175,55,.35);">
+                            <span class="chip" style="background:rgba(41,171,226,.16);color:#f3dca0;border:1px solid rgba(41,171,226,.35);">
                                 <span style="width:6px;height:6px;background:var(--gold);border-radius:9999px;display:inline-block;animation:pulse 2s infinite;"></span>
                                 Pakistan's most trusted retail
                             </span>
                             <h1 class="display text-4xl sm:text-5xl lg:text-6xl font-bold leading-[1.05] mt-5">
                                 Quality &amp; <span style="color:var(--gold);">affordability</span><br>in every box.
                             </h1>
-                            <p class="text-base sm:text-lg text-rose-50/85 max-w-md mt-5">
+                            <p class="text-base sm:text-lg text-blue-50/85 max-w-md mt-5">
                                 Hand-picked products from <strong>AL MUFEED TRADERS</strong> — now online with same-day fulfilment from our shop in PanjGirain.
                             </p>
                             <div class="flex flex-wrap gap-3 mt-8">
@@ -107,11 +107,11 @@
         <template x-if="count > 1">
             <div>
                 <button type="button" @click.prevent="prev()" aria-label="Previous slide"
-                    class="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/85 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg transition">
+                    class="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white border border-white/30 flex items-center justify-center transition" style="backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <button type="button" @click.prevent="next()" aria-label="Next slide"
-                    class="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/85 hover:bg-white text-gray-800 flex items-center justify-center shadow-lg transition">
+                    class="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/10 hover:bg-white/25 text-white border border-white/30 flex items-center justify-center transition" style="backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);">
                     <i class="fas fa-chevron-right"></i>
                 </button>
                 <div class="absolute top-5 right-5 z-20 flex gap-2">
@@ -137,7 +137,7 @@
         ] as [$icon, $title, $sub])
             <div class="flex items-start gap-3">
                 <span class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style="background:linear-gradient(135deg,#fdeef0,#f6ecd8);color:var(--rose);">
+                      style="background:linear-gradient(135deg,#e8f1fb,#f6ecd8);color:var(--rose);">
                     <i class="fas {{ $icon }}"></i>
                 </span>
                 <div>
@@ -278,7 +278,7 @@
             {{-- Fallback promo band so the section is never blank --}}
             <a href="{{ route('shop.catalog') }}"
                class="block relative rounded-3xl overflow-hidden shadow-lg aspect-video sm:aspect-[21/9]" style="background:linear-gradient(120deg,var(--brand-navy),var(--rose-deep),var(--rose));">
-                <div class="absolute inset-0" style="background:radial-gradient(circle at 80% 30%, rgba(212,175,55,.25), transparent 50%);"></div>
+                <div class="absolute inset-0" style="background:radial-gradient(circle at 80% 30%, rgba(41,171,226,.25), transparent 50%);"></div>
                 <div class="absolute inset-0 p-8 sm:p-12 flex flex-col justify-center text-white">
                     <div class="text-xs font-bold uppercase tracking-widest" style="color:var(--gold);">Special offers</div>
                     <h3 class="display text-2xl sm:text-4xl font-bold mt-2 max-w-md">Great deals, delivered to your door</h3>
@@ -365,11 +365,11 @@
 
 {{-- ═════════════════ CTA BAND ═════════════════ --}}
 <section class="py-16 sm:py-24 relative overflow-hidden" style="background:var(--brand-navy);">
-    <div class="absolute inset-0" style="background:radial-gradient(circle at 80% 30%, rgba(190,18,60,.35), transparent 50%);"></div>
-    <div class="absolute inset-0" style="background:radial-gradient(circle at 15% 80%, rgba(212,175,55,.18), transparent 45%);"></div>
+    <div class="absolute inset-0" style="background:radial-gradient(circle at 80% 30%, rgba(46,49,146,.35), transparent 50%);"></div>
+    <div class="absolute inset-0" style="background:radial-gradient(circle at 15% 80%, rgba(41,171,226,.18), transparent 45%);"></div>
     <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white reveal">
         <h2 class="display text-3xl sm:text-5xl font-bold mb-4">Discover something new every visit</h2>
-        <p class="text-base sm:text-lg text-rose-50/80 mb-8 max-w-xl mx-auto">
+        <p class="text-base sm:text-lg text-blue-50/80 mb-8 max-w-xl mx-auto">
             From everyday essentials to special occasion pieces — Almufeed brings the best of our shops directly to your door.
         </p>
         <a href="{{ route('shop.catalog') }}" class="btn btn-primary"><i class="fas fa-bag-shopping"></i> Browse the full catalog</a>

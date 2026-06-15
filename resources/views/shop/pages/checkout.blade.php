@@ -10,7 +10,7 @@
         </div>
 
         @if ($isGuest)
-            <div class="bg-rose-50 border border-rose-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 reveal">
+            <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 reveal">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-circle-info text-lg" style="color:var(--brand-cyan);"></i>
                     <div>
@@ -25,17 +25,15 @@
             @csrf
 
             <div class="space-y-6 reveal">
-                @if ($isGuest)
-                    <div class="bg-white rounded-2xl border border-gray-100 p-6">
-                        <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-envelope" style="color:var(--brand-cyan);"></i> Contact info</h2>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Email *</label>
-                            <input type="email" name="guest_email" required value="{{ old('guest_email') }}" placeholder="you@example.com"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
-                            <p class="text-[11px] text-gray-500 mt-1">We'll send your order confirmation here.</p>
-                        </div>
+                <div class="bg-white rounded-2xl border border-gray-100 p-6">
+                    <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-envelope" style="color:var(--brand-cyan);"></i> Contact info</h2>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-600 mb-1 block">Email *</label>
+                        <input type="email" name="email" required value="{{ old('email', $customer?->email) }}" placeholder="you@example.com"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-[11px] text-gray-500 mt-1">Your order confirmation and status updates are sent here.</p>
                     </div>
-                @endif
+                </div>
 
                 {{-- Shipping address --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
@@ -43,31 +41,31 @@
                     <div class="grid sm:grid-cols-2 gap-4">
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">First name *</label>
-                            <input type="text" name="shipping_first_name" required value="{{ old('shipping_first_name', $customer ? (explode(' ', $customer->name)[0] ?? '') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_first_name" required value="{{ old('shipping_first_name', $customer ? (explode(' ', $customer->name)[0] ?? '') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Last name</label>
-                            <input type="text" name="shipping_last_name" value="{{ old('shipping_last_name', $customer ? \Str::after($customer->name, ' ') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_last_name" value="{{ old('shipping_last_name', $customer ? \Str::after($customer->name, ' ') : '') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Phone *</label>
-                            <input type="text" name="shipping_phone" required value="{{ old('shipping_phone', $customer?->phone) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_phone" required value="{{ old('shipping_phone', $customer?->phone) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">City *</label>
-                            <input type="text" name="shipping_city" required value="{{ old('shipping_city') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_city" required value="{{ old('shipping_city') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Address line 1 *</label>
-                            <input type="text" name="shipping_address1" required value="{{ old('shipping_address1', $customer?->address) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_address1" required value="{{ old('shipping_address1', $customer?->address) }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Address line 2</label>
-                            <input type="text" name="shipping_address2" value="{{ old('shipping_address2') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_address2" value="{{ old('shipping_address2') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                         <div>
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Post code</label>
-                            <input type="text" name="shipping_post_code" value="{{ old('shipping_post_code') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                            <input type="text" name="shipping_post_code" value="{{ old('shipping_post_code') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         </div>
                     </div>
                 </div>
@@ -78,8 +76,8 @@
                     <div class="space-y-2">
                         @foreach ($dispatchMethods as $dm)
                             <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition"
-                                   :class="dispatch === '{{ $dm->name }}' ? 'border-rose-500 bg-rose-50/40' : 'border-gray-100 hover:border-gray-200'">
-                                <input type="radio" name="dispatch_method" value="{{ $dm->name }}" x-model="dispatch" class="text-rose-600 mt-0.5 self-start">
+                                   :class="dispatch === '{{ $dm->name }}' ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
+                                <input type="radio" name="dispatch_method" value="{{ $dm->name }}" x-model="dispatch" class="text-blue-600 mt-0.5 self-start">
                                 <div class="flex-1">
                                     <div class="font-semibold text-gray-800 text-sm">{{ $dm->name }}</div>
                                     @if ($dm->note)
@@ -98,16 +96,16 @@
                     <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-credit-card" style="color:var(--brand-cyan);"></i> Payment method</h2>
                     <div class="grid sm:grid-cols-2 gap-3">
                         <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition"
-                               :class="method === 'cod' ? 'border-rose-500 bg-rose-50/40' : 'border-gray-100 hover:border-gray-200'">
-                            <input type="radio" name="payment_method" value="cod" x-model="method" class="mt-1 text-rose-600">
+                               :class="method === 'cod' ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
+                            <input type="radio" name="payment_method" value="cod" x-model="method" class="mt-1 text-blue-600">
                             <div>
                                 <div class="font-semibold text-gray-800">Cash on Delivery</div>
                                 <div class="text-[11px] text-gray-500 mt-0.5">Pay when you receive your order</div>
                             </div>
                         </label>
                         <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition"
-                               :class="method === 'bank_transfer' ? 'border-rose-500 bg-rose-50/40' : 'border-gray-100 hover:border-gray-200'">
-                            <input type="radio" name="payment_method" value="bank_transfer" x-model="method" class="mt-1 text-rose-600">
+                               :class="method === 'bank_transfer' ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
+                            <input type="radio" name="payment_method" value="bank_transfer" x-model="method" class="mt-1 text-blue-600">
                             <div>
                                 <div class="font-semibold text-gray-800">Bank Transfer</div>
                                 <div class="text-[11px] text-gray-500 mt-0.5">We'll share account details after order</div>
@@ -118,7 +116,7 @@
 
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
                     <label class="text-xs font-semibold text-gray-600 mb-1 block">Order notes (optional)</label>
-                    <textarea name="order_notes_customer" rows="2" placeholder="Anything you'd like us to know..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500"></textarea>
+                    <textarea name="order_notes_customer" rows="2" placeholder="Anything you'd like us to know..." class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></textarea>
                 </div>
             </div>
 

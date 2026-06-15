@@ -104,6 +104,7 @@ Route::middleware(['auth', 'branch', 'permission:manage attendance'])->group(fun
 // ── Products, Units, Categories ──
 Route::middleware(['auth', 'branch', 'permission:manage products'])->group(function () {
     Route::resource('products', ProductController::class)->except(['show']);
+    Route::patch('products/{product}/toggle-website', [ProductController::class, 'toggleWebsite'])->name('products.toggle-website');
     Route::get('products/import', [ProductController::class, 'showImportForm'])->name('products.import.show');
     Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
     Route::get('products/export', [ProductController::class, 'export'])->name('products.export');

@@ -4,7 +4,7 @@
 <section class="py-10 sm:py-14">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="mb-8 reveal">
-            <h1 class="display text-3xl sm:text-4xl font-bold flex items-center gap-3"><i class="fas fa-heart text-rose-500"></i> Wishlist</h1>
+            <h1 class="display text-3xl sm:text-4xl font-bold flex items-center gap-3"><i class="fas fa-heart text-blue-500"></i> Wishlist</h1>
             <p class="text-gray-500 text-sm mt-2">Save your favourites for later.</p>
         </div>
 

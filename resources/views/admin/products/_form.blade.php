@@ -368,6 +368,16 @@
                     class="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                 <label for="track_inventory" class="ml-2 block text-sm text-gray-700">Track Inventory</label>
             </div>
+
+            <div class="flex items-center sm:col-span-2 bg-cyan-50/60 border border-cyan-100 rounded-lg p-3">
+                <input type="checkbox" name="show_on_website" id="show_on_website" value="1"
+                    {{ old('show_on_website', $product->show_on_website ?? true) ? 'checked' : '' }}
+                    class="h-4 w-4 text-cyan-600 border-gray-300 rounded focus:ring-cyan-500">
+                <label for="show_on_website" class="ml-2 block text-sm text-gray-700">
+                    <i class="fas fa-globe text-cyan-600 mr-1"></i> Show on website
+                    <span class="text-gray-400">— when on, this product is visible on the online store</span>
+                </label>
+            </div>
         </div>
 
         <!-- Submit -->

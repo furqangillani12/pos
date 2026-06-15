@@ -7,18 +7,17 @@
         {{-- Header --}}
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-8 reveal">
             <div>
-                <a href="{{ route('shop.account') }}" class="text-xs text-gray-500 hover:text-rose-700 inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i> Back to account</a>
+                <a href="{{ route('shop.account') }}" class="text-xs text-gray-500 hover:text-blue-700 inline-flex items-center gap-2 mb-2"><i class="fas fa-arrow-left"></i> Back to account</a>
                 <h1 class="display text-3xl sm:text-4xl font-bold">Account statement</h1>
                 <p class="text-gray-500 text-sm mt-1">
                     {{ $customer->name }}
-                    <span class="chip ml-1" style="background:#fdeef0;color:var(--rose);">{{ $customer->type_label }}</span>
+                    <span class="chip ml-1" style="background:#e8f1fb;color:var(--rose);">{{ $customer->type_label }}</span>
                 </p>
             </div>
-            <button onclick="window.print()" class="btn btn-ghost !py-2 !text-xs no-print"><i class="fas fa-print"></i> Print / Save PDF</button>
         </div>
 
         {{-- Summary cards --}}
-        <div class="grid grid-cols-2 {{ $summary['is_reseller'] ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-4 mb-6 reveal-stagger">
+        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6 reveal-stagger">
             <div class="bg-white border border-gray-100 rounded-2xl p-5">
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Total purchased</div>
                 <div class="text-2xl font-extrabold mt-1" style="color:var(--brand-navy);">{{ shop_price($summary['business']) }}</div>
@@ -37,13 +36,6 @@
                     @else All clear — nothing due @endif
                 </div>
             </div>
-            @if ($summary['is_reseller'])
-                <div class="rounded-2xl p-5" style="background:linear-gradient(135deg,var(--gold-deep),var(--gold));">
-                    <div class="text-xs uppercase tracking-wide" style="color:#2b2127;">Your earnings</div>
-                    <div class="text-2xl font-extrabold mt-1" style="color:#2b2127;">{{ shop_price($summary['earnings']) }}</div>
-                    <div class="text-[11px] mt-0.5" style="color:#5b4a14;">Est. margin vs retail</div>
-                </div>
-            @endif
         </div>
 
         {{-- Date filter --}}
@@ -58,7 +50,7 @@
             </div>
             <button class="btn btn-dark !py-2 !text-xs">Filter</button>
             @if (request('from') || request('to'))
-                <a href="{{ route('shop.account.statement') }}" class="text-xs text-rose-500 hover:underline">Clear</a>
+                <a href="{{ route('shop.account.statement') }}" class="text-xs text-blue-500 hover:underline">Clear</a>
             @endif
         </form>
 
@@ -104,7 +96,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-gray-600">
                                         <span class="inline-block px-2 py-0.5 rounded text-[10px] font-semibold
-                                            {{ $isOrder ? 'bg-rose-50 text-rose-700' : ($r['type']==='payout' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700') }}">{{ $label }}</span>
+                                            {{ $isOrder ? 'bg-blue-50 text-blue-700' : ($r['type']==='payout' ? 'bg-amber-50 text-amber-700' : 'bg-emerald-50 text-emerald-700') }}">{{ $label }}</span>
                                         @if ($isOrder)
                                             <span class="text-xs text-gray-500 ml-1">{{ $r['items_count'] }} {{ \Str::plural('item', $r['items_count']) }} · {{ $r['channel'] }}</span>
                                         @endif

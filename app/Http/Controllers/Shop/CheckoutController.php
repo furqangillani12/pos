@@ -48,10 +48,9 @@ class CheckoutController extends Controller
             'dispatch_method'      => 'required|string|max:100',
             'payment_method'       => 'required|in:cod,bank_transfer',
             'order_notes_customer' => 'nullable|string|max:1000',
+            // Always capture an email — order confirmation + status updates go here.
+            'email'                => 'required|email|max:191',
         ];
-        if ($isGuest) {
-            $rules['guest_email'] = 'required|email|max:191';
-        }
 
         $data = $request->validate($rules);
 
@@ -75,7 +74,7 @@ class CheckoutController extends Controller
                 'order_source'     => 'online',
                 'order_type'       => 'online',
                 'customer_id'      => $customer?->id,
-                'customer_email'   => $customer?->email ?? ($data['guest_email'] ?? null),
+                'customer_email'   => $data['email'],
                 'customer_type'    => $customer?->customer_type ?? 'customer',
                 'user_id'          => null,
                 'branch_id'        => $branchId,

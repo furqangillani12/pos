@@ -74,6 +74,7 @@
                             <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Wholesale</th>
                             <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Stock</th>
                             <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Status</th>
+                            <th class="px-3 py-3 text-center text-xs font-medium text-gray-500 uppercase">Website</th>
                             <th class="px-3 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
@@ -145,6 +146,18 @@
                                     </span>
                                 </td>
 
+                                <td class="px-3 py-3 text-center">
+                                    <form action="{{ route('products.toggle-website', $product->id) }}" method="POST" class="inline">
+                                        @csrf @method('PATCH')
+                                        <button type="submit"
+                                            title="{{ $product->show_on_website ? 'Visible on website — click to hide' : 'Hidden — click to show on website' }}"
+                                            class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium {{ $product->show_on_website ? 'bg-cyan-100 text-cyan-800 hover:bg-cyan-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200' }}">
+                                            <i class="fas {{ $product->show_on_website ? 'fa-globe' : 'fa-eye-slash' }}"></i>
+                                            {{ $product->show_on_website ? 'On' : 'Off' }}
+                                        </button>
+                                    </form>
+                                </td>
+
                                 <td class="px-3 py-3 text-right">
                                     <div class="flex items-center justify-end gap-1">
                                         <a href="{{ route('products.edit', $product->id) }}" class="text-blue-500 hover:text-blue-700 p-1" title="Edit"><i class="fas fa-edit"></i></a>
@@ -157,11 +170,11 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="px-4 py-8 text-center text-gray-400">No products found</td>
+                                <td colspan="11" class="px-4 py-8 text-center text-gray-400">No products found</td>
                             </tr>
                         @endforelse
                         <tr id="noProductResults" style="display:none">
-                            <td colspan="10" class="px-4 py-8 text-center text-gray-400">No products match your search.</td>
+                            <td colspan="11" class="px-4 py-8 text-center text-gray-400">No products match your search.</td>
                         </tr>
                     </tbody>
                 </table>
@@ -243,6 +256,13 @@
                             @endif
                         </div>
                         <div class="flex items-center gap-2">
+                            <form action="{{ route('products.toggle-website', $product->id) }}" method="POST">
+                                @csrf @method('PATCH')
+                                <button type="submit"
+                                    class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-xs font-medium {{ $product->show_on_website ? 'bg-cyan-100 text-cyan-800' : 'bg-gray-100 text-gray-500' }}">
+                                    <i class="fas {{ $product->show_on_website ? 'fa-globe' : 'fa-eye-slash' }}"></i> {{ $product->show_on_website ? 'Web on' : 'Web off' }}
+                                </button>
+                            </form>
                             <a href="{{ route('products.edit', $product->id) }}"
                                 class="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-xs font-medium">
                                 <i class="fas fa-edit"></i> Edit

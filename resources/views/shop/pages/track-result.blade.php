@@ -3,7 +3,7 @@
 @section('content')
 <section class="py-10 sm:py-14">
     <div class="max-w-4xl mx-auto px-4 reveal">
-        <a href="{{ route('shop.track') }}" class="text-xs text-gray-500 hover:text-rose-700 inline-flex items-center gap-2 mb-4"><i class="fas fa-arrow-left"></i> Track another order</a>
+        <a href="{{ route('shop.track') }}" class="text-xs text-gray-500 hover:text-blue-700 inline-flex items-center gap-2 mb-4"><i class="fas fa-arrow-left"></i> Track another order</a>
 
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
             <div>
@@ -11,7 +11,7 @@
                 <h1 class="display text-3xl font-bold mt-1">{{ $order->order_number }}</h1>
                 <p class="text-gray-500 text-sm mt-1">Placed {{ $order->created_at->format('d M Y · h:i A') }}</p>
             </div>
-            <span class="chip capitalize self-start" style="background:#fdeef0;color:var(--brand-cyan);font-size:13px;padding:6px 14px;">{{ str_replace('_', ' ', $order->status) }}</span>
+            <span class="chip capitalize self-start" style="background:#e8f1fb;color:var(--brand-cyan);font-size:13px;padding:6px 14px;">{{ str_replace('_', ' ', $order->status) }}</span>
         </div>
 
         @php
@@ -27,7 +27,7 @@
         @endphp
 
         @if ($order->status === 'cancelled')
-            <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-5 mb-6 reveal">
+            <div class="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-5 mb-6 reveal">
                 <i class="fas fa-circle-xmark mr-2"></i> This order was cancelled. If you think this is a mistake, please contact us.
             </div>
         @else

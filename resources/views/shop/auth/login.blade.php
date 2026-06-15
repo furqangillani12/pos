@@ -14,7 +14,7 @@
             <form method="POST" action="{{ route('shop.login.post') }}" x-data="{ show: false }" class="space-y-4">
                 @csrf
                 @if ($errors->any())
-                    <div class="bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg px-3 py-2">
+                    <div class="bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg px-3 py-2">
                         {{ $errors->first() }}
                     </div>
                 @endif
@@ -25,7 +25,7 @@
                         <input type="text" name="login" required autofocus value="{{ old('login') }}"
                                placeholder="03xx-xxxxxxx or you@example.com"
                                style="padding-left:40px;"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     </div>
                     <p class="text-[11px] text-gray-400 mt-1">Have a shop account (khata)? Sign in with the phone number on file. Ask us to set your password if you don't have one yet.</p>
                 </div>
@@ -35,7 +35,7 @@
                         <i class="fas fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
                         <input :type="show ? 'text' : 'password'" name="password" required
                                style="padding-left:40px;padding-right:42px;"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <button type="button" @click="show = !show" tabindex="-1"
                                 style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;">
                             <i class="fas" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
@@ -43,7 +43,7 @@
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                    <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500">
+                    <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
                     Remember me
                 </label>
 

@@ -15,7 +15,7 @@
 
         @if ($badge !== 'default')
             <span class="chip absolute top-3 left-3 z-10"
-                  style="background:{{ $badge === 'sale' ? '#fee2e2' : ($badge === 'new' ? '#fdeef0' : '#fef3c7') }};
+                  style="background:{{ $badge === 'sale' ? '#fee2e2' : ($badge === 'new' ? '#e8f1fb' : '#cfeefb') }};
                          color:{{ $badge === 'sale' ? '#b91c1c' : ($badge === 'new' ? '#0e7490' : '#92400e') }};">
                 {{ $badge === 'sale' ? 'SALE' : ($badge === 'new' ? 'NEW' : 'HOT') }}
             </span>
@@ -24,7 +24,7 @@
         <div class="quick">
             @auth('customer')
                 <button type="button" onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
-                        class="{{ $inWishlist ? 'text-rose-500' : '' }}" title="Wishlist">
+                        class="{{ $inWishlist ? 'text-blue-500' : '' }}" title="Wishlist">
                     <i class="{{ $inWishlist ? 'fas' : 'far' }} fa-heart"></i>
                 </button>
             @else
@@ -43,7 +43,7 @@
             <div class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">{{ $product->brand->name }}</div>
         @endif
         <a href="{{ route('shop.product', $product->slug ?? $product->id) }}"
-           class="font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-rose-700 transition">
+           class="font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-blue-700 transition">
             {{ $product->name }}
         </a>
 

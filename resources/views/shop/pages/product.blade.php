@@ -24,8 +24,8 @@
 
         {{-- Breadcrumb --}}
         <nav class="text-xs text-gray-500 mb-6 flex items-center gap-2 reveal">
-            <a href="{{ route('shop.home') }}" class="hover:text-rose-700">Home</a> /
-            @if ($product->category) <a href="{{ route('shop.category', $product->category->slug ?? '#') }}" class="hover:text-rose-700">{{ $product->category->name }}</a> / @endif
+            <a href="{{ route('shop.home') }}" class="hover:text-blue-700">Home</a> /
+            @if ($product->category) <a href="{{ route('shop.category', $product->category->slug ?? '#') }}" class="hover:text-blue-700">{{ $product->category->name }}</a> / @endif
             <span class="text-gray-700">{{ $product->name }}</span>
         </nav>
 
@@ -44,7 +44,7 @@
                         @foreach ($gallery as $i => $g)
                             <button @click="active = {{ $i }}" type="button"
                                     class="aspect-square rounded-xl overflow-hidden border-2 transition"
-                                    :class="active === {{ $i }} ? 'border-rose-500' : 'border-transparent'">
+                                    :class="active === {{ $i }} ? 'border-blue-500' : 'border-transparent'">
                                 <img src="{{ shop_image($g) }}" class="w-full h-full object-cover">
                             </button>
                         @endforeach
@@ -85,8 +85,8 @@
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
                         <span class="text-emerald-700 font-semibold">In stock</span>
                     @else
-                        <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-                        <span class="text-rose-700 font-semibold">Out of stock</span>
+                        <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        <span class="text-red-600 font-semibold">Out of stock</span>
                     @endif
                 </div>
 
@@ -103,7 +103,7 @@
                     </button>
                     @auth('customer')
                         <button type="button" onclick="toggleWishlist({{ $product->id }}, this)"
-                                class="w-12 h-12 rounded-xl border border-gray-200 hover:border-rose-300 transition flex items-center justify-center {{ $inWishlist ? 'text-rose-500' : 'text-gray-500' }}">
+                                class="w-12 h-12 rounded-xl border border-gray-200 hover:border-blue-300 transition flex items-center justify-center {{ $inWishlist ? 'text-blue-500' : 'text-gray-500' }}">
                             <i class="{{ $inWishlist ? 'fas' : 'far' }} fa-heart"></i>
                         </button>
                     @endauth

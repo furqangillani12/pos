@@ -11,7 +11,7 @@
             </div>
         @endif
         @if ($error)
-            <div class="rounded-xl px-4 py-3 text-sm flex items-start gap-3 border bg-rose-50 border-rose-200 text-rose-700">
+            <div class="rounded-xl px-4 py-3 text-sm flex items-start gap-3 border bg-red-50 border-red-200 text-red-700">
                 <i class="fas fa-circle-exclamation mt-0.5"></i>
                 <span class="flex-1">{{ $error }}</span>
             </div>

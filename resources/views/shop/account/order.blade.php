@@ -3,7 +3,7 @@
 @section('content')
 <section class="py-10 sm:py-14">
     <div class="max-w-4xl mx-auto px-4 reveal">
-        <a href="{{ route('shop.account.orders') }}" class="text-xs text-gray-500 hover:text-rose-700 inline-flex items-center gap-2 mb-4"><i class="fas fa-arrow-left"></i> Back to my orders</a>
+        <a href="{{ route('shop.account.orders') }}" class="text-xs text-gray-500 hover:text-blue-700 inline-flex items-center gap-2 mb-4"><i class="fas fa-arrow-left"></i> Back to my orders</a>
 
         <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
             <div>
@@ -11,7 +11,7 @@
                 <h1 class="display text-3xl font-bold mt-1">{{ $order->order_number }}</h1>
                 <p class="text-gray-500 text-sm mt-1">Placed {{ $order->created_at->format('d M Y · h:i A') }}</p>
             </div>
-            <span class="chip capitalize self-start" style="background:#fdeef0;color:var(--brand-cyan);font-size:13px;padding:6px 14px;">{{ str_replace('_', ' ', $order->status) }}</span>
+            <span class="chip capitalize self-start" style="background:#e8f1fb;color:var(--brand-cyan);font-size:13px;padding:6px 14px;">{{ str_replace('_', ' ', $order->status) }}</span>
         </div>
 
         {{-- Status timeline --}}

@@ -31,6 +31,15 @@ class HomeController extends Controller
             ->with('category', 'brand')
             ->orderByDesc('avg_rating')->orderByDesc('review_count')->limit(8)->get();
 
+        // Fall back to best-available products so the section is never empty
+        // (e.g. before any reviews exist) instead of showing a loading skeleton.
+        if ($bestRated->isEmpty()) {
+            $bestRated = Product::onWebsite()
+                ->with('category', 'brand')
+                ->orderByDesc('avg_rating')->orderByDesc('review_count')->orderByDesc('id')
+                ->limit(8)->get();
+        }
+
         $brands = Brand::where('is_active', true)->where('is_featured', true)
             ->orderBy('sort_order')->limit(8)->get();
 

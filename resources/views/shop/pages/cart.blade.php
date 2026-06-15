@@ -10,7 +10,7 @@
                 <h1 class="display text-3xl sm:text-4xl font-bold">Your bag</h1>
                 <p class="text-gray-500 text-sm mt-2">{{ $items->count() }} {{ \Str::plural('item', $items->count()) }}</p>
             </div>
-            <a href="{{ route('shop.catalog') }}" class="text-sm text-rose-700 hover:underline hidden sm:inline-flex items-center gap-2">
+            <a href="{{ route('shop.catalog') }}" class="text-sm text-blue-700 hover:underline hidden sm:inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left text-xs"></i> Continue shopping
             </a>
         </div>
@@ -31,7 +31,7 @@
                                 <img src="{{ shop_image($item->product?->image) }}" alt="" class="w-full sm:w-28 sm:h-32 object-cover rounded-xl" style="background:#f5f1e8;">
                             </a>
                             <div class="flex-1 min-w-0">
-                                <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-rose-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
+                                <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-blue-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
                                 @if ($item->product?->brand)
                                     <div class="text-[10px] uppercase tracking-widest text-gray-400 mt-0.5">{{ $item->product->brand->name }}</div>
                                 @endif
@@ -45,7 +45,7 @@
                                     </form>
                                     <form method="POST" action="{{ route('shop.cart.remove', $item) }}">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="text-xs text-rose-500 hover:underline"><i class="fas fa-trash text-[10px] mr-1"></i> Remove</button>
+                                        <button type="submit" class="text-xs text-red-500 hover:underline"><i class="fas fa-trash text-[10px] mr-1"></i> Remove</button>
                                     </form>
                                 </div>
                             </div>
@@ -82,7 +82,7 @@
                                         <div class="font-bold text-emerald-700">{{ $coupon->code }}</div>
                                         <div class="text-emerald-600">applied</div>
                                     </div>
-                                    <form method="POST" action="{{ route('shop.cart.coupon.remove') }}">@csrf @method('DELETE')<button class="text-rose-500 text-xs"><i class="fas fa-times"></i></button></form>
+                                    <form method="POST" action="{{ route('shop.cart.coupon.remove') }}">@csrf @method('DELETE')<button class="text-red-500 text-xs"><i class="fas fa-times"></i></button></form>
                                 </div>
                             @else
                                 <form method="POST" action="{{ route('shop.cart.coupon') }}" class="flex gap-2">

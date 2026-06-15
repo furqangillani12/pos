@@ -61,8 +61,12 @@ class ProductController extends Controller
             'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
-            'track_inventory'  => 'boolean'
+            'track_inventory'  => 'boolean',
+            'show_on_website'  => 'boolean',
         ]);
+
+        // Checkbox: present only when ticked, so resolve explicitly.
+        $validated['show_on_website'] = $request->boolean('show_on_website');
 
         if (!empty($validated['weight_kg'])) {
             $weight = $validated['weight_kg'];
@@ -135,8 +139,13 @@ class ProductController extends Controller
             'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:2048',
             'is_active'        => 'boolean',
-            'track_inventory'  => 'boolean'
+            'track_inventory'  => 'boolean',
+            'show_on_website'  => 'boolean',
         ]);
+
+        // Checkbox: present only when ticked, so resolve explicitly.
+        $validated['show_on_website'] = $request->boolean('show_on_website');
+
         if (!empty($validated['weight_kg'])) {
         $weight = $validated['weight_kg'];
         } elseif (!empty($validated['weight_g'])) {
@@ -167,6 +176,16 @@ class ProductController extends Controller
         }
 
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
+    }
+
+    /** Quick toggle of website visibility from the products list. */
+    public function toggleWebsite(Product $product)
+    {
+        $product->update(['show_on_website' => ! $product->show_on_website]);
+
+        return back()->with('success', $product->show_on_website
+            ? "\"{$product->name}\" is now visible on the website."
+            : "\"{$product->name}\" is now hidden from the website.");
     }
 
     public function destroy(Product $product)
