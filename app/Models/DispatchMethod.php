@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class DispatchMethod extends Model
 {
-    protected $fillable = ['name', 'has_tracking', 'sort_order', 'is_active'];
+    protected $fillable = ['name', 'note', 'has_tracking', 'sort_order', 'is_active'];
 
     protected $casts = [
         'is_active' => 'boolean',

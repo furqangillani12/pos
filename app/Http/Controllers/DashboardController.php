@@ -171,6 +171,20 @@ class DashboardController extends Controller
             ->when(!$this->isAllBranches(), fn($q) => $q->where('branch_id', $this->branchId()))
             ->sum('total_amount');
 
+        // ── Online (storefront) orders snapshot ──
+        $onlineBase = $this->scopeBranch(Order::query())->where('order_source', 'online');
+        $onlineOrders = [
+            'all'       => (clone $onlineBase)->count(),
+            'pending'   => (clone $onlineBase)->where('status', 'pending')->count(),
+            'confirmed' => (clone $onlineBase)->where('status', 'confirmed')->count(),
+            'shipped'   => (clone $onlineBase)->where('status', 'shipped')->count(),
+            'delivered' => (clone $onlineBase)->whereIn('status', ['delivered', 'completed'])->count(),
+            'cancelled' => (clone $onlineBase)->where('status', 'cancelled')->count(),
+            'unpaid'    => (clone $onlineBase)->where('online_payment_status', 'bank_pending')->count(),
+        ];
+        // "Remaining" = received but not yet delivered/cancelled
+        $onlineOrders['remaining'] = $onlineOrders['pending'] + $onlineOrders['confirmed'] + $onlineOrders['shipped'];
+
         return view('admin.dashboard', compact(
             'todaySales', 'yesterdaySales', 'salesChange',
             'todayOrders', 'todayPaid', 'todayExpenses',
@@ -182,7 +196,7 @@ class DashboardController extends Controller
             'presentEmployees', 'totalEmployees',
             'topProducts', 'topDebtors',
             'recentOrders', 'employeeAttendance',
-            'salesChart', 'paymentBreakdown'
+            'salesChart', 'paymentBreakdown', 'onlineOrders'
         ));
     }
 

@@ -141,6 +141,53 @@
             </a>
         </div>
 
+        {{-- ══════════════════════════════════════════
+             ONLINE (STOREFRONT) ORDERS SNAPSHOT
+        ══════════════════════════════════════════ --}}
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-4 sm:p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <i class="fas fa-globe text-rose-500"></i> Online Orders (Website)
+                </h3>
+                <a href="{{ route('admin.online-orders.index') }}" class="text-xs font-semibold text-rose-600 hover:text-rose-700 inline-flex items-center gap-1">
+                    Manage <i class="fas fa-arrow-right text-[10px]"></i>
+                </a>
+            </div>
+            <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                @php
+                    $onlineCards = [
+                        ['Total',     $onlineOrders['all'],       'gray',    'fa-receipt',          ''],
+                        ['Received',  $onlineOrders['pending'],   'amber',   'fa-clipboard-check',  'pending'],
+                        ['Confirmed', $onlineOrders['confirmed'], 'blue',    'fa-check',            'confirmed'],
+                        ['Dispatched',$onlineOrders['shipped'],   'indigo',  'fa-truck',            'shipped'],
+                        ['Delivered', $onlineOrders['delivered'], 'green',   'fa-circle-check',     'delivered'],
+                        ['Remaining', $onlineOrders['remaining'], 'rose',    'fa-hourglass-half',   ''],
+                    ];
+                    $palette = [
+                        'gray'   => 'bg-gray-50 text-gray-700 border-gray-200',
+                        'amber'  => 'bg-amber-50 text-amber-700 border-amber-200',
+                        'blue'   => 'bg-blue-50 text-blue-700 border-blue-200',
+                        'indigo' => 'bg-indigo-50 text-indigo-700 border-indigo-200',
+                        'green'  => 'bg-green-50 text-green-700 border-green-200',
+                        'rose'   => 'bg-rose-50 text-rose-700 border-rose-200',
+                    ];
+                @endphp
+                @foreach ($onlineCards as [$label, $count, $color, $icon, $statusFilter])
+                    <a href="{{ route('admin.online-orders.index', $statusFilter ? ['status' => $statusFilter] : []) }}"
+                       class="rounded-lg border p-3 text-center hover:shadow-sm transition {{ $palette[$color] }}">
+                        <i class="fas {{ $icon }} text-sm mb-1 block opacity-70"></i>
+                        <div class="text-xl font-extrabold leading-none">{{ $count }}</div>
+                        <div class="text-[11px] font-medium mt-1">{{ $label }}</div>
+                    </a>
+                @endforeach
+            </div>
+            @if ($onlineOrders['unpaid'] > 0)
+                <div class="mt-3 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                    <i class="fas fa-triangle-exclamation mr-1"></i> {{ $onlineOrders['unpaid'] }} bank-transfer order(s) awaiting payment confirmation.
+                </div>
+            @endif
+        </div>
+
         {{-- Quick Settings Link --}}
         @hasanyrole('admin|super_admin')
         <div class="flex justify-end">

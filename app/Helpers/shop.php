@@ -1,8 +1,47 @@
 <?php
 
 use App\Models\CartItem;
+use App\Models\Setting;
 use App\Services\Shop\CartService;
 use Illuminate\Support\Facades\Auth;
+
+if (!function_exists('setting')) {
+    /**
+     * Read a site setting (social links, contact info, etc.) managed from the
+     * admin Settings screen. Cached. Falls back to $default when unset/empty.
+     */
+    function setting(string $key, $default = null)
+    {
+        return Setting::get($key, $default);
+    }
+}
+
+if (!function_exists('courier_track_url')) {
+    /**
+     * Build a public courier tracking URL from a dispatch-method name and a
+     * tracking/consignment number. Returns null when we can't form one, so the
+     * caller can fall back to plain text.
+     */
+    function courier_track_url(?string $dispatchMethod, ?string $trackingId): ?string
+    {
+        $trackingId = trim((string) $trackingId);
+        if ($trackingId === '') return null;
+
+        $key = strtolower((string) $dispatchMethod);
+        $code = rawurlencode($trackingId);
+
+        return match (true) {
+            str_contains($key, 'tcs')      => "https://www.tcsexpress.com/track/?trackingNo={$code}",
+            str_contains($key, 'leopard')  => "https://www.leopardscourier.com/leopards-tracking?cn_number={$code}",
+            str_contains($key, 'm&p') ,
+            str_contains($key, 'mp ')      => "https://mulphilog.com/track-and-trace?tracking={$code}",
+            str_contains($key, 'post')     => "https://ep.gov.pk/track.asp?id={$code}",
+            str_contains($key, 'daewoo')   => "https://daewoo.com.pk/track-parcel/?tracking={$code}",
+            str_contains($key, 'trax')     => "https://sonic.pk/tracking?id={$code}",
+            default                        => "https://www.google.com/search?q=" . rawurlencode(trim($dispatchMethod . ' tracking ' . $trackingId)),
+        };
+    }
+}
 
 if (!function_exists('shop_cart_count')) {
     /**

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <meta name="theme-color" content="#0c1f3d">
+    <meta name="theme-color" content="#1f1517">
 
     <title>@yield('title', 'Almufeed Traders') · Almufeed Traders</title>
     <meta name="description" content="@yield('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail branches across Pakistan.')">
@@ -20,19 +20,25 @@
 
     <style>
         :root {
-            --brand-navy:  #0c1f3d;
-            --brand-blue:  #1e3a8a;
-            --brand-cyan:  #0891b2;
-            --brand-light: #1f8fc1;
-            --gold:        #fbbf24;
-            --gold-deep:   #d97706;
-            --paper:       #fafaf7;
-            --paper-warm:  #f5f1e8;
+            /* ── Rose + slate (elegant boutique) palette ──────────────────
+               Variable NAMES are kept stable so every shop page inherits the
+               new theme; only the values changed from the old navy/cyan set. */
+            --brand-navy:  #1f1517;   /* deep wine — darkest surface/text  */
+            --brand-blue:  #7f1d3a;   /* mid wine — gradient mid-stop      */
+            --brand-cyan:  #be123c;   /* ROSE — primary accent / links     */
+            --brand-light: #e11d48;   /* bright rose — hovers / highlights */
+            --rose:        #be123c;
+            --rose-deep:   #9f1239;
+            --gold:        #d4af37;   /* soft gold — secondary accent      */
+            --gold-deep:   #b8860b;
+            --paper:       #faf7f7;   /* blush page background             */
+            --paper-warm:  #f6ecee;   /* warm blush section background     */
+            --ink:         #2b2127;   /* warm charcoal body text           */
         }
         html, body {
             font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
             background: var(--paper);
-            color: #1f2937;
+            color: var(--ink);
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
         }
@@ -69,12 +75,15 @@
                transition: transform .15s ease, box-shadow .2s ease, background .2s ease, color .2s ease;
                border: 1px solid transparent; cursor: pointer; user-select: none; }
         .btn:hover { transform: translateY(-1px); }
-        .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color: #111827;
-                       box-shadow: 0 10px 25px -10px rgba(251,191,36,.55); }
-        .btn-primary:hover { box-shadow: 0 14px 30px -10px rgba(251,191,36,.75); }
-        .btn-dark { background: linear-gradient(135deg, var(--brand-navy), var(--brand-cyan)); color: #fff;
-                    box-shadow: 0 10px 25px -10px rgba(12,31,61,.45); }
-        .btn-ghost { background: transparent; border-color: rgba(0,0,0,.12); color: #1f2937; }
+        .btn-primary { background: linear-gradient(135deg, var(--rose), var(--rose-deep)); color: #fff;
+                       box-shadow: 0 10px 25px -10px rgba(190,18,60,.6); }
+        .btn-primary:hover { box-shadow: 0 16px 34px -10px rgba(190,18,60,.8); }
+        .btn-gold { background: linear-gradient(135deg, var(--gold), var(--gold-deep)); color: #2b2127;
+                    box-shadow: 0 10px 25px -10px rgba(212,175,55,.55); }
+        .btn-gold:hover { box-shadow: 0 14px 30px -10px rgba(212,175,55,.75); }
+        .btn-dark { background: linear-gradient(135deg, var(--brand-navy), var(--rose-deep)); color: #fff;
+                    box-shadow: 0 10px 25px -10px rgba(31,21,23,.45); }
+        .btn-ghost { background: transparent; border-color: rgba(0,0,0,.12); color: var(--ink); }
         .btn-ghost:hover { background: #fff; border-color: rgba(0,0,0,.25); }
         .btn-block { width: 100%; }
 
@@ -88,7 +97,7 @@
             transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .25s ease, border-color .25s ease;
             display: flex; flex-direction: column;
         }
-        .product-card:hover { transform: translateY(-6px); box-shadow: 0 25px 40px -25px rgba(8,32,75,.25); border-color: rgba(8,145,178,.35); }
+        .product-card:hover { transform: translateY(-6px); box-shadow: 0 25px 40px -25px rgba(159,18,57,.28); border-color: rgba(190,18,60,.35); }
         .product-card .img-wrap { position: relative; aspect-ratio: 4/5; background: var(--paper-warm); overflow: hidden; }
         .product-card .img-wrap img { width: 100%; height: 100%; object-fit: cover; transition: transform .6s cubic-bezier(.2,.8,.2,1); }
         .product-card:hover .img-wrap img { transform: scale(1.06); }
@@ -103,17 +112,17 @@
 
         /* ── Hero ─────────────────────────────────────────────────────── */
         .hero {
-            background: linear-gradient(120deg, var(--brand-navy), var(--brand-blue), var(--brand-cyan), var(--brand-blue));
+            background: linear-gradient(120deg, var(--brand-navy), var(--rose-deep), var(--rose), var(--brand-blue));
             background-size: 300% 300%;
-            animation: heroShift 18s ease infinite;
+            animation: heroShift 20s ease infinite;
             position: relative; overflow: hidden; color: #fff;
         }
         @keyframes heroShift { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
         .hero::before {
             content:''; position: absolute; inset: 0;
             background:
-                radial-gradient(circle at 20% 20%, rgba(251,191,36,.18), transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(31,143,193,.25), transparent 45%);
+                radial-gradient(circle at 18% 22%, rgba(212,175,55,.20), transparent 42%),
+                radial-gradient(circle at 82% 72%, rgba(225,29,72,.30), transparent 46%);
             pointer-events: none;
         }
 
@@ -255,16 +264,16 @@
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-1 p-3 max-h-[60vh] overflow-y-auto">
                             @foreach ($allShopCategories as $cat)
                                 <a href="{{ route('shop.category', $cat->slug) }}"
-                                   class="group flex items-center gap-3 p-3 rounded-xl hover:bg-cyan-50 transition">
-                                    <span class="w-10 h-10 rounded-lg bg-gray-100 group-hover:bg-cyan-100 transition overflow-hidden flex items-center justify-center flex-shrink-0">
+                                   class="group flex items-center gap-3 p-3 rounded-xl hover:bg-rose-50 transition">
+                                    <span class="w-10 h-10 rounded-lg bg-gray-100 group-hover:bg-rose-100 transition overflow-hidden flex items-center justify-center flex-shrink-0">
                                         @if ($cat->photo)
                                             <img src="{{ shop_image($cat->photo) }}" alt="" class="w-full h-full object-cover">
                                         @else
-                                            <i class="fas fa-folder text-gray-400 group-hover:text-cyan-600 text-sm"></i>
+                                            <i class="fas fa-folder text-gray-400 group-hover:text-rose-600 text-sm"></i>
                                         @endif
                                     </span>
                                     <div class="min-w-0 flex-1">
-                                        <div class="font-semibold text-gray-800 group-hover:text-cyan-700 truncate text-sm">{{ $cat->name }}</div>
+                                        <div class="font-semibold text-gray-800 group-hover:text-rose-700 truncate text-sm">{{ $cat->name }}</div>
                                         <div class="text-[11px] text-gray-400">{{ $cat->products_count }} {{ \Str::plural('product', $cat->products_count) }}</div>
                                     </div>
                                 </a>
@@ -362,10 +371,15 @@
                      alt="AL MUFEED TRADERS"
                      class="h-12 mb-4 brightness-0 invert opacity-90"
                      style="max-width:200px;">
-                <p class="text-sm text-gray-400 leading-relaxed">Quality and affordability you can trust. PanjGirain, Tehsil Darya Khan, District Bhakkar.</p>
+                <p class="text-sm text-gray-400 leading-relaxed">Quality and affordability you can trust. {{ setting('site_address', 'PanjGirain, Tehsil Darya Khan, District Bhakkar.') }}</p>
                 <div class="text-xs text-gray-500 mt-3 space-y-1">
-                    <div><i class="fas fa-phone mr-2"></i> +92 300 7951919</div>
-                    <div><i class="fas fa-envelope mr-2"></i> Amt7212@gmail.com</div>
+                    <div><i class="fas fa-phone mr-2"></i> {{ setting('site_phone', '+92 300 7951919') }}</div>
+                    <div><i class="fas fa-envelope mr-2"></i> {{ setting('site_email', 'Amt7212@gmail.com') }}</div>
+                    @if (setting('site_whatsapp'))
+                        <div><i class="fab fa-whatsapp mr-2"></i>
+                            <a href="https://wa.me/{{ preg_replace('/\D+/', '', setting('site_whatsapp')) }}" target="_blank" rel="noopener" class="hover:text-white">{{ setting('site_whatsapp') }}</a>
+                        </div>
+                    @endif
                 </div>
             </div>
             <div>
@@ -395,11 +409,24 @@
                     <input type="email" placeholder="you@example.com" class="flex-1 px-3 py-2 rounded-lg bg-gray-800 border border-gray-700 text-sm focus:ring-2 focus:ring-amber-400 focus:border-amber-400">
                     <button type="submit" class="btn btn-primary !py-2 !px-4 !text-xs">Join</button>
                 </form>
-                <div class="flex items-center gap-3 mt-4 text-gray-400">
-                    <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center"><i class="fab fa-facebook-f"></i></a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center"><i class="fab fa-instagram"></i></a>
-                    <a href="#" class="w-9 h-9 rounded-full bg-gray-800 hover:bg-gray-700 flex items-center justify-center"><i class="fab fa-whatsapp"></i></a>
-                </div>
+                @php
+                    $socials = array_filter([
+                        ['url' => setting('social_facebook'),  'icon' => 'fa-facebook-f', 'label' => 'Facebook'],
+                        ['url' => setting('social_instagram'), 'icon' => 'fa-instagram',  'label' => 'Instagram'],
+                        ['url' => setting('social_whatsapp') ? 'https://wa.me/' . preg_replace('/\D+/', '', setting('social_whatsapp')) : null, 'icon' => 'fa-whatsapp', 'label' => 'WhatsApp'],
+                        ['url' => setting('social_tiktok'),    'icon' => 'fa-tiktok',     'label' => 'TikTok'],
+                        ['url' => setting('social_x'),         'icon' => 'fa-x-twitter',  'label' => 'X'],
+                        ['url' => setting('social_youtube'),   'icon' => 'fa-youtube',    'label' => 'YouTube'],
+                    ], fn ($s) => !empty($s['url']));
+                @endphp
+                @if (count($socials))
+                    <div class="flex items-center flex-wrap gap-3 mt-4 text-gray-400">
+                        @foreach ($socials as $s)
+                            <a href="{{ $s['url'] }}" target="_blank" rel="noopener" aria-label="{{ $s['label'] }}"
+                               class="w-9 h-9 rounded-full bg-gray-800 hover:bg-rose-600 hover:text-white flex items-center justify-center transition"><i class="fab {{ $s['icon'] }}"></i></a>
+                        @endforeach
+                    </div>
+                @endif
             </div>
         </div>
         <div class="border-t border-gray-800 py-5 text-center text-xs text-gray-500">
@@ -415,11 +442,11 @@
             <button @click="mobileNavOpen = false" class="text-gray-400 hover:text-gray-700"><i class="fas fa-times"></i></button>
         </div>
         <nav class="flex-1 overflow-y-auto p-5 space-y-2 text-sm" x-data="{ catsOpen: false }">
-            <a href="{{ route('shop.home') }}"     class="block py-2 hover:text-cyan-700 font-semibold">Home</a>
-            <a href="{{ route('shop.catalog') }}"  class="block py-2 hover:text-cyan-700 font-semibold">Shop</a>
+            <a href="{{ route('shop.home') }}"     class="block py-2 hover:text-rose-700 font-semibold">Home</a>
+            <a href="{{ route('shop.catalog') }}"  class="block py-2 hover:text-rose-700 font-semibold">Shop</a>
 
             <button type="button" @click="catsOpen = !catsOpen"
-                    class="w-full flex items-center justify-between py-2 hover:text-cyan-700 font-semibold">
+                    class="w-full flex items-center justify-between py-2 hover:text-rose-700 font-semibold">
                 <span>Categories</span>
                 <i class="fas fa-chevron-down text-[10px] text-gray-400" :class="catsOpen ? 'rotate-180' : ''" style="transition:transform .2s;"></i>
             </button>
@@ -429,7 +456,7 @@
                  x-transition:enter-end="opacity-100 translate-y-0"
                  class="pl-3 space-y-1 border-l border-gray-200">
                 @foreach ($allShopCategories ?? collect() as $cat)
-                    <a href="{{ route('shop.category', $cat->slug) }}" class="block py-1.5 text-gray-600 hover:text-cyan-700">
+                    <a href="{{ route('shop.category', $cat->slug) }}" class="block py-1.5 text-gray-600 hover:text-rose-700">
                         {{ $cat->name }}
                         <span class="text-[10px] text-gray-400">({{ $cat->products_count ?? 0 }})</span>
                     </a>

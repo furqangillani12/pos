@@ -43,7 +43,7 @@
             <div class="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">{{ $product->brand->name }}</div>
         @endif
         <a href="{{ route('shop.product', $product->slug ?? $product->id) }}"
-           class="font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-cyan-700 transition">
+           class="font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-rose-700 transition">
             {{ $product->name }}
         </a>
 

@@ -16,29 +16,50 @@
 
         @php
             $steps = [
-                'pending'   => ['Pending',   'fa-clock'],
-                'confirmed' => ['Confirmed', 'fa-check'],
-                'shipped'   => ['Shipped',   'fa-truck'],
-                'delivered' => ['Delivered', 'fa-box-circle-check'],
+                'pending'   => ['Order received', 'fa-clipboard-check'],
+                'confirmed' => ['Confirmed',      'fa-check'],
+                'shipped'   => ['Dispatched',     'fa-truck'],
+                'delivered' => ['Delivered',      'fa-box-circle-check'],
             ];
             $current = $order->status === 'completed' ? 'delivered' : $order->status;
             $currentIdx = array_search($current, array_keys($steps));
+            $courierUrl = courier_track_url($order->dispatch_method, $order->tracking_id);
         @endphp
 
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 reveal">
-            <div class="grid grid-cols-4 gap-2">
-                @foreach ($steps as $key => [$label, $icon])
-                    @php $idx = array_search($key, array_keys($steps)); $done = $currentIdx !== false && $idx <= $currentIdx; @endphp
-                    <div class="text-center">
-                        <div class="w-10 h-10 rounded-full mx-auto flex items-center justify-center text-sm transition"
-                             style="background:{{ $done ? 'var(--brand-cyan)' : '#e5e7eb' }};color:{{ $done ? 'white' : '#9ca3af' }};">
-                            <i class="fas {{ $icon }}"></i>
-                        </div>
-                        <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? 'var(--brand-navy)' : '#9ca3af' }};">{{ $label }}</div>
-                    </div>
-                @endforeach
+        @if ($order->status === 'cancelled')
+            <div class="bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl p-5 mb-6 reveal">
+                <i class="fas fa-circle-xmark mr-2"></i> This order was cancelled. If you think this is a mistake, please contact us.
             </div>
-        </div>
+        @else
+            <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 reveal">
+                <div class="grid grid-cols-4 gap-2">
+                    @foreach ($steps as $key => [$label, $icon])
+                        @php $idx = array_search($key, array_keys($steps)); $done = $currentIdx !== false && $idx <= $currentIdx; @endphp
+                        <div class="text-center">
+                            <div class="w-10 h-10 rounded-full mx-auto flex items-center justify-center text-sm transition"
+                                 style="background:{{ $done ? 'var(--brand-cyan)' : '#e5e7eb' }};color:{{ $done ? 'white' : '#9ca3af' }};">
+                                <i class="fas {{ $icon }}"></i>
+                            </div>
+                            <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? 'var(--brand-navy)' : '#9ca3af' }};">{{ $label }}</div>
+                        </div>
+                    @endforeach
+                </div>
+
+                @if ($order->tracking_id)
+                    <div class="mt-5 pt-5 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <div class="text-xs text-gray-500">Tracking number ({{ $order->dispatch_method }})</div>
+                            <div class="font-bold text-gray-800 tracking-wide">{{ $order->tracking_id }}</div>
+                        </div>
+                        @if ($courierUrl)
+                            <a href="{{ $courierUrl }}" target="_blank" rel="noopener" class="btn btn-primary !py-2 !text-xs w-max">
+                                <i class="fas fa-location-arrow"></i> Track on courier site
+                            </a>
+                        @endif
+                    </div>
+                @endif
+            </div>
+        @endif
 
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
             <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">

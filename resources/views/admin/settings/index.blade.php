@@ -10,6 +10,66 @@
             </div>
         @endif
 
+        {{-- ═══════════════════════════════════════
+             WEBSITE / SOCIAL (storefront contact + social links)
+        ═══════════════════════════════════════ --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-globe text-rose-500"></i> Website &amp; Social Links
+                </h2>
+                <span class="text-xs text-gray-400">Shown on the storefront footer</span>
+            </div>
+            <form action="{{ route('admin.settings.site.update') }}" method="POST" class="p-5">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Contact phone</label>
+                        <input type="text" name="site_phone" value="{{ old('site_phone', $site['site_phone'] ?? '') }}" placeholder="+92 300 7951919" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">WhatsApp number <span class="text-gray-400 font-normal">(digits, e.g. 923007951919)</span></label>
+                        <input type="text" name="site_whatsapp" value="{{ old('site_whatsapp', $site['site_whatsapp'] ?? '') }}" placeholder="923007951919" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Contact email</label>
+                        <input type="email" name="site_email" value="{{ old('site_email', $site['site_email'] ?? '') }}" placeholder="info@almufeed.com.pk" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Address</label>
+                        <input type="text" name="site_address" value="{{ old('site_address', $site['site_address'] ?? '') }}" placeholder="PanjGirain, Tehsil Darya Khan, Bhakkar" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-facebook-f text-blue-600 mr-1"></i> Facebook URL</label>
+                        <input type="url" name="social_facebook" value="{{ old('social_facebook', $site['social_facebook'] ?? '') }}" placeholder="https://facebook.com/..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-instagram text-pink-600 mr-1"></i> Instagram URL</label>
+                        <input type="url" name="social_instagram" value="{{ old('social_instagram', $site['social_instagram'] ?? '') }}" placeholder="https://instagram.com/..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-whatsapp text-green-600 mr-1"></i> WhatsApp link number <span class="text-gray-400 font-normal">(for chat button)</span></label>
+                        <input type="text" name="social_whatsapp" value="{{ old('social_whatsapp', $site['social_whatsapp'] ?? '') }}" placeholder="923007951919" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-tiktok mr-1"></i> TikTok URL</label>
+                        <input type="url" name="social_tiktok" value="{{ old('social_tiktok', $site['social_tiktok'] ?? '') }}" placeholder="https://tiktok.com/@..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-x-twitter mr-1"></i> X (Twitter) URL</label>
+                        <input type="url" name="social_x" value="{{ old('social_x', $site['social_x'] ?? '') }}" placeholder="https://x.com/..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-youtube text-red-600 mr-1"></i> YouTube URL</label>
+                        <input type="url" name="social_youtube" value="{{ old('social_youtube', $site['social_youtube'] ?? '') }}" placeholder="https://youtube.com/@..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold"><i class="fas fa-check mr-1"></i> Save website settings</button>
+                </div>
+            </form>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {{-- ═══════════════════════════════════════
@@ -129,7 +189,7 @@
 
                 <div class="p-5">
                     {{-- Add New --}}
-                    <form action="{{ route('admin.settings.dispatch-methods.store') }}" method="POST" class="mb-4">
+                    <form action="{{ route('admin.settings.dispatch-methods.store') }}" method="POST" class="mb-4 space-y-2">
                         @csrf
                         <div class="flex flex-col sm:flex-row gap-2 sm:items-center">
                             <input type="text" name="name" placeholder="Name (e.g. TCS)" required
@@ -145,6 +205,8 @@
                                 </button>
                             </div>
                         </div>
+                        <input type="text" name="note" placeholder="Customer note (optional) — e.g. Estimated delivery 5–7 working days"
+                            class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:ring-orange-500 focus:border-orange-500">
                     </form>
 
                     {{-- List --}}
@@ -153,10 +215,15 @@
                             <div x-data="{ editing: false }" class="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-lg border {{ $dm->is_active ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 opacity-60' }}">
                                 <div class="flex-1 min-w-0">
                                     {{-- Display mode --}}
-                                    <div x-show="!editing" class="flex items-center gap-2 flex-wrap">
-                                        <span class="font-medium text-gray-800 text-sm">{{ $dm->name }}</span>
-                                        @if($dm->has_tracking)
-                                            <span class="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">Tracking</span>
+                                    <div x-show="!editing">
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="font-medium text-gray-800 text-sm">{{ $dm->name }}</span>
+                                            @if($dm->has_tracking)
+                                                <span class="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">Tracking</span>
+                                            @endif
+                                        </div>
+                                        @if($dm->note)
+                                            <div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-circle-info mr-1 text-gray-300"></i>{{ $dm->note }}</div>
                                         @endif
                                     </div>
 
@@ -172,6 +239,8 @@
                                                 class="rounded border-gray-300 text-orange-600">
                                             Track
                                         </label>
+                                        <input type="text" name="note" value="{{ $dm->note }}" placeholder="Customer note (optional)"
+                                            class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
                                         <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
                                         <button type="button" @click="editing = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
                                     </form>

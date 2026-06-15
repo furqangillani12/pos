@@ -6,17 +6,48 @@ use App\Http\Controllers\Controller;
 use App\Models\PaymentMethod;
 use App\Models\DispatchMethod;
 use App\Models\DeliveryChargeSlab;
+use App\Models\Setting;
 use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
+    /** Keys managed by the Website / Social settings card. */
+    public const SITE_KEYS = [
+        'site_phone', 'site_whatsapp', 'site_email', 'site_address',
+        'social_facebook', 'social_instagram', 'social_whatsapp',
+        'social_tiktok', 'social_x', 'social_youtube',
+    ];
+
     public function index()
     {
         $paymentMethods = PaymentMethod::orderBy('sort_order')->get();
         $dispatchMethods = DispatchMethod::with('deliverySlabs')->orderBy('sort_order')->get();
         $deliverySlabs = DeliveryChargeSlab::with('dispatchMethod')->orderBy('dispatch_method_id')->orderBy('min_weight')->get();
+        $site = Setting::allValues();
 
-        return view('admin.settings.index', compact('paymentMethods', 'dispatchMethods', 'deliverySlabs'));
+        return view('admin.settings.index', compact('paymentMethods', 'dispatchMethods', 'deliverySlabs', 'site'));
+    }
+
+    // ── Website / Social settings ──
+
+    public function updateSiteSettings(Request $request)
+    {
+        $data = $request->validate([
+            'site_phone'       => 'nullable|string|max:50',
+            'site_whatsapp'    => 'nullable|string|max:30',
+            'site_email'       => 'nullable|email|max:191',
+            'site_address'     => 'nullable|string|max:500',
+            'social_facebook'  => 'nullable|url|max:300',
+            'social_instagram' => 'nullable|url|max:300',
+            'social_whatsapp'  => 'nullable|string|max:30',
+            'social_tiktok'    => 'nullable|url|max:300',
+            'social_x'         => 'nullable|url|max:300',
+            'social_youtube'   => 'nullable|url|max:300',
+        ]);
+
+        Setting::putMany($data);
+
+        return redirect()->route('admin.settings.index')->with('success', 'Website settings saved.');
     }
 
     // ── Payment Methods ──
@@ -78,6 +109,7 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'name'         => 'required|string|max:50|unique:dispatch_methods,name',
+            'note'         => 'nullable|string|max:500',
             'has_tracking' => 'boolean',
         ]);
 
@@ -94,6 +126,7 @@ class SettingsController extends Controller
     {
         $validated = $request->validate([
             'name'         => 'required|string|max:50|unique:dispatch_methods,name,' . $dispatchMethod->id,
+            'note'         => 'nullable|string|max:500',
             'has_tracking' => 'boolean',
         ]);
 

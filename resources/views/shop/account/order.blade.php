@@ -83,6 +83,15 @@
                         <span class="text-gray-500">{{ $order->shipping_phone }}</span>
                     </div>
                     <div class="text-xs text-gray-500 mt-3"><i class="fas fa-truck"></i> {{ $order->dispatch_method }}</div>
+                    @if ($order->tracking_id)
+                        @php $courierUrl = courier_track_url($order->dispatch_method, $order->tracking_id); @endphp
+                        <div class="mt-2 text-xs">
+                            <span class="text-gray-500">Tracking:</span> <span class="font-semibold text-gray-800">{{ $order->tracking_id }}</span>
+                            @if ($courierUrl)
+                                <a href="{{ $courierUrl }}" target="_blank" rel="noopener" class="ml-1 font-semibold" style="color:var(--brand-cyan);">Track <i class="fas fa-arrow-up-right-from-square text-[9px]"></i></a>
+                            @endif
+                        </div>
+                    @endif
                 </div>
 
                 <div class="bg-white rounded-2xl border border-gray-100 p-5">

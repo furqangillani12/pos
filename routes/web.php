@@ -273,6 +273,8 @@ Route::post('/admin/customers/{customer}/check-credit', function (Request $reque
 Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
 
+    Route::post('/settings/site', [SettingsController::class, 'updateSiteSettings'])->name('settings.site.update');
+
     Route::post('/settings/payment-methods', [SettingsController::class, 'storePaymentMethod'])->name('settings.payment-methods.store');
     Route::put('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'updatePaymentMethod'])->name('settings.payment-methods.update');
     Route::patch('/settings/payment-methods/{paymentMethod}/toggle', [SettingsController::class, 'togglePaymentMethod'])->name('settings.payment-methods.toggle');

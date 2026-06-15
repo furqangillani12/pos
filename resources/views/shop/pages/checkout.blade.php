@@ -79,9 +79,14 @@
                         @foreach ($dispatchMethods as $dm)
                             <label class="flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition"
                                    :class="dispatch === '{{ $dm->name }}' ? 'border-cyan-500 bg-cyan-50/40' : 'border-gray-100 hover:border-gray-200'">
-                                <input type="radio" name="dispatch_method" value="{{ $dm->name }}" x-model="dispatch" class="text-cyan-600">
+                                <input type="radio" name="dispatch_method" value="{{ $dm->name }}" x-model="dispatch" class="text-cyan-600 mt-0.5 self-start">
                                 <div class="flex-1">
                                     <div class="font-semibold text-gray-800 text-sm">{{ $dm->name }}</div>
+                                    @if ($dm->note)
+                                        <div class="text-xs text-gray-500 mt-0.5 flex items-start gap-1.5">
+                                            <i class="fas fa-circle-info text-gray-300 mt-0.5"></i><span>{{ $dm->note }}</span>
+                                        </div>
+                                    @endif
                                 </div>
                             </label>
                         @endforeach
