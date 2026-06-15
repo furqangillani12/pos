@@ -16,6 +16,33 @@ if (!function_exists('setting')) {
     }
 }
 
+if (!function_exists('wa_link')) {
+    /**
+     * Build a WhatsApp click-to-chat link (wa.me) for a number + prefilled text.
+     * Returns null if no usable number.
+     */
+    function wa_link(?string $number, string $text = ''): ?string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $number);
+        if ($digits === '') return null;
+        // Pakistani local 03xx… → 92 3xx…
+        if (str_starts_with($digits, '0')) {
+            $digits = '92' . ltrim($digits, '0');
+        }
+        $url = 'https://wa.me/' . $digits;
+        if ($text !== '') $url .= '?text=' . rawurlencode($text);
+        return $url;
+    }
+}
+
+if (!function_exists('shop_whatsapp_number')) {
+    /** The shop's public WhatsApp number from settings. */
+    function shop_whatsapp_number(): ?string
+    {
+        return setting('social_whatsapp') ?: setting('site_whatsapp') ?: null;
+    }
+}
+
 if (!function_exists('courier_track_url')) {
     /**
      * Build a public courier tracking URL from a dispatch-method name and a

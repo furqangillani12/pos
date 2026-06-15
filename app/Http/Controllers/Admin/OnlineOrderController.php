@@ -101,6 +101,9 @@ class OnlineOrderController extends Controller
             ]);
         });
 
+        // Notify the customer of the new status (safe no-op without an email).
+        \App\Mail\OrderStatusMail::dispatchFor($order->fresh(), $data['status']);
+
         return back()->with('success', 'Order status updated to ' . ucfirst($data['status']) . '.');
     }
 

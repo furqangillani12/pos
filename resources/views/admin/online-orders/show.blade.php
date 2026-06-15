@@ -202,6 +202,25 @@
                 @if ($order->tracking_id)
                     <div class="text-xs text-gray-700 mt-1"><i class="fas fa-hashtag"></i> {{ $order->tracking_id }}</div>
                 @endif
+
+                @php
+                    $custPhone = $order->customer->phone ?? $order->shipping_phone;
+                    $statusMsg = match ($order->status) {
+                        'confirmed' => "Assalam o Alaikum, your order {$order->order_number} has been confirmed and is being prepared.",
+                        'shipped'   => "Assalam o Alaikum, your order {$order->order_number} has been dispatched" . ($order->dispatch_method ? " via {$order->dispatch_method}" : '') . ($order->tracking_id ? ". Tracking: {$order->tracking_id}" : '') . '.',
+                        'delivered' => "Assalam o Alaikum, your order {$order->order_number} has been delivered. Shukria!",
+                        'cancelled' => "Assalam o Alaikum, regarding your order {$order->order_number}…",
+                        default     => "Assalam o Alaikum, an update on your order {$order->order_number}.",
+                    };
+                    $waCust = wa_link($custPhone, $statusMsg);
+                @endphp
+                @if ($waCust)
+                    <a href="{{ $waCust }}" target="_blank" rel="noopener"
+                       class="mt-3 inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white" style="background:#25D366;">
+                        <i class="fab fa-whatsapp"></i> WhatsApp customer
+                    </a>
+                    <p class="text-[11px] text-gray-400 mt-1">Opens WhatsApp with a status message pre-filled — review &amp; send.</p>
+                @endif
             </div>
         </div>
     </div>

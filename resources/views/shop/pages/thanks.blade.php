@@ -27,9 +27,14 @@
             </div>
         </div>
 
+        @php $waOrder = wa_link(shop_whatsapp_number(), 'Hi, I just placed order ' . $order->order_number . '. I have a question about it.'); @endphp
+
         @auth('customer')
             <div class="flex flex-wrap justify-center gap-3 mt-8">
                 <a href="{{ route('shop.account.order', $order) }}" class="btn btn-dark"><i class="fas fa-receipt"></i> View order</a>
+                @if ($waOrder)
+                    <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> WhatsApp us</a>
+                @endif
                 <a href="{{ route('shop.catalog') }}" class="btn btn-ghost">Continue shopping</a>
             </div>
         @else
@@ -41,6 +46,9 @@
                         <div class="text-xs text-gray-600 mt-1 break-all">{{ url('/shop/track-order/' . $order->receipt_token) }}</div>
                         <div class="flex flex-wrap gap-2 mt-3">
                             <a href="{{ url('/shop/track-order/' . $order->receipt_token) }}" class="btn btn-dark !text-xs"><i class="fas fa-truck"></i> Track this order</a>
+                            @if ($waOrder)
+                                <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn !text-xs" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> WhatsApp us</a>
+                            @endif
                             <a href="{{ route('shop.track') }}" class="btn btn-ghost !text-xs">Track another order</a>
                             <a href="{{ route('shop.catalog') }}" class="btn btn-ghost !text-xs">Continue shopping</a>
                         </div>

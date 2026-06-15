@@ -109,6 +109,13 @@
                     <div class="text-sm capitalize">{{ str_replace('_', ' ', $order->payment_method) }}</div>
                     <div class="text-xs text-gray-500 mt-1 capitalize">{{ str_replace('_', ' ', $order->payment_status) }}</div>
                 </div>
+
+                @php $waOrder = wa_link(shop_whatsapp_number(), 'Hi, I would like an update on my order ' . $order->order_number . '.'); @endphp
+                @if ($waOrder)
+                    <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn btn-block !text-sm" style="background:#25D366;color:#fff;">
+                        <i class="fab fa-whatsapp"></i> Message us about this order
+                    </a>
+                @endif
             </div>
         </div>
     </div>
