@@ -19,7 +19,7 @@
                         <i class="fas fa-envelope" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
                         <input type="email" name="email" required autofocus value="{{ old('email') }}"
                                style="padding-left:40px;"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                     </div>
                 </div>
                 <div>
@@ -28,7 +28,7 @@
                         <i class="fas fa-lock" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
                         <input :type="show ? 'text' : 'password'" name="password" required
                                style="padding-left:40px;padding-right:42px;"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                         <button type="button" @click="show = !show" tabindex="-1"
                                 style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;">
                             <i class="fas" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
@@ -36,7 +36,7 @@
                     </div>
                 </div>
                 <label class="inline-flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-                    <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-cyan-600 focus:ring-cyan-500">
+                    <input type="checkbox" name="remember" value="1" class="rounded border-gray-300 text-rose-600 focus:ring-rose-500">
                     Remember me
                 </label>
 

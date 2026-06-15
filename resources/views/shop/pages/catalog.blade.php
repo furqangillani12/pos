@@ -6,13 +6,13 @@
 <section class="hero py-14 sm:py-16 text-center">
     <div class="hero-pattern absolute inset-0"></div>
     <div class="relative max-w-3xl mx-auto px-4 reveal">
-        <span class="chip mb-4 inline-block" style="background:rgba(251,191,36,.15);color:#fde68a;border:1px solid rgba(251,191,36,.3);">
+        <span class="chip mb-4 inline-block" style="background:rgba(212,175,55,.16);color:#f3dca0;border:1px solid rgba(212,175,55,.35);">
             {{ $category ? 'Category' : ($brand ? 'Brand' : ($q ? 'Search' : 'Shop')) }}
         </span>
         <h1 class="display text-4xl sm:text-5xl font-bold text-white">
             {{ $category?->name ?? $brand?->name ?? ($q ? 'Results for "' . $q . '"' : 'All products') }}
         </h1>
-        <p class="text-sky-100/80 mt-3">{{ $products->total() }} products found</p>
+        <p class="text-rose-100/80 mt-3">{{ $products->total() }} products found</p>
     </div>
 </section>
 
@@ -26,7 +26,7 @@
 
                 <div class="bg-white rounded-2xl border border-gray-100 p-5">
                     <h3 class="font-bold text-gray-800 mb-3">Sort by</h3>
-                    <select name="sort" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                    <select name="sort" onchange="this.form.submit()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                         <option value="newest"    @selected($sort==='newest')>Newest first</option>
                         <option value="price_asc" @selected($sort==='price_asc')>Price: low to high</option>
                         <option value="price_desc"@selected($sort==='price_desc')>Price: high to low</option>
@@ -49,7 +49,7 @@
                         <h3 class="font-bold text-gray-800 mb-3">Brand</h3>
                         <div class="space-y-2 max-h-56 overflow-y-auto">
                             @foreach ($allBrands as $b)
-                                <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-cyan-700">
+                                <label class="flex items-center gap-2 text-sm cursor-pointer hover:text-rose-700">
                                     <input type="radio" name="brand_id" value="{{ $b->id }}" onchange="this.form.submit()"
                                            {{ request('brand_id') == $b->id ? 'checked' : '' }}>
                                     {{ $b->name }}
@@ -67,7 +67,7 @@
                         <h3 class="font-bold text-gray-800 mb-3">Categories</h3>
                         <ul class="space-y-1 text-sm">
                             @foreach ($allCategories as $cat)
-                                <li><a href="{{ route('shop.category', $cat->slug) }}" class="block py-1 hover:text-cyan-700 transition">{{ $cat->name }}</a></li>
+                                <li><a href="{{ route('shop.category', $cat->slug) }}" class="block py-1 hover:text-rose-700 transition">{{ $cat->name }}</a></li>
                             @endforeach
                         </ul>
                     </div>

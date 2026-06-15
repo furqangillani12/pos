@@ -592,7 +592,7 @@
             const t = document.createElement('div');
             t.className = 'toast ' + (type === 'success' ? 'success' : type === 'error' ? 'error' : '');
             const icon = type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-circle-exclamation' : 'fa-circle-info';
-            const color = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#0891b2';
+            const color = type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#be123c';
             t.innerHTML = `<i class="fas ${icon} text-base mt-0.5" style="color:${color};"></i><div class="flex-1 text-gray-700">${msg}</div>`;
             stack.appendChild(t);
             requestAnimationFrame(() => t.classList.add('show'));

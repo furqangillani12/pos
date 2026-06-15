@@ -10,7 +10,7 @@
                 <h1 class="display text-3xl sm:text-4xl font-bold">Your bag</h1>
                 <p class="text-gray-500 text-sm mt-2">{{ $items->count() }} {{ \Str::plural('item', $items->count()) }}</p>
             </div>
-            <a href="{{ route('shop.catalog') }}" class="text-sm text-cyan-700 hover:underline hidden sm:inline-flex items-center gap-2">
+            <a href="{{ route('shop.catalog') }}" class="text-sm text-rose-700 hover:underline hidden sm:inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left text-xs"></i> Continue shopping
             </a>
         </div>
@@ -31,7 +31,7 @@
                                 <img src="{{ shop_image($item->product?->image) }}" alt="" class="w-full sm:w-28 sm:h-32 object-cover rounded-xl" style="background:#f5f1e8;">
                             </a>
                             <div class="flex-1 min-w-0">
-                                <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-cyan-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
+                                <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-rose-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
                                 @if ($item->product?->brand)
                                     <div class="text-[10px] uppercase tracking-widest text-gray-400 mt-0.5">{{ $item->product->brand->name }}</div>
                                 @endif

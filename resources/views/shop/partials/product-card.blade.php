@@ -15,7 +15,7 @@
 
         @if ($badge !== 'default')
             <span class="chip absolute top-3 left-3 z-10"
-                  style="background:{{ $badge === 'sale' ? '#fee2e2' : ($badge === 'new' ? '#ecfeff' : '#fef3c7') }};
+                  style="background:{{ $badge === 'sale' ? '#fee2e2' : ($badge === 'new' ? '#fdeef0' : '#fef3c7') }};
                          color:{{ $badge === 'sale' ? '#b91c1c' : ($badge === 'new' ? '#0e7490' : '#92400e') }};">
                 {{ $badge === 'sale' ? 'SALE' : ($badge === 'new' ? 'NEW' : 'HOT') }}
             </span>

@@ -16,24 +16,24 @@
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Full name</label>
                     <input type="text" name="name" required value="{{ old('name') }}"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Email</label>
                     <input type="email" name="email" required value="{{ old('email') }}"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Phone</label>
                     <input type="text" name="phone" value="{{ old('phone') }}" placeholder="+92 300 1234567"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Password</label>
                     <div style="position:relative;">
                         <input :type="show ? 'text' : 'password'" name="password" required minlength="8"
                                style="padding-right:42px;"
-                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                         <button type="button" @click="show = !show" tabindex="-1"
                                 style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;">
                             <i class="fas" :class="show ? 'fa-eye-slash' : 'fa-eye'"></i>
@@ -44,7 +44,7 @@
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Confirm password</label>
                     <input type="password" name="password_confirmation" required minlength="8"
-                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                           class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                 </div>
 
                 <button type="submit" class="btn btn-dark btn-block"><i class="fas fa-user-plus"></i> Create account</button>

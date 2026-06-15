@@ -24,8 +24,8 @@
 
         {{-- Breadcrumb --}}
         <nav class="text-xs text-gray-500 mb-6 flex items-center gap-2 reveal">
-            <a href="{{ route('shop.home') }}" class="hover:text-cyan-700">Home</a> /
-            @if ($product->category) <a href="{{ route('shop.category', $product->category->slug ?? '#') }}" class="hover:text-cyan-700">{{ $product->category->name }}</a> / @endif
+            <a href="{{ route('shop.home') }}" class="hover:text-rose-700">Home</a> /
+            @if ($product->category) <a href="{{ route('shop.category', $product->category->slug ?? '#') }}" class="hover:text-rose-700">{{ $product->category->name }}</a> / @endif
             <span class="text-gray-700">{{ $product->name }}</span>
         </nav>
 
@@ -44,7 +44,7 @@
                         @foreach ($gallery as $i => $g)
                             <button @click="active = {{ $i }}" type="button"
                                     class="aspect-square rounded-xl overflow-hidden border-2 transition"
-                                    :class="active === {{ $i }} ? 'border-cyan-500' : 'border-transparent'">
+                                    :class="active === {{ $i }} ? 'border-rose-500' : 'border-transparent'">
                                 <img src="{{ shop_image($g) }}" class="w-full h-full object-cover">
                             </button>
                         @endforeach
@@ -98,7 +98,7 @@
                         <button type="button" @click="qty = qty + 1" class="px-4 py-3 text-gray-600 hover:text-gray-900"><i class="fas fa-plus text-xs"></i></button>
                     </div>
                     <button type="button" @click="addToCart({{ $product->id }}, qty)"
-                            class="btn btn-dark flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
+                            class="btn btn-primary flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
                         <i class="fas fa-bag-shopping"></i> Add to bag
                     </button>
                     @auth('customer')
