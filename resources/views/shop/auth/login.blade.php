@@ -13,14 +13,21 @@
 
             <form method="POST" action="{{ route('shop.login.post') }}" x-data="{ show: false }" class="space-y-4">
                 @csrf
+                @if ($errors->any())
+                    <div class="bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-lg px-3 py-2">
+                        {{ $errors->first() }}
+                    </div>
+                @endif
                 <div>
-                    <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Email</label>
+                    <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Phone or email</label>
                     <div style="position:relative;">
-                        <i class="fas fa-envelope" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
-                        <input type="email" name="email" required autofocus value="{{ old('email') }}"
+                        <i class="fas fa-user" style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#94a3b8;font-size:13px;pointer-events:none;"></i>
+                        <input type="text" name="login" required autofocus value="{{ old('login') }}"
+                               placeholder="03xx-xxxxxxx or you@example.com"
                                style="padding-left:40px;"
                                class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-rose-500 focus:border-rose-500">
                     </div>
+                    <p class="text-[11px] text-gray-400 mt-1">Have a shop account (khata)? Sign in with the phone number on file. Ask us to set your password if you don't have one yet.</p>
                 </div>
                 <div>
                     <label class="text-xs font-semibold text-gray-700 mb-1.5 block">Password</label>

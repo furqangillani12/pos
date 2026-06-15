@@ -59,6 +59,17 @@
                     class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="+92 300 1234567">
             </div>
+
+            <div class="sm:col-span-2 lg:col-span-3 bg-rose-50/60 border border-rose-100 rounded-lg p-3">
+                <label class="block text-sm font-medium text-gray-700">
+                    <i class="fas fa-globe text-rose-500 mr-1"></i> Website login password
+                    <span class="text-gray-400 font-normal">(optional — lets this customer log in online to see their khata/statement)</span>
+                </label>
+                <input type="text" name="website_password" value="" autocomplete="off"
+                    class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-rose-500 focus:border-rose-500"
+                    placeholder="{{ isset($customer) && $customer->password ? 'Login already enabled — type a new password to change it' : 'Set a password to enable website login' }}">
+                <p class="text-xs text-gray-500 mt-1">Customer signs in at the website using their <strong>phone or email</strong> + this password. Min 6 characters. Leave blank to keep unchanged.</p>
+            </div>
         </div>
 
         <!-- Additional Information -->

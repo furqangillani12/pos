@@ -92,7 +92,15 @@ class CustomerController extends Controller
             'credit_enabled' => 'nullable|boolean',
             'credit_limit'   => 'nullable|numeric|min:0',
             'credit_due_days'=> 'nullable|integer|min:1|max:365',
+            // Optional website login password
+            'website_password' => 'nullable|string|min:6|max:255',
         ]);
+
+        // Website login password → hashed by the model cast. Not a column on its own.
+        if ($request->filled('website_password')) {
+            $validated['password'] = $request->input('website_password');
+        }
+        unset($validated['website_password']);
 
         // Handle credit_enabled properly (checkbox sends value only when checked)
         $validated['credit_enabled'] = $request->has('credit_enabled') ? true : false;
@@ -244,7 +252,15 @@ class CustomerController extends Controller
             'credit_enabled' => 'nullable|boolean',
             'credit_limit'   => 'nullable|numeric|min:0',
             'credit_due_days'=> 'nullable|integer|min:1|max:365',
+            // Optional website login password
+            'website_password' => 'nullable|string|min:6|max:255',
         ]);
+
+        // Website login password → hashed by model cast. Blank = keep unchanged.
+        if ($request->filled('website_password')) {
+            $validated['password'] = $request->input('website_password');
+        }
+        unset($validated['website_password']);
 
         // Handle credit_enabled properly
         $validated['credit_enabled'] = $request->has('credit_enabled') ? true : false;

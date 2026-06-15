@@ -318,6 +318,7 @@
                             </div>
                             <a href="{{ route('shop.account') }}"          class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-user-circle text-gray-400 w-4"></i> My account</a>
                             <a href="{{ route('shop.account.orders') }}"   class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-receipt text-gray-400 w-4"></i> My orders</a>
+                            <a href="{{ route('shop.account.statement') }}" class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-file-invoice text-gray-400 w-4"></i> Statement &amp; khata</a>
                             <a href="{{ route('shop.wishlist') }}"         class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-heart text-gray-400 w-4"></i> Wishlist</a>
                             <a href="{{ route('shop.account.profile') }}"  class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-pen text-gray-400 w-4"></i> Edit profile</a>
                             <a href="{{ route('shop.account.password') }}" class="px-4 py-2 text-sm hover:bg-gray-50 flex items-center gap-2"><i class="fas fa-lock text-gray-400 w-4"></i> Change password</a>

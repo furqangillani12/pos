@@ -20,18 +20,35 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $data = $request->validate([
-            'email'    => 'required|email',
+            'login'    => 'required|string',
             'password' => 'required|string',
             'remember' => 'sometimes|boolean',
         ]);
 
-        $remember = $request->boolean('remember');
+        $remember   = $request->boolean('remember');
+        $loginInput = trim($data['login']);
 
-        if (!Auth::guard('customer')->attempt(['email' => $data['email'], 'password' => $data['password']], $remember)) {
-            return back()->withErrors(['email' => 'Email ya password ghalat hai (incorrect).'])->withInput();
+        // Resolve the customer by email OR phone (digits-only, forgiving of
+        // spaces/dashes/country code). Only accounts with a password set can
+        // log in — admin enables login by setting one in the POS.
+        if (filter_var($loginInput, FILTER_VALIDATE_EMAIL) !== false) {
+            $customer = Customer::whereNotNull('password')
+                ->where('email', $loginInput)->orderBy('id')->first();
+        } else {
+            // Match on the last 10 digits so +92 3xx / 03xx / 3xx all resolve
+            // to the same local number regardless of how it was stored.
+            $digits = preg_replace('/\D+/', '', $loginInput);
+            $suffix = substr($digits, -10);
+            $customer = strlen($suffix) < 7 ? null : Customer::whereNotNull('password')
+                ->whereRaw("RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(COALESCE(phone,''),' ',''),'-',''),'(',''),')',''), 10) = ?", [$suffix])
+                ->orderBy('id')->first();
         }
 
-        $customer = Auth::guard('customer')->user();
+        if (!$customer || !Hash::check($data['password'], $customer->password)) {
+            return back()->withErrors(['login' => 'Phone/email ya password ghalat hai (incorrect).'])->withInput();
+        }
+
+        Auth::guard('customer')->login($customer, $remember);
         $customer->update(['last_login_at' => now()]);
         $this->cart->mergeGuestIntoCustomer($customer->id);
 

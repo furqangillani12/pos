@@ -28,12 +28,13 @@
         </div>
 
         {{-- Quick links --}}
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 reveal-stagger">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 reveal-stagger">
             @foreach ([
-                ['route'=>'shop.account.orders',  'icon'=>'fa-receipt',   'title'=>'My orders',  'desc'=>'View order history'],
-                ['route'=>'shop.wishlist',       'icon'=>'fa-heart',     'title'=>'Wishlist',   'desc'=>'Saved items'],
-                ['route'=>'shop.account.profile','icon'=>'fa-user',      'title'=>'Profile',    'desc'=>'Edit your details'],
-                ['route'=>'shop.account.password','icon'=>'fa-lock',     'title'=>'Password',   'desc'=>'Change password'],
+                ['route'=>'shop.account.orders',   'icon'=>'fa-receipt',      'title'=>'My orders',  'desc'=>'View order history'],
+                ['route'=>'shop.account.statement','icon'=>'fa-file-invoice', 'title'=>'Statement',  'desc'=>'Khata & earnings'],
+                ['route'=>'shop.wishlist',        'icon'=>'fa-heart',        'title'=>'Wishlist',   'desc'=>'Saved items'],
+                ['route'=>'shop.account.profile', 'icon'=>'fa-user',         'title'=>'Profile',    'desc'=>'Edit your details'],
+                ['route'=>'shop.account.password','icon'=>'fa-lock',         'title'=>'Password',   'desc'=>'Change password'],
             ] as $card)
                 <a href="{{ route($card['route']) }}" class="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:-translate-y-1 transition group">
                     <span class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:linear-gradient(135deg,#fdeef0,#fef3c7);color:var(--brand-navy);">
