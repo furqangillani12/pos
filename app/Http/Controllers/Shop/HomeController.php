@@ -18,9 +18,23 @@ class HomeController extends Controller
         $featuredCategories = Category::active()->where('is_featured', true)
             ->orderBy('sort_order')->limit(8)->get();
 
+        // Fall back to any active categories when none are flagged "featured",
+        // so the "Shop by category" section is always populated.
+        if ($featuredCategories->isEmpty()) {
+            $featuredCategories = Category::active()
+                ->orderBy('sort_order')->orderBy('name')->limit(8)->get();
+        }
+
         $featuredProducts = Product::onWebsite()->featured()
             ->with('category', 'brand')
             ->orderByDesc('id')->limit(8)->get();
+
+        // Fall back to recent website products when none are flagged "featured".
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = Product::onWebsite()
+                ->with('category', 'brand')
+                ->orderByDesc('id')->limit(8)->get();
+        }
 
         $newArrivals = Product::onWebsite()
             ->with('category', 'brand')
@@ -42,6 +56,10 @@ class HomeController extends Controller
 
         $brands = Brand::where('is_active', true)->where('is_featured', true)
             ->orderBy('sort_order')->limit(8)->get();
+
+        if ($brands->isEmpty()) {
+            $brands = Brand::where('is_active', true)->orderBy('sort_order')->orderBy('name')->limit(8)->get();
+        }
 
         return view('shop.pages.home', compact(
             'heroBanners', 'midBanners', 'featuredCategories',
