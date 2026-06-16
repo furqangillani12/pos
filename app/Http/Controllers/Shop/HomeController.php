@@ -25,32 +25,35 @@ class HomeController extends Controller
                 ->orderBy('sort_order')->orderBy('name')->limit(8)->get();
         }
 
-        $featuredProducts = Product::onWebsite()->featured()
-            ->with('category', 'brand')
-            ->orderByDesc('id')->limit(8)->get();
-
-        // Fall back to recent website products when none are flagged "featured".
-        if ($featuredProducts->isEmpty()) {
-            $featuredProducts = Product::onWebsite()
-                ->with('category', 'brand')
-                ->orderByDesc('id')->limit(8)->get();
-        }
-
+        // New arrivals first — its ids are excluded from the fallback sections
+        // below so the three product rows never show the same items.
         $newArrivals = Product::onWebsite()
             ->with('category', 'brand')
             ->orderByDesc('created_at')->limit(8)->get();
+        $usedIds = $newArrivals->pluck('id')->all();
 
+        // Featured / best picks — curated when flagged, else a distinct set.
+        $featuredProducts = Product::onWebsite()->featured()
+            ->with('category', 'brand')
+            ->orderByDesc('id')->limit(8)->get();
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = Product::onWebsite()
+                ->whereNotIn('id', $usedIds)
+                ->with('category', 'brand')
+                ->inRandomOrder()->limit(8)->get();
+        }
+        $usedIds = array_merge($usedIds, $featuredProducts->pluck('id')->all());
+
+        // Top rated — real ratings when present, else a distinct best-available set.
         $bestRated = Product::onWebsite()
             ->where('avg_rating', '>=', 4)
             ->with('category', 'brand')
             ->orderByDesc('avg_rating')->orderByDesc('review_count')->limit(8)->get();
-
-        // Fall back to best-available products so the section is never empty
-        // (e.g. before any reviews exist) instead of showing a loading skeleton.
         if ($bestRated->isEmpty()) {
             $bestRated = Product::onWebsite()
+                ->whereNotIn('id', $usedIds)
                 ->with('category', 'brand')
-                ->orderByDesc('avg_rating')->orderByDesc('review_count')->orderByDesc('id')
+                ->orderByDesc('review_count')->orderByDesc('id')
                 ->limit(8)->get();
         }
 

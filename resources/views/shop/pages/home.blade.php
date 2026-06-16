@@ -150,9 +150,9 @@
 </section>
 
 {{-- ═════════════════ FEATURED CATEGORIES (always shown) ═════════════════ --}}
-<section id="categories" class="py-16 sm:py-20">
+<section id="categories" class="py-8 sm:py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-10 reveal">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 reveal">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Browse</span>
                 <h2 class="display text-3xl sm:text-4xl font-bold mt-2">Shop by category</h2>
@@ -190,9 +190,9 @@
 </section>
 
 {{-- ═════════════════ FEATURED PRODUCTS (always shown) ═════════════════ --}}
-<section class="py-16 sm:py-20" style="background:var(--paper-warm);">
+<section class="py-8 sm:py-10" style="background:var(--paper-warm);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-10 reveal">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 reveal">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Featured</span>
                 <h2 class="display text-3xl sm:text-4xl font-bold mt-2">Our best picks for you</h2>
@@ -214,7 +214,7 @@
 </section>
 
 {{-- ═════════════════ MID PROMO (carousel, always shown) ═════════════════ --}}
-<section class="py-16 sm:py-20">
+<section class="py-8 sm:py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 reveal">
         @if ($midBanners->isNotEmpty())
             <div x-data="{
@@ -292,9 +292,9 @@
 </section>
 
 {{-- ═════════════════ NEW ARRIVALS (always shown) ═════════════════ --}}
-<section class="py-16 sm:py-20" style="background:var(--paper-warm);">
+<section class="py-8 sm:py-10" style="background:var(--paper-warm);">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-10 reveal">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 reveal">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Fresh</span>
                 <h2 class="display text-3xl sm:text-4xl font-bold mt-2">New arrivals</h2>
@@ -316,9 +316,9 @@
 </section>
 
 {{-- ═════════════════ TOP RATED (always shown) ═════════════════ --}}
-<section class="py-16 sm:py-20">
+<section class="py-8 sm:py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-10 reveal">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 reveal">
             <div>
                 <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Loved by customers</span>
                 <h2 class="display text-3xl sm:text-4xl font-bold mt-2">Top rated products</h2>
@@ -340,7 +340,7 @@
 </section>
 
 {{-- ═════════════════ BRANDS (always shown) ═════════════════ --}}
-<section class="py-12 sm:py-16 bg-white border-y border-gray-100">
+<section class="py-8 sm:py-10 bg-white border-y border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="text-center mb-8 reveal">
             <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Brands we love</span>
@@ -364,7 +364,7 @@
 </section>
 
 {{-- ═════════════════ CTA BAND ═════════════════ --}}
-<section class="py-16 sm:py-24 relative overflow-hidden" style="background:var(--brand-navy);">
+<section class="py-10 sm:py-12 relative overflow-hidden" style="background:var(--brand-navy);">
     <div class="absolute inset-0" style="background:radial-gradient(circle at 80% 30%, rgba(46,49,146,.35), transparent 50%);"></div>
     <div class="absolute inset-0" style="background:radial-gradient(circle at 15% 80%, rgba(41,171,226,.18), transparent 45%);"></div>
     <div class="relative max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-white reveal">
