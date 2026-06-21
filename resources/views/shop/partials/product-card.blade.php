@@ -1,8 +1,8 @@
 @php
     /** @var \App\Models\Product $product */
     $price     = shop_product_price($product);
-    $original  = (float) ($product->price ?? 0);
-    $hasSale   = $original > 0 && $original > $price;
+    $strike    = shop_strike_price($product);
+    $hasSale   = $strike !== null;
     $cover     = shop_image($product->image);
     $badge     = $hasSale ? 'sale' : ($product->condition_label ?? 'default');
     $inWishlist = auth('customer')->check()
@@ -47,10 +47,17 @@
             {{ $product->name }}
         </a>
 
-        <div class="flex items-center gap-2 mt-2">
+        @if ($product->barcode)
+            <div class="text-[10px] text-gray-400 font-mono mt-1">Code: {{ $product->barcode }}</div>
+        @endif
+
+        <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-2">
             <span class="font-bold text-base" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
             @if ($hasSale)
-                <span class="text-xs text-gray-400 line-through">{{ shop_price($original) }}</span>
+                <span class="text-xs text-gray-400 line-through">{{ shop_price($strike) }}</span>
+                @if (shop_is_reseller())
+                    <span class="text-[10px] font-semibold text-emerald-600">retail · save {{ shop_price($strike - $price) }}</span>
+                @endif
             @endif
         </div>
 

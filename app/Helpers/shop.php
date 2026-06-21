@@ -70,6 +70,76 @@ if (!function_exists('courier_track_url')) {
     }
 }
 
+if (!function_exists('shop_is_reseller')) {
+    /** True when the logged-in customer buys at a reseller/wholesale tier. */
+    function shop_is_reseller(): bool
+    {
+        $type = Auth::guard('customer')->user()?->customer_type ?? 'customer';
+        return in_array($type, ['reseller', 'wholesale'], true);
+    }
+}
+
+if (!function_exists('shop_strike_price')) {
+    /**
+     * The reference price to show struck-through next to what the visitor pays.
+     * - Reseller / wholesale: the RETAIL price (sale_price) so they see their margin.
+     * - Retail customer: the list/MRP price (price) when it's higher (a real sale).
+     * Returns null when there's nothing meaningful to strike out.
+     */
+    function shop_strike_price($product): ?float
+    {
+        $paid = shop_product_price($product);
+        if (shop_is_reseller()) {
+            $retail = (float) ($product->sale_price ?: $product->price ?: 0);
+            return $retail > $paid ? $retail : null;
+        }
+        $list = (float) ($product->price ?? 0);
+        return $list > $paid ? $list : null;
+    }
+}
+
+if (!function_exists('shop_package_price')) {
+    /** The package price for the current visitor's tier (retail/reseller/wholesale). */
+    function shop_package_price($package): float
+    {
+        $type = Auth::guard('customer')->user()?->customer_type ?? 'customer';
+        return match ($type) {
+            'reseller'  => (float) ($package->resale_price    ?: $package->sale_price),
+            'wholesale' => (float) ($package->wholesale_price ?: $package->sale_price),
+            default     => (float) $package->sale_price,
+        };
+    }
+}
+
+if (!function_exists('shop_tax_rate')) {
+    /** Storefront tax rate (percent value or fixed amount) from settings. */
+    function shop_tax_rate(): float
+    {
+        return (float) setting('shop_tax_rate', 0);
+    }
+}
+
+if (!function_exists('shop_tax_type')) {
+    /** 'percent' (default) or 'fixed' — how the storefront tax is applied. */
+    function shop_tax_type(): string
+    {
+        return setting('shop_tax_type', 'percent') === 'fixed' ? 'fixed' : 'percent';
+    }
+}
+
+if (!function_exists('shop_tax_amount')) {
+    /**
+     * Tax on a taxable base, computed exactly like the POS receipt
+     * (exclusive: added on top). Returns 0 when no rate is set.
+     */
+    function shop_tax_amount(float $base): float
+    {
+        $rate = shop_tax_rate();
+        if ($rate <= 0 || $base <= 0) return 0.0;
+        return shop_tax_type() === 'fixed' ? $rate : round($base * $rate / 100, 2);
+    }
+}
+
 if (!function_exists('shop_cart_count')) {
     /**
      * Sum of cart item quantities for the current customer or session.

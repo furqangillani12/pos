@@ -45,9 +45,9 @@ class CartService
         return (float) $this->items()->sum(fn ($i) => (float) $i->qty * (float) $i->unit_price);
     }
 
-    public function add(Product $product, float $qty = 1, ?string $size = null, ?string $color = null): CartItem
+    public function add(Product $product, float $qty = 1, ?string $size = null, ?string $color = null, ?float $priceOverride = null): CartItem
     {
-        $price = shop_product_price($product);
+        $price = $priceOverride !== null ? $priceOverride : shop_product_price($product);
 
         $existing = $this->query()
             ->where('product_id', $product->id)
@@ -72,6 +72,34 @@ class CartService
             'selected_size'  => $size,
             'selected_color' => $color,
         ]);
+    }
+
+    /**
+     * Add every product in a package to the cart, distributing the package's
+     * (tier) price across the lines proportionally to each item's retail value —
+     * so the cart total equals the package deal, not the sum of retail prices.
+     * Returns the number of distinct products added.
+     */
+    public function addPackage(\App\Models\Package $package): int
+    {
+        $package->loadMissing('items.product');
+        $items = $package->items->filter(fn ($i) => $i->product);
+        if ($items->isEmpty()) return 0;
+
+        $pkgPrice    = shop_package_price($package);
+        $retailTotal = $items->sum(fn ($i) => (float) ($i->product->sale_price ?: $i->product->price ?: 0) * (float) $i->quantity);
+        $n = $items->count();
+
+        foreach ($items as $item) {
+            $qty = max(0.01, (float) $item->quantity);
+            $lineRetail = (float) ($item->product->sale_price ?: $item->product->price ?: 0) * $qty;
+            $share = $retailTotal > 0 ? ($lineRetail / $retailTotal) : (1 / $n);
+            $lineTotal = round($pkgPrice * $share, 2);
+            $unit = round($lineTotal / $qty, 2);
+            $this->add($item->product, $qty, null, null, $unit);
+        }
+
+        return $n;
     }
 
     public function update(CartItem $item, float $qty): CartItem
@@ -164,12 +192,19 @@ class CartService
 
     public function totals(): array
     {
-        $sub = $this->subtotal();
+        $sub  = $this->subtotal();
         $disc = $this->discount();
+        $afterDiscount = max(0, $sub - $disc);
+        // Tax shown on the cart is computed on (subtotal − discount); at checkout
+        // it is recomputed to include delivery, matching the POS receipt exactly.
+        $tax = shop_tax_amount($afterDiscount);
         return [
             'subtotal' => round($sub, 2),
             'discount' => round($disc, 2),
-            'total'    => round(max(0, $sub - $disc), 2),
+            'tax'      => round($tax, 2),
+            'tax_rate' => shop_tax_rate(),
+            'tax_type' => shop_tax_type(),
+            'total'    => round($afterDiscount + $tax, 2),
             'count'    => $this->count(),
         ];
     }

@@ -54,9 +54,14 @@
                                     @endif
                                 </div>
                             </div>
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
-                                {{ $isActive ? 'Active' : 'Inactive' }}
-                            </span>
+                            <div class="flex flex-col items-end gap-1">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600' }}">
+                                    {{ $isActive ? 'Active' : 'Inactive' }}
+                                </span>
+                                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full {{ $branch->show_on_website ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-500' }}">
+                                    <i class="fas {{ $branch->show_on_website ? 'fa-globe' : 'fa-eye-slash' }} mr-0.5"></i> {{ $branch->show_on_website ? 'On web' : 'Off web' }}
+                                </span>
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-3 gap-3 mb-4">
@@ -97,6 +102,15 @@
                                             class="bg-gray-100 hover:bg-yellow-100 text-gray-700 hover:text-yellow-700 text-xs px-3 py-1.5 rounded-lg font-medium transition">
                                         <i class="fas fa-{{ $isActive ? 'toggle-off' : 'toggle-on' }}"></i>
                                         {{ $isActive ? 'Deactivate' : 'Activate' }}
+                                    </button>
+                                </form>
+                                <form method="POST" action="{{ route('admin.branches.toggle-website', $branch) }}" class="inline">
+                                    @csrf @method('PATCH')
+                                    <button type="submit"
+                                            class="bg-gray-100 hover:bg-blue-100 text-gray-700 hover:text-blue-700 text-xs px-3 py-1.5 rounded-lg font-medium transition"
+                                            title="Show/hide this branch on the website">
+                                        <i class="fas fa-{{ $branch->show_on_website ? 'eye-slash' : 'globe' }}"></i>
+                                        {{ $branch->show_on_website ? 'Hide web' : 'Show web' }}
                                     </button>
                                 </form>
                                 @if(($branch->orders_count ?? 0) === 0)

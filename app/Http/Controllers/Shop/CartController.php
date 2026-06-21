@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Shop;
 
 use App\Http\Controllers\Controller;
 use App\Models\CartItem;
+use App\Models\Package;
 use App\Models\Product;
 use App\Services\Shop\CartService;
 use Illuminate\Http\Request;
@@ -39,11 +40,24 @@ class CartController extends Controller
 
         return response()->json([
             'ok'         => true,
-            'message'    => 'Added to your bag',
+            'message'    => 'Added to your cart',
             'item'       => ['id' => $item->id, 'qty' => $item->qty],
             'cart_count' => $totals['count'],
             'subtotal'   => $totals['subtotal'],
         ]);
+    }
+
+    public function addPackage(Request $request)
+    {
+        $data = $request->validate(['package_id' => 'required|exists:packages,id']);
+        $package = Package::with('items.product')->where('is_active', true)->findOrFail($data['package_id']);
+
+        $added = $this->cart->addPackage($package);
+        if ($added === 0) {
+            return back()->with('shop_error', 'This package has no available items.');
+        }
+
+        return redirect()->route('shop.cart')->with('shop_success', "“{$package->name}” package added to your cart.");
     }
 
     public function update(Request $request, CartItem $item)

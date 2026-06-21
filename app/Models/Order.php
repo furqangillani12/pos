@@ -26,8 +26,10 @@ class Order extends Model
         'shipping_first_name', 'shipping_last_name', 'shipping_phone',
         'shipping_address1', 'shipping_address2',
         'shipping_city', 'shipping_country', 'shipping_post_code',
+        'shipping_province', 'shipping_district', 'shipping_tehsil',
         'coupon_code', 'coupon_discount',
         'online_payment_status', 'online_payment_ref',
+        'payment_proof_path', 'payment_sender_name', 'payment_sender_bank', 'payment_sender_amount',
         'order_notes_customer',
     ];
 

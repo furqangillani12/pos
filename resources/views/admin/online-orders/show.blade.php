@@ -156,6 +156,24 @@
                     @endif
                 </div>
 
+                {{-- Customer-submitted bank-transfer proof --}}
+                @if ($order->payment_proof_path || $order->payment_sender_name || $order->payment_sender_amount)
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2"><i class="fas fa-receipt text-blue-500"></i> Payment proof</div>
+                        <div class="space-y-1 text-sm">
+                            @if ($order->payment_sender_name)<div><span class="text-gray-500">From title:</span> <span class="font-semibold">{{ $order->payment_sender_name }}</span></div>@endif
+                            @if ($order->payment_sender_bank)<div><span class="text-gray-500">From bank:</span> <span class="font-semibold">{{ $order->payment_sender_bank }}</span></div>@endif
+                            @if ($order->payment_sender_amount)<div><span class="text-gray-500">Amount sent:</span> <span class="font-semibold">Rs. {{ number_format($order->payment_sender_amount, 0) }}</span></div>@endif
+                        </div>
+                        @if ($order->payment_proof_path)
+                            <a href="{{ asset('storage/' . $order->payment_proof_path) }}" target="_blank" rel="noopener" class="block mt-2">
+                                <img src="{{ asset('storage/' . $order->payment_proof_path) }}" alt="Payment screenshot" class="w-full max-h-56 object-contain rounded-lg border border-gray-200 bg-gray-50">
+                                <span class="text-[11px] text-blue-600">Open full screenshot <i class="fas fa-external-link-alt"></i></span>
+                            </a>
+                        @endif
+                    </div>
+                @endif
+
                 @if ($order->balance_amount > 0 && $order->status !== 'cancelled')
                     <form method="POST" action="{{ route('admin.online-orders.mark-paid', $order) }}" class="mt-4 pt-4 border-t border-gray-100"
                           onsubmit="return confirm('Mark this order as fully paid? Customer khata will be reduced.')">
@@ -193,9 +211,14 @@
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Shipping</h3>
                 <div class="text-sm text-gray-700 leading-relaxed">
                     {{ $order->shipping_first_name }} {{ $order->shipping_last_name }}<br>
+                    <i class="fas fa-phone text-xs text-gray-400"></i> {{ $order->shipping_phone }}<br>
                     {{ $order->shipping_address1 }}<br>
                     @if ($order->shipping_address2){{ $order->shipping_address2 }}<br>@endif
-                    {{ $order->shipping_city }}@if ($order->shipping_post_code), {{ $order->shipping_post_code }}@endif<br>
+                    @php
+                        $line = array_filter([$order->shipping_tehsil, $order->shipping_district, $order->shipping_city]);
+                    @endphp
+                    @if (count($line)){{ implode(', ', $line) }}<br>@endif
+                    @if ($order->shipping_province){{ $order->shipping_province }}@if ($order->shipping_post_code) — {{ $order->shipping_post_code }}@endif<br>@endif
                     <span class="text-gray-500">{{ $order->shipping_country }}</span>
                 </div>
                 <div class="text-xs text-gray-500 mt-3"><i class="fas fa-truck"></i> {{ $order->dispatch_method }}</div>

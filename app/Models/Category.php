@@ -12,12 +12,13 @@ class Category extends Model
     protected $fillable = [
         'branch_id', 'user_id', 'parent_id',
         'name', 'slug', 'description',
-        'photo', 'sort_order', 'is_active', 'is_featured',
+        'photo', 'sort_order', 'is_active', 'is_featured', 'show_on_website',
     ];
 
     protected $casts = [
-        'is_active'   => 'boolean',
-        'is_featured' => 'boolean',
+        'is_active'       => 'boolean',
+        'is_featured'     => 'boolean',
+        'show_on_website' => 'boolean',
     ];
 
     protected static function booted()
@@ -63,6 +64,12 @@ class Category extends Model
     public function scopeActive($q)
     {
         return $q->where('is_active', true);
+    }
+
+    /** Categories visible on the public storefront. */
+    public function scopeOnWebsite($q)
+    {
+        return $q->where('is_active', true)->where('show_on_website', true);
     }
 
     public function getRouteKeyName()

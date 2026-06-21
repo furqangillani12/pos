@@ -1,5 +1,5 @@
 @extends('shop.layouts.app')
-@section('title', 'Your bag')
+@section('title', 'Your cart')
 
 @section('content')
 <section class="py-10 sm:py-14">
@@ -7,7 +7,7 @@
 
         <div class="flex items-end justify-between mb-8 reveal">
             <div>
-                <h1 class="display text-3xl sm:text-4xl font-bold">Your bag</h1>
+                <h1 class="display text-3xl sm:text-4xl font-bold">Your cart</h1>
                 <p class="text-gray-500 text-sm mt-2">{{ $items->count() }} {{ \Str::plural('item', $items->count()) }}</p>
             </div>
             <a href="{{ route('shop.catalog') }}" class="text-sm text-blue-700 hover:underline hidden sm:inline-flex items-center gap-2">
@@ -15,10 +15,12 @@
             </a>
         </div>
 
+        @include('shop.partials.notice', ['class' => 'mb-6 reveal'])
+
         @if ($items->isEmpty())
             <div class="bg-white rounded-2xl border border-gray-100 p-16 text-center reveal">
-                <i class="fas fa-shopping-bag text-5xl text-gray-300 mb-4 block"></i>
-                <h2 class="display text-2xl font-bold mb-2">Your bag is empty</h2>
+                <i class="fas fa-shopping-cart text-5xl text-gray-300 mb-4 block"></i>
+                <h2 class="display text-2xl font-bold mb-2">Your cart is empty</h2>
                 <p class="text-gray-500 mb-6">Discover something beautiful in our shop.</p>
                 <a href="{{ route('shop.catalog') }}" class="btn btn-dark">Start shopping <i class="fas fa-arrow-right text-xs"></i></a>
             </div>
@@ -64,6 +66,9 @@
                         <div class="space-y-2 text-sm">
                             <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-semibold">{{ shop_price($totals['subtotal']) }}</span></div>
                             <div class="flex justify-between"><span class="text-gray-500">Discount</span><span class="font-semibold {{ $totals['discount'] > 0 ? 'text-emerald-600' : '' }}">-{{ shop_price($totals['discount']) }}</span></div>
+                            @if (($totals['tax'] ?? 0) > 0)
+                                <div class="flex justify-between"><span class="text-gray-500">Tax @if ($totals['tax_type'] === 'percent')({{ rtrim(rtrim(number_format($totals['tax_rate'],2),'0'),'.') }}%)@endif</span><span class="font-semibold">{{ shop_price($totals['tax']) }}</span></div>
+                            @endif
                             <div class="flex justify-between text-xs text-gray-500 italic"><span>Delivery</span><span>calculated at checkout</span></div>
                         </div>
                         <hr class="my-4 border-gray-100">

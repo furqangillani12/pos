@@ -15,13 +15,13 @@ class HomeController extends Controller
         $heroBanners = Banner::active()->position('hero')->orderBy('sort_order')->get();
         $midBanners  = Banner::active()->position('mid')->orderBy('sort_order')->limit(10)->get();
 
-        $featuredCategories = Category::active()->where('is_featured', true)
+        $featuredCategories = Category::onWebsite()->where('is_featured', true)
             ->orderBy('sort_order')->limit(8)->get();
 
-        // Fall back to any active categories when none are flagged "featured",
+        // Fall back to any website categories when none are flagged "featured",
         // so the "Shop by category" section is always populated.
         if ($featuredCategories->isEmpty()) {
-            $featuredCategories = Category::active()
+            $featuredCategories = Category::onWebsite()
                 ->orderBy('sort_order')->orderBy('name')->limit(8)->get();
         }
 

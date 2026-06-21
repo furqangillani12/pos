@@ -121,7 +121,7 @@ class OnlineOrderController extends Controller
                 'paid_amount'           => (float) $order->total,
                 'balance_amount'        => 0,
                 'payment_status'        => 'paid',
-                'online_payment_status' => $order->payment_method === 'bank_transfer' ? 'bank_paid' : 'paid',
+                'online_payment_status' => $order->online_payment_status === 'cod' ? 'paid' : 'bank_paid',
                 'online_payment_ref'    => $data['payment_ref'] ?? $order->online_payment_ref,
             ]);
 

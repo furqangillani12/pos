@@ -9,7 +9,9 @@ class Branch extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name', 'code', 'address', 'phone', 'logo', 'order_start_number', 'is_active'];
+    protected $fillable = ['name', 'code', 'address', 'phone', 'logo', 'order_start_number', 'is_active', 'show_on_website'];
+
+    protected $casts = ['show_on_website' => 'boolean'];
 
     public function stockEntries()
     {

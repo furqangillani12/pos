@@ -157,6 +157,17 @@ class BranchController extends Controller
         return back()->with('success', "Branch \"{$branch->name}\" {$status}.");
     }
 
+    public function toggleWebsite(Branch $branch)
+    {
+        if ($this->isLockedUser()) {
+            return back()->with('error', 'You cannot change website visibility.');
+        }
+
+        $branch->update(['show_on_website' => !$branch->show_on_website]);
+        $status = $branch->show_on_website ? 'shown on' : 'hidden from';
+        return back()->with('success', "Branch \"{$branch->name}\" is now {$status} the website.");
+    }
+
     // Branch selection page (no branch middleware)
     public function select()
     {

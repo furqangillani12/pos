@@ -16,6 +16,8 @@ class SettingsController extends Controller
         'site_phone', 'site_whatsapp', 'site_email', 'site_address',
         'social_facebook', 'social_instagram', 'social_whatsapp',
         'social_tiktok', 'social_x', 'social_youtube',
+        'shop_tax_rate', 'shop_tax_type',
+        'notice_title', 'notice_short', 'notice_full',
     ];
 
     public function index()
@@ -43,6 +45,11 @@ class SettingsController extends Controller
             'social_tiktok'    => 'nullable|url|max:300',
             'social_x'         => 'nullable|url|max:300',
             'social_youtube'   => 'nullable|url|max:300',
+            'shop_tax_rate'    => 'nullable|numeric|min:0|max:100',
+            'shop_tax_type'    => 'nullable|in:percent,fixed',
+            'notice_title'     => 'nullable|string|max:120',
+            'notice_short'     => 'nullable|string|max:255',
+            'notice_full'      => 'nullable|string|max:2000',
         ]);
 
         Setting::putMany($data);
@@ -72,7 +79,16 @@ class SettingsController extends Controller
         $validated = $request->validate([
             'name'  => 'required|string|max:50|unique:payment_methods,name,' . $paymentMethod->id,
             'label' => 'required|string|max:50',
+            'show_on_website' => 'boolean',
+            'is_cod'          => 'boolean',
+            'account_title'   => 'nullable|string|max:191',
+            'account_number'  => 'nullable|string|max:100',
+            'bank_name'       => 'nullable|string|max:100',
+            'instructions'    => 'nullable|string|max:500',
         ]);
+
+        $validated['show_on_website'] = $request->boolean('show_on_website');
+        $validated['is_cod']          = $request->boolean('is_cod');
 
         $paymentMethod->update($validated);
 
@@ -128,9 +144,20 @@ class SettingsController extends Controller
             'name'         => 'required|string|max:50|unique:dispatch_methods,name,' . $dispatchMethod->id,
             'note'         => 'nullable|string|max:500',
             'has_tracking' => 'boolean',
+            'show_on_website' => 'boolean',
+            'logo'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
         ]);
 
-        $validated['has_tracking'] = $request->boolean('has_tracking');
+        $validated['has_tracking']    = $request->boolean('has_tracking');
+        $validated['show_on_website'] = $request->boolean('show_on_website');
+
+        if ($request->hasFile('logo')) {
+            if ($dispatchMethod->logo && \Storage::disk('public')->exists($dispatchMethod->logo)) {
+                \Storage::disk('public')->delete($dispatchMethod->logo);
+            }
+            $validated['logo'] = $request->file('logo')->store('courier-logos', 'public');
+        }
+
         $dispatchMethod->update($validated);
 
         return redirect()->route('admin.settings.index')->with('success', 'Dispatch method updated.');

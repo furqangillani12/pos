@@ -53,6 +53,7 @@ $registerShopRoutes = function () {
         // ── Cart (works for guests + customers) ────────────────────────────
         Route::get('/cart',                  [CartController::class, 'index'])->name('cart');
         Route::post('/cart/add',             [CartController::class, 'add'])->name('cart.add');
+        Route::post('/cart/add-package',     [CartController::class, 'addPackage'])->name('cart.add-package');
         Route::post('/cart/update/{item}',   [CartController::class, 'update'])->name('cart.update');
         Route::delete('/cart/remove/{item}', [CartController::class, 'remove'])->name('cart.remove');
         Route::get('/cart/json',             [CartController::class, 'json'])->name('cart.json');
@@ -90,6 +91,7 @@ $registerShopRoutes = function () {
         // Open to guests too. The CheckoutController fills customer_id when
         // authenticated, otherwise stores email/phone on the order.
         Route::get('/checkout',                   [CheckoutController::class, 'index'])->name('checkout');
+        Route::get('/checkout/lookup',            [CheckoutController::class, 'lookup'])->name('checkout.lookup');
         Route::post('/checkout/place',            [CheckoutController::class, 'place'])->name('checkout.place');
         Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankYou'])->name('checkout.thanks');
 

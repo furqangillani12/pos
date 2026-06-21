@@ -63,6 +63,40 @@
                         <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-youtube text-red-600 mr-1"></i> YouTube URL</label>
                         <input type="url" name="social_youtube" value="{{ old('social_youtube', $site['social_youtube'] ?? '') }}" placeholder="https://youtube.com/@..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
+
+                    {{-- ── Online store tax (applied on website orders, like the POS receipt) ── --}}
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
+                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-percent text-emerald-500 mr-1"></i> Online store tax</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tax rate</label>
+                        <input type="number" step="0.01" min="0" name="shop_tax_rate" value="{{ old('shop_tax_rate', $site['shop_tax_rate'] ?? '') }}" placeholder="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <p class="text-[11px] text-gray-400 mt-1">Leave 0 for no tax. Applied on (subtotal − discount + delivery), same as POS.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tax type</label>
+                        <select name="shop_tax_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="percent" {{ ($site['shop_tax_type'] ?? 'percent') === 'percent' ? 'selected' : '' }}>Percent (%)</option>
+                            <option value="fixed" {{ ($site['shop_tax_type'] ?? '') === 'fixed' ? 'selected' : '' }}>Fixed (Rs.)</option>
+                        </select>
+                    </div>
+
+                    {{-- ── Khushkhabri / good-news note shown on cart & checkout ── --}}
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
+                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-gift text-amber-500 mr-1"></i> Cart / checkout note (Khushkhabri)</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Note title</label>
+                        <input type="text" name="notice_title" value="{{ old('notice_title', $site['notice_title'] ?? '') }}" placeholder="خوشخبری / Good news" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Short line (teaser)</label>
+                        <input type="text" name="notice_short" value="{{ old('notice_short', $site['notice_short'] ?? '') }}" placeholder="Easy returns & exchange…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Full text (shown on “Read more”)</label>
+                        <textarea name="notice_full" rows="3" placeholder="یہاں تجارت اسلامی اصولوں کے مطابق ہوتی ہے…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old('notice_full', $site['notice_full'] ?? '') }}</textarea>
+                    </div>
                 </div>
                 <div class="mt-4 flex justify-end">
                     <button class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold"><i class="fas fa-check mr-1"></i> Save website settings</button>
@@ -112,19 +146,36 @@
                                     <div x-show="!editing" class="flex items-center gap-2 flex-wrap">
                                         <span class="font-medium text-gray-800 text-sm">{{ $pm->label }}</span>
                                         <span class="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">{{ $pm->name }}</span>
+                                        @if($pm->show_on_website)<span class="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded"><i class="fas fa-globe"></i> Web</span>@endif
+                                        @if($pm->is_cod)<span class="text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded">COD</span>@endif
+                                        @if($pm->account_number)<span class="text-[10px] text-gray-500">· {{ $pm->bank_name }} {{ $pm->account_number }}</span>@endif
                                     </div>
 
                                     {{-- Edit mode --}}
                                     <form x-show="editing" x-cloak
                                         action="{{ route('admin.settings.payment-methods.update', $pm) }}" method="POST"
-                                        class="flex flex-wrap gap-2">
+                                        class="space-y-2">
                                         @csrf @method('PUT')
-                                        <input type="text" name="name" value="{{ $pm->name }}"
-                                            class="w-full sm:w-28 border border-gray-300 rounded px-2 py-1 text-xs">
-                                        <input type="text" name="label" value="{{ $pm->label }}"
-                                            class="w-full sm:w-28 border border-gray-300 rounded px-2 py-1 text-xs">
-                                        <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
-                                        <button type="button" @click="editing = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
+                                        <div class="flex flex-wrap gap-2">
+                                            <input type="text" name="name" value="{{ $pm->name }}" placeholder="value"
+                                                class="w-full sm:w-28 border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <input type="text" name="label" value="{{ $pm->label }}" placeholder="label"
+                                                class="w-full sm:w-28 border border-gray-300 rounded px-2 py-1 text-xs">
+                                        </div>
+                                        <div class="flex flex-wrap gap-3">
+                                            <label class="flex items-center gap-1 text-xs text-gray-600"><input type="hidden" name="show_on_website" value="0"><input type="checkbox" name="show_on_website" value="1" {{ $pm->show_on_website ? 'checked' : '' }} class="rounded border-gray-300 text-indigo-600"> Show on website</label>
+                                            <label class="flex items-center gap-1 text-xs text-gray-600"><input type="hidden" name="is_cod" value="0"><input type="checkbox" name="is_cod" value="1" {{ $pm->is_cod ? 'checked' : '' }} class="rounded border-gray-300 text-amber-600"> Cash on delivery</label>
+                                        </div>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <input type="text" name="account_title" value="{{ $pm->account_title }}" placeholder="Account title" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <input type="text" name="account_number" value="{{ $pm->account_number }}" placeholder="Account / IBAN" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <input type="text" name="bank_name" value="{{ $pm->bank_name }}" placeholder="Bank / wallet name" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <input type="text" name="instructions" value="{{ $pm->instructions }}" placeholder="Instructions (optional)" class="border border-gray-300 rounded px-2 py-1 text-xs">
+                                        </div>
+                                        <div class="flex gap-3">
+                                            <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
+                                            <button type="button" @click="editing = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
+                                        </div>
                                     </form>
                                 </div>
 
@@ -217,10 +268,12 @@
                                     {{-- Display mode --}}
                                     <div x-show="!editing">
                                         <div class="flex items-center gap-2 flex-wrap">
+                                            @if($dm->logo)<img src="{{ asset('storage/'.$dm->logo) }}" class="w-6 h-6 object-contain rounded">@endif
                                             <span class="font-medium text-gray-800 text-sm">{{ $dm->name }}</span>
                                             @if($dm->has_tracking)
                                                 <span class="text-xs text-orange-600 bg-orange-50 px-2 py-0.5 rounded">Tracking</span>
                                             @endif
+                                            @if($dm->show_on_website)<span class="text-[10px] text-blue-600 bg-blue-50 px-2 py-0.5 rounded"><i class="fas fa-globe"></i> Web</span>@endif
                                         </div>
                                         @if($dm->note)
                                             <div class="text-xs text-gray-500 mt-0.5"><i class="fas fa-circle-info mr-1 text-gray-300"></i>{{ $dm->note }}</div>
@@ -229,20 +282,34 @@
 
                                     {{-- Edit mode --}}
                                     <form x-show="editing" x-cloak
-                                        action="{{ route('admin.settings.dispatch-methods.update', $dm) }}" method="POST"
-                                        class="flex flex-wrap gap-2 items-center">
+                                        action="{{ route('admin.settings.dispatch-methods.update', $dm) }}" method="POST" enctype="multipart/form-data"
+                                        class="space-y-2">
                                         @csrf @method('PUT')
-                                        <input type="text" name="name" value="{{ $dm->name }}"
-                                            class="w-full sm:w-32 border border-gray-300 rounded px-2 py-1 text-xs">
-                                        <label class="flex items-center gap-1 text-xs text-gray-600">
-                                            <input type="checkbox" name="has_tracking" value="1" {{ $dm->has_tracking ? 'checked' : '' }}
-                                                class="rounded border-gray-300 text-orange-600">
-                                            Track
-                                        </label>
+                                        <div class="flex flex-wrap gap-2 items-center">
+                                            <input type="text" name="name" value="{{ $dm->name }}"
+                                                class="w-full sm:w-32 border border-gray-300 rounded px-2 py-1 text-xs">
+                                            <label class="flex items-center gap-1 text-xs text-gray-600">
+                                                <input type="checkbox" name="has_tracking" value="1" {{ $dm->has_tracking ? 'checked' : '' }}
+                                                    class="rounded border-gray-300 text-orange-600">
+                                                Track
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-gray-600">
+                                                <input type="hidden" name="show_on_website" value="0">
+                                                <input type="checkbox" name="show_on_website" value="1" {{ $dm->show_on_website ? 'checked' : '' }}
+                                                    class="rounded border-gray-300 text-blue-600">
+                                                Show on website
+                                            </label>
+                                        </div>
                                         <input type="text" name="note" value="{{ $dm->note }}" placeholder="Customer note (optional)"
                                             class="w-full border border-gray-300 rounded px-2 py-1 text-xs">
-                                        <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
-                                        <button type="button" @click="editing = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-xs text-gray-500">Courier logo:</span>
+                                            <input type="file" name="logo" accept="image/*" class="text-xs">
+                                        </div>
+                                        <div class="flex gap-3">
+                                            <button type="submit" class="text-green-600 hover:text-green-800 text-xs font-medium">Save</button>
+                                            <button type="button" @click="editing = false" class="text-gray-400 hover:text-gray-600 text-xs">Cancel</button>
+                                        </div>
                                     </form>
                                 </div>
 

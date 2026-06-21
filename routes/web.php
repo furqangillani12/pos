@@ -79,6 +79,7 @@ Route::prefix('admin')->middleware(['auth', 'branch'])->group(function () {
 Route::middleware(['auth', 'branch', 'permission:manage branches'])->prefix('admin')->name('admin.')->group(function () {
     Route::resource('branches', BranchController::class);
     Route::patch('branches/{branch}/toggle', [BranchController::class, 'toggleActive'])->name('branches.toggle');
+    Route::patch('branches/{branch}/toggle-website', [BranchController::class, 'toggleWebsite'])->name('branches.toggle-website');
 });
 
 // ── Employees ──
@@ -114,6 +115,7 @@ Route::middleware(['auth', 'branch', 'permission:manage products'])->group(funct
 Route::middleware(['auth', 'branch', 'permission:manage categories'])->group(function () {
     Route::resource('categories', CategoryController::class)->except(['show']);
     Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
+    Route::patch('categories/{category:id}/toggle-website', [CategoryController::class, 'toggleWebsite'])->name('categories.toggle-website');
 });
 
 // ── Inventory ──

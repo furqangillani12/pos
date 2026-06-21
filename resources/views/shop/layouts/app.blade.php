@@ -9,6 +9,18 @@
     <title>@yield('title', 'Almufeed Traders') · Almufeed Traders</title>
     <meta name="description" content="@yield('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail branches across Pakistan.')">
 
+    {{-- Open Graph / Twitter — so shared product links preview the product image,
+         not the company logo. Pages override og_image/og_title via @section. --}}
+    <meta property="og:type" content="@yield('og_type', 'website')">
+    <meta property="og:site_name" content="AL MUFEED TRADERS">
+    <meta property="og:title" content="@yield('og_title', View::getSection('title', 'AL MUFEED TRADERS'))">
+    <meta property="og:description" content="@yield('og_description', View::getSection('description', 'Quality and affordability you can trust.'))">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:image" content="@yield('og_image', asset('assets/images/brand/almufeed-traders-square.jpg'))">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('og_title', View::getSection('title', 'AL MUFEED TRADERS'))">
+    <meta name="twitter:image" content="@yield('og_image', asset('assets/images/brand/almufeed-traders-square.jpg'))">
+
     <link rel="icon" type="image/png" href="{{ asset('assets/images/brand/almufeed-traders-square.jpg') }}">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -189,7 +201,7 @@
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
             });
-            if (res.ok) { window.toast && window.toast('Removed from bag', 'success'); this.loadCart(); }
+            if (res.ok) { window.toast && window.toast('Removed from cart', 'success'); this.loadCart(); }
             else        { window.toast && window.toast('Could not remove', 'error'); }
         },
     }"
@@ -225,7 +237,7 @@
                 /* All categories from every branch, deduplicated by slug, with product counts.
                    Shown in the hover-mega-menu in the header. */
                 $allShopCategories = \Illuminate\Support\Facades\Cache::remember('shop:nav-cats', 300, function () {
-                    return \App\Models\Category::active()
+                    return \App\Models\Category::onWebsite()
                         ->withCount(['products' => fn ($q) => $q->where('is_active', true)->where('show_on_website', true)])
                         ->orderByDesc('is_featured')
                         ->orderBy('sort_order')->orderBy('name')
@@ -487,7 +499,7 @@
     <div class="drawer-overlay" :class="miniCartOpen ? 'open' : ''" @click="miniCartOpen = false"></div>
     <div class="drawer" :class="miniCartOpen ? 'open' : ''">
         <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
-            <span class="font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-shopping-bag"></i> Your bag <span class="text-xs text-gray-500" x-text="'(' + cartItems.length + ')'"></span></span>
+            <span class="font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-shopping-cart"></i> Your cart <span class="text-xs text-gray-500" x-text="'(' + cartItems.length + ')'"></span></span>
             <button type="button" @click="miniCartOpen = false" class="text-gray-400 hover:text-gray-700 w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center"><i class="fas fa-times"></i></button>
         </div>
         <div class="flex-1 overflow-y-auto p-5">
@@ -500,7 +512,7 @@
             <template x-if="!cartLoading && cartItems.length === 0">
                 <div class="text-center py-12 text-gray-500">
                     <i class="fas fa-shopping-bag text-4xl text-gray-300 mb-3 block"></i>
-                    <p class="font-semibold">Your bag is empty</p>
+                    <p class="font-semibold">Your cart is empty</p>
                     <p class="text-xs mt-1">Add some beautiful pieces to it.</p>
                     <a href="{{ route('shop.catalog') }}" @click="miniCartOpen = false" class="btn btn-dark mt-4 !text-xs">Start shopping</a>
                 </div>
@@ -526,10 +538,21 @@
                 <span class="text-gray-500 text-sm">Subtotal</span>
                 <span class="font-bold text-lg" style="color:var(--brand-navy);" x-text="'Rs. ' + cartSubtotal.toLocaleString()"></span>
             </div>
-            <a href="{{ route('shop.cart') }}" class="btn btn-ghost btn-block mb-2">View bag</a>
+            <a href="{{ route('shop.cart') }}" class="btn btn-ghost btn-block mb-2">View cart</a>
             <a href="{{ route('shop.checkout') }}" class="btn btn-primary btn-block">Checkout <i class="fas fa-arrow-right text-xs"></i></a>
         </div>
     </div>
+
+    {{-- ═════════════════ Floating WhatsApp button ═════════════════ --}}
+    @php $waFloat = wa_link(shop_whatsapp_number() ?: setting('site_phone'), 'Assalam-o-Alaikum! I have a question about your products.'); @endphp
+    @if ($waFloat)
+        <a href="{{ $waFloat }}" target="_blank" rel="noopener" aria-label="Chat on WhatsApp"
+           class="fixed left-5 bottom-5 z-[150] flex items-center justify-center w-14 h-14 rounded-full text-white shadow-2xl transition hover:scale-110"
+           style="background:#25D366; box-shadow:0 12px 30px -8px rgba(37,211,102,.6);">
+            <i class="fab fa-whatsapp text-3xl"></i>
+            <span class="absolute inline-flex h-full w-full rounded-full opacity-40 animate-ping" style="background:#25D366;"></span>
+        </a>
+    @endif
 
     {{-- ═════════════════ Toast stack ═════════════════ --}}
     <div class="toast-stack" id="toastStack"></div>
@@ -616,7 +639,7 @@
                 });
                 const data = await res.json();
                 if (!res.ok || !data.ok) { window.toast(data.message || 'Could not add', 'error'); return false; }
-                window.toast(data.message || 'Added to bag', 'success');
+                window.toast(data.message || 'Added to cart', 'success');
 
                 // Update body's Alpine state (cartCount + reload mini-cart)
                 const bodyData = window.Alpine ? window.Alpine.$data(document.body) : null;
@@ -645,6 +668,37 @@
                     window.toast(data.in_wishlist ? 'Added to wishlist' : 'Removed from wishlist', 'success');
                 }
             } catch(e) { window.toast('Network error', 'error'); }
+        };
+
+        // ── Buy now: add to cart silently, then jump straight to checkout ──
+        window.buyNow = async function (productId, qty = 1) {
+            const ok = await window.addToCart(productId, qty, { openDrawer: false });
+            if (ok) window.location = '{{ route('shop.checkout') }}';
+        };
+
+        // ── Copy text to clipboard (name / description / link) ───────────
+        window.copyText = async function (text, msg = 'Copied to clipboard') {
+            try {
+                await navigator.clipboard.writeText(text);
+                window.toast(msg, 'success');
+            } catch (e) {
+                // Fallback for older / insecure contexts
+                const ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                try { document.execCommand('copy'); window.toast(msg, 'success'); }
+                catch (_) { window.toast('Could not copy', 'error'); }
+                ta.remove();
+            }
+        };
+
+        // ── Share a product (native share sheet, else copy the link) ─────
+        window.shareProduct = async function (url, title) {
+            if (navigator.share) {
+                try { await navigator.share({ title: title, url: url }); } catch (e) {}
+            } else {
+                window.copyText(url, 'Link copied — share it anywhere');
+            }
         };
     </script>
 </body>

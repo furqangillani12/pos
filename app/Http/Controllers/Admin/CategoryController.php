@@ -38,8 +38,16 @@ class CategoryController extends Controller
                 'required', 'string', 'max:255',
                 Rule::unique('categories', 'name')->where(fn ($q) => $q->where('branch_id', $scopeBranchId)),
             ],
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'sort_order'  => 'nullable|integer|min:0',
+            'photo'       => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
         ]);
+
+        $validated['sort_order'] = (int) $request->input('sort_order', 0);
+
+        if ($request->hasFile('photo')) {
+            $validated['photo'] = $request->file('photo')->store('category-photos', 'public');
+        }
 
         if ($scopeBranchId) {
             $validated['branch_id'] = $scopeBranchId;
@@ -58,11 +66,29 @@ class CategoryController extends Controller
                     ->where(fn ($q) => $q->where('branch_id', $category->branch_id))
                     ->ignore($category->id),
             ],
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'sort_order'  => 'nullable|integer|min:0',
+            'photo'       => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
         ]);
+
+        $validated['sort_order'] = (int) $request->input('sort_order', $category->sort_order ?? 0);
+
+        if ($request->hasFile('photo')) {
+            if ($category->photo && \Storage::disk('public')->exists($category->photo)) {
+                \Storage::disk('public')->delete($category->photo);
+            }
+            $validated['photo'] = $request->file('photo')->store('category-photos', 'public');
+        }
 
         $category->update($validated);
         return back()->with('success', 'Category updated successfully');
+    }
+
+    /** Quick toggle of storefront visibility from the categories list. */
+    public function toggleWebsite(Category $category)
+    {
+        $category->update(['show_on_website' => !$category->show_on_website]);
+        return back()->with('success', 'Category is now ' . ($category->show_on_website ? 'visible on' : 'hidden from') . ' the website.');
     }
 
     public function destroy(Request $request, Category $category)

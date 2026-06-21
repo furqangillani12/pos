@@ -11,7 +11,7 @@
 
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="p-6">
-                <form action="{{ route('categories.store') }}" method="POST">
+                <form action="{{ route('categories.store') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @include('admin.categories._form')
 

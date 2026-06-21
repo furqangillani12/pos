@@ -17,4 +17,25 @@
         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
         @enderror
     </div>
+
+    <div>
+        <label for="sort_order" class="block text-sm font-medium text-gray-700">Display order</label>
+        <input type="number" name="sort_order" id="sort_order" min="0"
+               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+               value="{{ old('sort_order', $category->sort_order ?? 0) }}">
+        <p class="mt-1 text-xs text-gray-500">Lower number shows first on the website. Put Islamic / popular categories on top with a small number.</p>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-gray-700">Category image</label>
+        @if (!empty($category) && $category->photo)
+            <img src="{{ asset('storage/' . $category->photo) }}" alt="" class="w-20 h-20 object-cover rounded-lg border mt-1 mb-2">
+        @endif
+        <input type="file" name="photo" accept="image/png,image/jpeg,image/webp"
+               class="mt-1 block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+        <p class="mt-1 text-xs text-gray-500">PNG/JPG/WebP, up to 2 MB. Shown on the storefront category menu and cards.</p>
+        @error('photo')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+    </div>
+
+    <p class="text-xs text-gray-500">New categories show on the website by default. Use the <span class="font-medium">Website</span> toggle in the list to hide one.</p>
 </div>

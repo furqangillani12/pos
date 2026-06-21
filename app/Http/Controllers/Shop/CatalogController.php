@@ -71,7 +71,7 @@ class CatalogController extends Controller
 
         $products = $query->paginate(24)->withQueryString();
 
-        $allCategories = Category::active()->whereNull('parent_id')->orderBy('sort_order')->get();
+        $allCategories = Category::onWebsite()->whereNull('parent_id')->orderBy('sort_order')->get();
         $allBrands     = Brand::where('is_active', true)->orderBy('name')->get();
 
         return view('shop.pages.catalog', compact('products', 'category', 'brand', 'q', 'allCategories', 'allBrands', 'sort'));

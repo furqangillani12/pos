@@ -3,11 +3,15 @@
 @section('title', $product->meta_title ?: $product->name)
 @section('description', $product->meta_description ?: ($product->summary ?: \Str::limit(strip_tags($product->description), 150)))
 
+{{-- Share preview = the product image (not the company logo). --}}
+@section('og_type', 'product')
+@section('og_image', shop_image($product->image))
+
 @section('content')
 @php
     $price    = shop_product_price($product);
-    $original = (float) ($product->price ?? 0);
-    $hasSale  = $original > 0 && $original > $price;
+    $strike   = shop_strike_price($product);
+    $hasSale  = $strike !== null;
     $cover    = shop_image($product->image);
     $gallery  = collect([$product->image])
         ->merge(is_array($product->gallery) ? $product->gallery : [])
@@ -59,6 +63,13 @@
                 @endif
                 <h1 class="display text-3xl sm:text-4xl font-bold mt-2 leading-tight">{{ $product->name }}</h1>
 
+                @if ($product->barcode)
+                    <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
+                        <span>Item code: <span class="font-mono font-semibold text-gray-700">{{ $product->barcode }}</span></span>
+                        <button type="button" onclick="copyText('{{ $product->barcode }}', 'Item code copied')" class="text-gray-400 hover:text-blue-600" title="Copy code"><i class="far fa-copy"></i></button>
+                    </div>
+                @endif
+
                 @if ((float) $product->avg_rating > 0)
                     <div class="flex items-center gap-2 mt-3 text-sm">
                         <div class="text-amber-500">
@@ -68,11 +79,15 @@
                     </div>
                 @endif
 
-                <div class="flex items-baseline gap-3 mt-6">
+                <div class="flex items-baseline flex-wrap gap-x-3 gap-y-1 mt-6">
                     <span class="text-3xl font-extrabold" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
                     @if ($hasSale)
-                        <span class="text-lg text-gray-400 line-through">{{ shop_price($original) }}</span>
-                        <span class="chip" style="background:#fee2e2;color:#b91c1c;">SAVE {{ shop_price($original - $price) }}</span>
+                        <span class="text-lg text-gray-400 line-through">{{ shop_price($strike) }}</span>
+                        @if (shop_is_reseller())
+                            <span class="chip" style="background:#dcfce7;color:#047857;">Retail price · you save {{ shop_price($strike - $price) }}</span>
+                        @else
+                            <span class="chip" style="background:#fee2e2;color:#b91c1c;">SAVE {{ shop_price($strike - $price) }}</span>
+                        @endif
                     @endif
                 </div>
 
@@ -90,7 +105,7 @@
                     @endif
                 </div>
 
-                {{-- Add to bag --}}
+                {{-- Add to cart / Buy now --}}
                 <div class="mt-8 flex flex-wrap items-center gap-3">
                     <div class="inline-flex items-center bg-gray-100 rounded-xl">
                         <button type="button" @click="qty = Math.max(1, qty - 1)" class="px-4 py-3 text-gray-600 hover:text-gray-900"><i class="fas fa-minus text-xs"></i></button>
@@ -98,8 +113,12 @@
                         <button type="button" @click="qty = qty + 1" class="px-4 py-3 text-gray-600 hover:text-gray-900"><i class="fas fa-plus text-xs"></i></button>
                     </div>
                     <button type="button" @click="addToCart({{ $product->id }}, qty)"
+                            class="btn btn-ghost flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
+                        <i class="fas fa-cart-plus"></i> Add to cart
+                    </button>
+                    <button type="button" @click="buyNow({{ $product->id }}, qty)"
                             class="btn btn-primary flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
-                        <i class="fas fa-bag-shopping"></i> Add to bag
+                        <i class="fas fa-bolt"></i> Buy now
                     </button>
                     @auth('customer')
                         <button type="button" onclick="toggleWishlist({{ $product->id }}, this)"
@@ -107,6 +126,26 @@
                             <i class="{{ $inWishlist ? 'fas' : 'far' }} fa-heart"></i>
                         </button>
                     @endauth
+                </div>
+
+                {{-- Share / copy --}}
+                @php
+                    $shareUrl  = route('shop.product', $product->slug ?? $product->id);
+                    $shareText = trim($product->name . "\n" . ($product->summary ?: \Str::limit(strip_tags($product->description), 160)) . "\n" . shop_price($price));
+                @endphp
+                <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
+                    <span class="text-gray-500 mr-1">Share:</span>
+                    <a href="https://wa.me/?text={{ rawurlencode($shareText . "\n" . $shareUrl) }}"
+                       target="_blank" rel="noopener"
+                       class="w-9 h-9 rounded-full border border-gray-200 hover:bg-green-50 hover:border-green-300 flex items-center justify-center text-green-600" title="Share on WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode($shareUrl) }}" target="_blank" rel="noopener"
+                       class="w-9 h-9 rounded-full border border-gray-200 hover:bg-blue-50 hover:border-blue-300 flex items-center justify-center text-blue-600" title="Share on Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <button type="button" onclick="shareProduct('{{ $shareUrl }}', '{{ addslashes($product->name) }}')"
+                            class="w-9 h-9 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600" title="Share / more"><i class="fas fa-share-nodes"></i></button>
+                    <button type="button" onclick="copyText('{{ $shareUrl }}', 'Product link copied')"
+                            class="w-9 h-9 rounded-full border border-gray-200 hover:bg-gray-50 flex items-center justify-center text-gray-600" title="Copy link"><i class="fas fa-link"></i></button>
+                    <button type="button" onclick="copyText(@js($shareText), 'Name & details copied')"
+                            class="inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-gray-200 hover:bg-gray-50 text-gray-600 text-xs" title="Copy name & details"><i class="far fa-copy"></i> Copy details</button>
                 </div>
 
                 {{-- Trust strip --}}
@@ -172,13 +211,40 @@
             @endauth
         </div>
 
+        {{-- Packages / deals that include this product --}}
+        @if (($packages ?? collect())->isNotEmpty())
+            <div class="mt-16 reveal">
+                <div class="flex items-center gap-2 mb-6">
+                    <i class="fas fa-box-open text-emerald-500"></i>
+                    <h2 class="display text-2xl sm:text-3xl font-bold">Save more with a package</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                    @foreach ($packages as $package)
+                        @include('shop.partials.package-card', ['package' => $package])
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
         {{-- Related --}}
         @if ($related->isNotEmpty())
             <div class="mt-16 reveal">
                 <h2 class="display text-2xl sm:text-3xl font-bold mb-6">You might also like</h2>
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                    @foreach ($related as $product)
-                        @include('shop.partials.product-card', compact('product'))
+                    @foreach ($related as $relatedProduct)
+                        @include('shop.partials.product-card', ['product' => $relatedProduct])
+                    @endforeach
+                </div>
+            </div>
+        @endif
+
+        {{-- Popular --}}
+        @if (($popular ?? collect())->isNotEmpty())
+            <div class="mt-16 reveal">
+                <h2 class="display text-2xl sm:text-3xl font-bold mb-6">Popular right now</h2>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+                    @foreach ($popular as $popularProduct)
+                        @include('shop.partials.product-card', ['product' => $popularProduct])
                     @endforeach
                 </div>
             </div>
