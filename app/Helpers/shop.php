@@ -98,6 +98,87 @@ if (!function_exists('shop_strike_price')) {
     }
 }
 
+if (!function_exists('order_status_norm')) {
+    /** Map legacy statuses onto the current online lifecycle vocabulary. */
+    function order_status_norm(?string $status): string
+    {
+        return match ($status) {
+            'shipped'   => 'dispatched',
+            'completed' => 'delivered',
+            default     => $status ?: 'pending',
+        };
+    }
+}
+
+if (!function_exists('order_status_meta')) {
+    /** Label/icon/colours for a status, with a safe fallback. */
+    function order_status_meta(?string $status): array
+    {
+        $key = order_status_norm($status);
+        $all = config('order_flow.statuses', []);
+        return $all[$key] ?? ['label' => ucfirst((string) $status), 'icon' => 'fa-circle', 'bg' => '#f3f4f6', 'text' => '#374151'];
+    }
+}
+
+if (!function_exists('order_holder_phone')) {
+    /**
+     * The number the account was opened on — the registered customer's phone,
+     * else the order's shipping phone. Status messages go HERE (not to a
+     * reseller's end-customer).
+     */
+    function order_holder_phone($order): ?string
+    {
+        return $order->customer?->phone ?: $order->shipping_phone;
+    }
+}
+
+if (!function_exists('order_track_url')) {
+    /** Courier tracking deep-link for a dispatched order, or null. */
+    function order_track_url($order): ?string
+    {
+        return courier_track_url($order->dispatch_method, $order->tracking_id);
+    }
+}
+
+if (!function_exists('order_status_message')) {
+    /**
+     * Customer-facing message for a status change. Uses the admin-editable
+     * template (setting "status_msg_{status}") when present, expanding
+     * placeholders; otherwise returns a sensible default line.
+     */
+    function order_status_message($order, ?string $status = null): string
+    {
+        $status = order_status_norm($status ?: $order->status);
+        $name   = trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? '')) ?: ($order->customer?->name ?? 'there');
+        $track  = order_track_url($order);
+
+        $tokens = [
+            '{order}'      => $order->order_number,
+            '{name}'       => $name,
+            '{status}'     => order_status_meta($status)['label'],
+            '{courier}'    => $order->dispatch_method ?? '',
+            '{tracking}'   => $order->tracking_id ?? '',
+            '{track_link}' => $track ?? '',
+            '{total}'      => 'Rs. ' . number_format((float) $order->total, 0),
+        ];
+
+        $tpl = setting('status_msg_' . $status);
+        if ($tpl) {
+            return strtr($tpl, $tokens);
+        }
+
+        // Default copy when no template is configured.
+        if ($status === 'dispatched') {
+            return "Assalam-o-Alaikum {$name}, your order {$order->order_number} has been dispatched"
+                  . ($order->dispatch_method ? " via {$order->dispatch_method}" : '')
+                  . ($order->tracking_id ? ". Tracking: {$order->tracking_id}" : '')
+                  . ($track ? ". Track: {$track}" : '') . '.';
+        }
+        return "Assalam-o-Alaikum {$name}, your order {$order->order_number} is now "
+             . order_status_meta($status)['label'] . '. Thank you for shopping with us.';
+    }
+}
+
 if (!function_exists('shop_package_price')) {
     /** The package price for the current visitor's tier (retail/reseller/wholesale). */
     function shop_package_price($package): float

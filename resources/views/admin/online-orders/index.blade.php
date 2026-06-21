@@ -54,8 +54,8 @@
             <div class="sm:col-span-2">
                 <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     <option value="">All statuses</option>
-                    @foreach (['pending','confirmed','shipped','delivered','cancelled'] as $s)
-                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ ucfirst($s) }}</option>
+                    @foreach (config('order_flow.statuses') as $s => $meta)
+                        <option value="{{ $s }}" @selected(request('status') === $s)>{{ $meta['label'] }}</option>
                     @endforeach
                 </select>
             </div>
@@ -95,17 +95,8 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    @php
-                        $statusColors = [
-                            'pending'   => ['bg'=>'#fef3c7','text'=>'#92400e'],
-                            'confirmed' => ['bg'=>'#dbeafe','text'=>'#1e40af'],
-                            'shipped'   => ['bg'=>'#e0f2fe','text'=>'#0369a1'],
-                            'delivered' => ['bg'=>'#d1fae5','text'=>'#065f46'],
-                            'cancelled' => ['bg'=>'#fee2e2','text'=>'#991b1b'],
-                        ];
-                    @endphp
                     @forelse ($orders as $o)
-                        @php $sc = $statusColors[$o->status] ?? ['bg'=>'#f3f4f6','text'=>'#374151']; @endphp
+                        @php $sc = order_status_meta($o->status); @endphp
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3">
                                 <a href="{{ route('admin.online-orders.show', $o) }}" class="font-mono text-xs font-semibold text-cyan-700 hover:underline">{{ $o->order_number }}</a>
@@ -132,8 +123,8 @@
                                 <div class="text-[11px] text-gray-500 capitalize">{{ str_replace('_',' ', $o->online_payment_status ?? $o->payment_status) }}</div>
                             </td>
                             <td class="px-4 py-3">
-                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold capitalize"
-                                      style="background:{{ $sc['bg'] }};color:{{ $sc['text'] }};">{{ $o->status }}</span>
+                                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-semibold"
+                                      style="background:{{ $sc['bg'] }};color:{{ $sc['text'] }};">{{ $sc['label'] }}</span>
                             </td>
                             <td class="px-4 py-3 text-right font-bold whitespace-nowrap">Rs. {{ number_format($o->total, 0) }}</td>
                             <td class="px-4 py-3 text-right">

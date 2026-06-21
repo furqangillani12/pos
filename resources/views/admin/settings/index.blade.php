@@ -104,6 +104,33 @@
             </form>
         </div>
 
+        {{-- ═══════════════════════════════════════
+             ORDER STATUS MESSAGES (sent to customer on each status)
+        ═══════════════════════════════════════ --}}
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
+            <div class="px-5 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                    <i class="fas fa-comment-dots text-cyan-500"></i> Order status messages
+                </h2>
+                <p class="text-xs text-gray-500 mt-1">Sent with each status (email + WhatsApp). Placeholders: <code class="bg-gray-100 px-1 rounded">{name}</code> <code class="bg-gray-100 px-1 rounded">{order}</code> <code class="bg-gray-100 px-1 rounded">{courier}</code> <code class="bg-gray-100 px-1 rounded">{tracking}</code> <code class="bg-gray-100 px-1 rounded">{track_link}</code> <code class="bg-gray-100 px-1 rounded">{total}</code>. Add review-points text here, e.g. for “Confirmed”.</p>
+            </div>
+            <form action="{{ route('admin.settings.status-templates.update') }}" method="POST" class="p-5">
+                @csrf
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    @foreach (config('order_flow.statuses') as $key => $meta)
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fas {{ $meta['icon'] }} mr-1" style="color:{{ $meta['text'] }};"></i> {{ $meta['label'] }}</label>
+                            <textarea name="status_msg_{{ $key }}" rows="2" placeholder="Leave blank for the default message"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-cyan-500 focus:border-cyan-500">{{ $site['status_msg_' . $key] ?? '' }}</textarea>
+                        </div>
+                    @endforeach
+                </div>
+                <div class="mt-4 flex justify-end">
+                    <button class="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg text-sm font-semibold"><i class="fas fa-check mr-1"></i> Save status messages</button>
+                </div>
+            </form>
+        </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
             {{-- ═══════════════════════════════════════

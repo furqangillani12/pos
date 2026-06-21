@@ -277,6 +277,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
 
     Route::post('/settings/site', [SettingsController::class, 'updateSiteSettings'])->name('settings.site.update');
+    Route::post('/settings/status-templates', [SettingsController::class, 'updateStatusTemplates'])->name('settings.status-templates.update');
 
     Route::post('/settings/payment-methods', [SettingsController::class, 'storePaymentMethod'])->name('settings.payment-methods.store');
     Route::put('/settings/payment-methods/{paymentMethod}', [SettingsController::class, 'updatePaymentMethod'])->name('settings.payment-methods.update');
@@ -315,6 +316,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/online-orders/{order}',             [\App\Http\Controllers\Admin\OnlineOrderController::class, 'show'])->name('online-orders.show');
     Route::patch('/online-orders/{order}/status',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'updateStatus'])->name('online-orders.status');
     Route::patch('/online-orders/{order}/mark-paid', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'markPaid'])->name('online-orders.mark-paid');
+    Route::post('/online-orders/{order}/notify',      [\App\Http\Controllers\Admin\OnlineOrderController::class, 'notify'])->name('online-orders.notify');
 });
 
 // ── Linked customer ↔ supplier (offset feature) ──

@@ -47,30 +47,27 @@
 
                 {{-- Timeline --}}
                 @php
-                    $steps = [
-                        'pending'   => ['Pending',   'fa-clock'],
-                        'confirmed' => ['Confirmed', 'fa-check'],
-                        'shipped'   => ['Shipped',   'fa-truck'],
-                        'delivered' => ['Delivered', 'fa-circle-check'],
-                    ];
-                    $current = $order->status === 'completed' ? 'delivered' : $order->status;
-                    $cancelled = $order->status === 'cancelled';
-                    $currentIdx = array_search($current, array_keys($steps));
+                    $timeline = config('order_flow.timeline');
+                    $statuses = config('order_flow.statuses');
+                    $current = order_status_norm($order->status);
+                    $terminal = in_array($current, config('order_flow.terminal'), true);
+                    $currentIdx = array_search($current, $timeline);
                 @endphp
-                <div class="p-5 grid grid-cols-4 gap-2 {{ $cancelled ? 'opacity-50' : '' }}">
-                    @foreach ($steps as $key => [$label, $icon])
-                        @php $idx = array_search($key, array_keys($steps)); $done = !$cancelled && $currentIdx !== false && $idx <= $currentIdx; @endphp
+                <div class="p-5 grid grid-cols-5 gap-2 {{ $terminal ? 'opacity-50' : '' }}">
+                    @foreach ($timeline as $idx => $key)
+                        @php $meta = $statuses[$key]; $done = !$terminal && $currentIdx !== false && $idx <= $currentIdx; @endphp
                         <div class="text-center">
                             <div class="w-10 h-10 rounded-full mx-auto flex items-center justify-center text-sm transition"
                                  style="background:{{ $done ? '#0891b2' : '#e5e7eb' }};color:{{ $done ? 'white' : '#9ca3af' }};">
-                                <i class="fas {{ $icon }}"></i>
+                                <i class="fas {{ $meta['icon'] }}"></i>
                             </div>
-                            <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? '#0c1f3d' : '#9ca3af' }};">{{ $label }}</div>
+                            <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? '#0c1f3d' : '#9ca3af' }};">{{ $meta['label'] }}</div>
                         </div>
                     @endforeach
                 </div>
-                @if ($cancelled)
-                    <div class="px-5 -mt-2 pb-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style="background:#fee2e2;color:#991b1b;"><i class="fas fa-ban"></i> Cancelled</span></div>
+                @if ($terminal)
+                    @php $tm = $statuses[$current]; @endphp
+                    <div class="px-5 -mt-2 pb-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style="background:{{ $tm['bg'] }};color:{{ $tm['text'] }};"><i class="fas {{ $tm['icon'] }}"></i> {{ $tm['label'] }}</span></div>
                 @endif
 
                 <form method="POST" action="{{ route('admin.online-orders.status', $order) }}" class="border-t border-gray-100 p-5 flex flex-col sm:flex-row sm:items-end gap-3">
@@ -78,8 +75,8 @@
                     <div class="sm:w-44 flex-shrink-0">
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Update status</label>
                         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                            @foreach (['pending','confirmed','shipped','delivered','cancelled'] as $s)
-                                <option value="{{ $s }}" @selected($order->status === $s)>{{ ucfirst($s) }}</option>
+                            @foreach ($statuses as $s => $meta)
+                                <option value="{{ $s }}" @selected($current === $s)>{{ $meta['label'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -223,27 +220,38 @@
                 </div>
                 <div class="text-xs text-gray-500 mt-3"><i class="fas fa-truck"></i> {{ $order->dispatch_method }}</div>
                 @if ($order->tracking_id)
-                    <div class="text-xs text-gray-700 mt-1"><i class="fas fa-hashtag"></i> {{ $order->tracking_id }}</div>
+                    <div class="text-xs text-gray-700 mt-1"><i class="fas fa-hashtag"></i> {{ $order->tracking_id }}
+                        @if (order_track_url($order))
+                            · <a href="{{ order_track_url($order) }}" target="_blank" rel="noopener" class="text-cyan-700 font-semibold hover:underline">Track <i class="fas fa-external-link-alt text-[9px]"></i></a>
+                        @endif
+                    </div>
                 @endif
 
+                {{-- Notify the account holder (the number/email the account was opened on) --}}
                 @php
-                    $custPhone = $order->customer->phone ?? $order->shipping_phone;
-                    $statusMsg = match ($order->status) {
-                        'confirmed' => "Assalam o Alaikum, your order {$order->order_number} has been confirmed and is being prepared.",
-                        'shipped'   => "Assalam o Alaikum, your order {$order->order_number} has been dispatched" . ($order->dispatch_method ? " via {$order->dispatch_method}" : '') . ($order->tracking_id ? ". Tracking: {$order->tracking_id}" : '') . '.',
-                        'delivered' => "Assalam o Alaikum, your order {$order->order_number} has been delivered. Shukria!",
-                        'cancelled' => "Assalam o Alaikum, regarding your order {$order->order_number}…",
-                        default     => "Assalam o Alaikum, an update on your order {$order->order_number}.",
-                    };
-                    $waCust = wa_link($custPhone, $statusMsg);
+                    $holderPhone = order_holder_phone($order);
+                    $waCust = wa_link($holderPhone, order_status_message($order, $order->status));
                 @endphp
-                @if ($waCust)
-                    <a href="{{ $waCust }}" target="_blank" rel="noopener"
-                       class="mt-3 inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white" style="background:#25D366;">
-                        <i class="fab fa-whatsapp"></i> WhatsApp customer
-                    </a>
-                    <p class="text-[11px] text-gray-400 mt-1">Opens WhatsApp with a status message pre-filled — review &amp; send.</p>
-                @endif
+                <div class="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                    <div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500">Notify customer ({{ $holderPhone ?: '—' }})</div>
+                    <div class="flex flex-wrap gap-2">
+                        @if ($waCust)
+                            <a href="{{ $waCust }}" target="_blank" rel="noopener"
+                               class="inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white" style="background:#25D366;">
+                                <i class="fab fa-whatsapp"></i> WhatsApp
+                            </a>
+                        @endif
+                        @if ($order->customer_email ?: $order->customer?->email)
+                            <form method="POST" action="{{ route('admin.online-orders.notify', $order) }}">
+                                @csrf
+                                <button class="inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-lg text-white" style="background:#2563eb;">
+                                    <i class="fas fa-envelope"></i> Email status
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+                    <p class="text-[11px] text-gray-400">WhatsApp opens pre-filled to the <strong>account holder</strong>'s number. Email sends the current status with your template.</p>
+                </div>
             </div>
         </div>
     </div>

@@ -35,27 +35,40 @@ class OrderStatusMail extends Mailable
     public static function contentFor(Order $order, string $event): array
     {
         $num = $order->order_number;
-        return match ($event) {
+        $key = $event === 'placed' ? 'placed' : order_status_norm($event);
+
+        $content = match ($key) {
             'placed' => [
                 'heading' => 'Order received',
                 'intro'   => "Thank you! We've received your order {$num} and will confirm it shortly.",
-                'lines'   => ['We will message you as your order is confirmed, dispatched and delivered.'],
+                'lines'   => ['We will message you as your order is confirmed, packed, dispatched and delivered.'],
             ],
             'confirmed' => [
                 'heading' => 'Order confirmed',
                 'intro'   => "Good news — your order {$num} has been confirmed and is being prepared.",
                 'lines'   => [],
             ],
-            'shipped' => [
+            'packed' => [
+                'heading' => 'Order packed',
+                'intro'   => "Your order {$num} has been packed and is ready to be dispatched.",
+                'lines'   => [],
+            ],
+            'dispatched' => [
                 'heading' => 'Order dispatched',
                 'intro'   => "Your order {$num} is on its way" . ($order->dispatch_method ? " via {$order->dispatch_method}" : '') . '.',
-                'lines'   => array_filter([
+                'lines'   => array_values(array_filter([
                     $order->tracking_id ? "Tracking number: {$order->tracking_id}" : null,
-                ]),
+                    order_track_url($order) ? 'Track it here: ' . order_track_url($order) : null,
+                ])),
             ],
             'delivered' => [
                 'heading' => 'Order delivered',
                 'intro'   => "Your order {$num} has been delivered. Thank you for shopping with us!",
+                'lines'   => [],
+            ],
+            'returned' => [
+                'heading' => 'Order returned',
+                'intro'   => "Your order {$num} has been marked as returned. Please contact us if you have any questions.",
                 'lines'   => [],
             ],
             'cancelled' => [
@@ -69,6 +82,14 @@ class OrderStatusMail extends Mailable
                 'lines'   => [],
             ],
         };
+
+        // Append the admin-editable template for this status (e.g. review-points
+        // copy) when one is configured.
+        if ($key !== 'placed' && setting('status_msg_' . $key)) {
+            $content['lines'][] = order_status_message($order, $key);
+        }
+
+        return $content;
     }
 
     /**

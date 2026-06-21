@@ -11,31 +11,32 @@
                 <h1 class="display text-3xl font-bold mt-1">{{ $order->order_number }}</h1>
                 <p class="text-gray-500 text-sm mt-1">Placed {{ $order->created_at->format('d M Y · h:i A') }}</p>
             </div>
-            <span class="chip capitalize self-start" style="background:#e8f1fb;color:var(--brand-cyan);font-size:13px;padding:6px 14px;">{{ str_replace('_', ' ', $order->status) }}</span>
+            @php $sm = order_status_meta($order->status); @endphp
+            <span class="chip self-start" style="background:{{ $sm['bg'] }};color:{{ $sm['text'] }};font-size:13px;padding:6px 14px;">{{ $sm['label'] }}</span>
         </div>
 
         {{-- Status timeline --}}
         @php
-            $steps = [
-                'pending'   => ['Pending',   'fa-clock'],
-                'confirmed' => ['Confirmed', 'fa-check'],
-                'shipped'   => ['Shipped',   'fa-truck'],
-                'delivered' => ['Delivered', 'fa-box-circle-check'],
-            ];
-            $current = $order->status === 'completed' ? 'delivered' : $order->status;
-            $currentIdx = array_search($current, array_keys($steps));
+            $timeline   = config('order_flow.timeline');
+            $statuses   = config('order_flow.statuses');
+            $current    = order_status_norm($order->status);
+            $terminal   = in_array($current, config('order_flow.terminal'), true);
+            $currentIdx = array_search($current, $timeline);
         @endphp
 
-        <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 reveal">
-            <div class="grid grid-cols-4 gap-2">
-                @foreach ($steps as $key => [$label, $icon])
-                    @php $idx = array_search($key, array_keys($steps)); $done = $currentIdx !== false && $idx <= $currentIdx; @endphp
+        <div class="bg-white rounded-2xl border border-gray-100 p-6 mb-6 reveal {{ $terminal ? 'opacity-60' : '' }}">
+            @if ($terminal)
+                <div class="mb-3 text-sm font-semibold" style="color:{{ $sm['text'] }};"><i class="fas {{ $sm['icon'] }} mr-1"></i> This order is {{ $sm['label'] }}.</div>
+            @endif
+            <div class="grid grid-cols-5 gap-2">
+                @foreach ($timeline as $idx => $key)
+                    @php $meta = $statuses[$key]; $done = !$terminal && $currentIdx !== false && $idx <= $currentIdx; @endphp
                     <div class="text-center">
                         <div class="w-10 h-10 rounded-full mx-auto flex items-center justify-center text-sm transition"
                              style="background:{{ $done ? 'var(--brand-cyan)' : '#e5e7eb' }};color:{{ $done ? 'white' : '#9ca3af' }};">
-                            <i class="fas {{ $icon }}"></i>
+                            <i class="fas {{ $meta['icon'] }}"></i>
                         </div>
-                        <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? 'var(--brand-navy)' : '#9ca3af' }};">{{ $label }}</div>
+                        <div class="text-[11px] mt-1.5 font-semibold" style="color:{{ $done ? 'var(--brand-navy)' : '#9ca3af' }};">{{ $meta['label'] }}</div>
                     </div>
                 @endforeach
             </div>

@@ -75,14 +75,17 @@ class OnlineOrderController extends Controller
     {
         abort_unless($order->order_source === 'online', 404);
 
+        $allowed = array_keys(config('order_flow.statuses', []));
         $data = $request->validate([
-            'status'      => 'required|in:pending,confirmed,shipped,delivered,cancelled',
+            'status'      => ['required', 'string', \Illuminate\Validation\Rule::in($allowed)],
             'tracking_id' => 'nullable|string|max:191',
         ]);
 
-        DB::transaction(function () use ($order, $data) {
-            // Cancellation: restock branch if it was active
-            if ($data['status'] === 'cancelled' && $order->status !== 'cancelled') {
+        $restockStatuses = config('order_flow.restock', ['cancelled']);
+
+        DB::transaction(function () use ($order, $data, $restockStatuses) {
+            // Returned / cancelled: put stock back and reverse khata (once).
+            if (in_array($data['status'], $restockStatuses, true) && !in_array($order->status, $restockStatuses, true)) {
                 foreach ($order->items as $item) {
                     if ($item->product && $item->product->track_inventory && $order->branch_id) {
                         $item->product->incrementBranchStock($order->branch_id, (float) $item->quantity);
@@ -105,6 +108,14 @@ class OnlineOrderController extends Controller
         \App\Mail\OrderStatusMail::dispatchFor($order->fresh(), $data['status']);
 
         return back()->with('success', 'Order status updated to ' . ucfirst($data['status']) . '.');
+    }
+
+    /** Manually (re)send the current-status email to the customer. */
+    public function notify(Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+        \App\Mail\OrderStatusMail::dispatchFor($order, $order->status);
+        return back()->with('success', 'Status email sent to the customer.');
     }
 
     public function markPaid(Request $request, Order $order)

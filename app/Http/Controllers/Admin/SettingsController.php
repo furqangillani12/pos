@@ -57,6 +57,19 @@ class SettingsController extends Controller
         return redirect()->route('admin.settings.index')->with('success', 'Website settings saved.');
     }
 
+    /** Per-status customer message templates (#22). */
+    public function updateStatusTemplates(Request $request)
+    {
+        $pairs = [];
+        foreach (array_keys(config('order_flow.statuses', [])) as $key) {
+            $field = 'status_msg_' . $key;
+            $pairs[$field] = (string) $request->input($field, '');
+        }
+        Setting::putMany($pairs);
+
+        return redirect()->route('admin.settings.index')->with('success', 'Order status messages saved.');
+    }
+
     // ── Payment Methods ──
 
     public function storePaymentMethod(Request $request)
