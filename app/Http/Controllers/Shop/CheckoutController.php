@@ -114,6 +114,10 @@ class CheckoutController extends Controller
             'payment_sender_bank'  => 'nullable|string|max:191',
             'payment_sender_amount'=> 'nullable|numeric|min:0',
             'payment_proof'        => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
+            // Optional reseller "From" address printed on the dispatch slip.
+            'from_name'            => 'nullable|string|max:191',
+            'from_phone'           => 'nullable|string|max:30',
+            'from_address'         => 'nullable|string|max:500',
         ]);
 
         $items = $this->cart->items();
@@ -191,6 +195,9 @@ class CheckoutController extends Controller
                 'payment_sender_name'    => $data['payment_sender_name'] ?? null,
                 'payment_sender_bank'    => $data['payment_sender_bank'] ?? null,
                 'payment_sender_amount'  => $data['payment_sender_amount'] ?? null,
+                'from_name'    => $data['from_name'] ?? null,
+                'from_phone'   => $data['from_phone'] ?? null,
+                'from_address' => $data['from_address'] ?? null,
                 'order_notes_customer'=> $data['order_notes_customer'] ?? null,
                 'receipt_token'       => bin2hex(random_bytes(16)),
             ]);

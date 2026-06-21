@@ -110,6 +110,48 @@ class OnlineOrderController extends Controller
         return back()->with('success', 'Order status updated to ' . ucfirst($data['status']) . '.');
     }
 
+    /** Printable bilingual dispatch slip (#15/#16/#17). */
+    public function slip(Request $request, Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+        $order->load('items.product', 'customer', 'branch');
+
+        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : 'both';
+        // Sender block: company by default, or the reseller's "From" address.
+        $from        = $request->input('from') === 'reseller' && $order->from_name ? 'reseller' : 'company';
+        $withLogo    = $request->boolean('logo', true);
+        $withDetails = $request->boolean('details', true);
+        $dispatchMethod = \App\Models\DispatchMethod::where('name', $order->dispatch_method)->first();
+
+        return view('admin.online-orders.slip', compact('order', 'lang', 'from', 'withLogo', 'withDetails', 'dispatchMethod'));
+    }
+
+    /** Printable picking checklist (#18): image, name, barcode, price, qty. */
+    public function checklist(Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+        $order->load('items.product');
+        return view('admin.online-orders.checklist', compact('order'));
+    }
+
+    /** Attach a dispatch photo / short video to the order. */
+    public function uploadDispatchMedia(Request $request, Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+        $request->validate([
+            'dispatch_media' => 'required|file|mimes:png,jpg,jpeg,webp,mp4,webm,mov|max:20480',
+        ]);
+
+        if ($order->dispatch_media_path && \Storage::disk('public')->exists($order->dispatch_media_path)) {
+            \Storage::disk('public')->delete($order->dispatch_media_path);
+        }
+        $order->update([
+            'dispatch_media_path' => $request->file('dispatch_media')->store('dispatch-media', 'public'),
+        ]);
+
+        return back()->with('success', 'Dispatch photo/video attached.');
+    }
+
     /** Manually (re)send the current-status email to the customer. */
     public function notify(Order $order)
     {

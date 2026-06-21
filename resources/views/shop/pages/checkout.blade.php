@@ -179,6 +179,33 @@
                     @endif
                 </div>
 
+                @if (shop_is_reseller())
+                {{-- Reseller "From" address (printed as sender on the dispatch slip) --}}
+                <div class="bg-white rounded-2xl border border-gray-100 p-6" x-data="{ addFrom: {{ old('from_name') ? 'true' : 'false' }} }">
+                    <label class="flex items-start gap-3 cursor-pointer">
+                        <input type="checkbox" x-model="addFrom" class="mt-1 text-blue-600 rounded">
+                        <span>
+                            <span class="font-bold text-gray-900 flex items-center gap-2"><i class="fas fa-user-tag" style="color:var(--brand-cyan);"></i> Add my own "From" address</span>
+                            <span class="block text-xs text-gray-500 mt-0.5">For resellers — the parcel's sender will show your name & address instead of ours.</span>
+                        </span>
+                    </label>
+                    <div x-show="addFrom" x-cloak class="grid sm:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">From name</label>
+                            <input type="text" name="from_name" value="{{ old('from_name') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">From phone</label>
+                            <input type="text" name="from_phone" value="{{ old('from_phone') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div class="sm:col-span-2">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">From address</label>
+                            <input type="text" name="from_address" value="{{ old('from_address') }}" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                    </div>
+                </div>
+                @endif
+
                 {{-- Payment method --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
                     <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-credit-card" style="color:var(--brand-cyan);"></i> Payment method</h2>

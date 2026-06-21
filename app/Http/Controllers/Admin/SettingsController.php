@@ -18,6 +18,7 @@ class SettingsController extends Controller
         'social_tiktok', 'social_x', 'social_youtube',
         'shop_tax_rate', 'shop_tax_type',
         'notice_title', 'notice_short', 'notice_full',
+        'site_name', 'dispatch_postman_note', 'dispatch_postman_note_ur',
     ];
 
     public function index()
@@ -50,6 +51,9 @@ class SettingsController extends Controller
             'notice_title'     => 'nullable|string|max:120',
             'notice_short'     => 'nullable|string|max:255',
             'notice_full'      => 'nullable|string|max:2000',
+            'site_name'        => 'nullable|string|max:120',
+            'dispatch_postman_note'    => 'nullable|string|max:500',
+            'dispatch_postman_note_ur' => 'nullable|string|max:500',
         ]);
 
         Setting::putMany($data);

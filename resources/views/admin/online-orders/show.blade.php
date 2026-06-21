@@ -23,6 +23,14 @@
                class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg text-xs font-semibold">
                 <i class="fas fa-receipt"></i> Receipt
             </a>
+            <a href="{{ route('admin.online-orders.slip', $order) }}" target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-2 text-white rounded-lg text-xs font-semibold" style="background:#0891b2;">
+                <i class="fas fa-print"></i> Dispatch slip
+            </a>
+            <a href="{{ route('admin.online-orders.checklist', $order) }}" target="_blank"
+               class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg text-xs font-semibold">
+                <i class="fas fa-list-check"></i> Checklist
+            </a>
         </div>
     </div>
 
@@ -252,6 +260,33 @@
                     </div>
                     <p class="text-[11px] text-gray-400">WhatsApp opens pre-filled to the <strong>account holder</strong>'s number. Email sends the current status with your template.</p>
                 </div>
+
+                @if ($order->from_name)
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1"><i class="fas fa-user-tag text-purple-500"></i> Reseller "From" address</div>
+                        <div class="text-sm text-gray-700">{{ $order->from_name }}<br>{{ $order->from_phone }}<br>{{ $order->from_address }}</div>
+                        <div class="text-[11px] text-gray-400 mt-1">Printed as the sender on the slip when you pick "Reseller".</div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- Dispatch photo / video --}}
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3"><i class="fas fa-camera text-cyan-600"></i> Dispatch photo / video</h3>
+                @if ($order->dispatch_media_path)
+                    @php $ext = strtolower(pathinfo($order->dispatch_media_path, PATHINFO_EXTENSION)); @endphp
+                    @if (in_array($ext, ['mp4','webm','mov']))
+                        <video src="{{ asset('storage/'.$order->dispatch_media_path) }}" controls class="w-full rounded-lg border border-gray-200 mb-2"></video>
+                    @else
+                        <a href="{{ asset('storage/'.$order->dispatch_media_path) }}" target="_blank"><img src="{{ asset('storage/'.$order->dispatch_media_path) }}" class="w-full rounded-lg border border-gray-200 mb-2"></a>
+                    @endif
+                @endif
+                <form method="POST" action="{{ route('admin.online-orders.dispatch-media', $order) }}" enctype="multipart/form-data" class="space-y-2">
+                    @csrf
+                    <input type="file" name="dispatch_media" accept="image/*,video/*" required class="w-full text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-cyan-50 file:text-cyan-700">
+                    <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold rounded-lg"><i class="fas fa-upload"></i> {{ $order->dispatch_media_path ? 'Replace' : 'Attach' }} photo/video</button>
+                    <p class="text-[11px] text-gray-400">Image or short video (up to 20 MB) of what you're sending.</p>
+                </form>
             </div>
         </div>
     </div>

@@ -97,6 +97,24 @@
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Full text (shown on “Read more”)</label>
                         <textarea name="notice_full" rows="3" placeholder="یہاں تجارت اسلامی اصولوں کے مطابق ہوتی ہے…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old('notice_full', $site['notice_full'] ?? '') }}</textarea>
                     </div>
+
+                    {{-- ── Dispatch slip ── --}}
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
+                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-print text-cyan-500 mr-1"></i> Dispatch slip</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Business name (on slip)</label>
+                        <input type="text" name="site_name" value="{{ old('site_name', $site['site_name'] ?? '') }}" placeholder="AL MUFEED TRADERS" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div></div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Postman note — English</label>
+                        <textarea name="dispatch_postman_note" rows="2" placeholder="Dear postman: if you face any difficulty…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old('dispatch_postman_note', $site['dispatch_postman_note'] ?? '') }}</textarea>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Postman note — اردو</label>
+                        <textarea name="dispatch_postman_note_ur" rows="2" dir="rtl" placeholder="معزز پوسٹ مین…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old('dispatch_postman_note_ur', $site['dispatch_postman_note_ur'] ?? '') }}</textarea>
+                    </div>
                 </div>
                 <div class="mt-4 flex justify-end">
                     <button class="px-5 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold"><i class="fas fa-check mr-1"></i> Save website settings</button>

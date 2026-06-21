@@ -317,6 +317,9 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::patch('/online-orders/{order}/status',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'updateStatus'])->name('online-orders.status');
     Route::patch('/online-orders/{order}/mark-paid', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'markPaid'])->name('online-orders.mark-paid');
     Route::post('/online-orders/{order}/notify',      [\App\Http\Controllers\Admin\OnlineOrderController::class, 'notify'])->name('online-orders.notify');
+    Route::get('/online-orders/{order}/slip',         [\App\Http\Controllers\Admin\OnlineOrderController::class, 'slip'])->name('online-orders.slip');
+    Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');
+    Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
 });
 
 // ── Linked customer ↔ supplier (offset feature) ──
