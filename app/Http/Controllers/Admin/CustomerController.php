@@ -228,7 +228,29 @@ class CustomerController extends Controller
             $query->latest()->take(10);
         }]);
         
+        $customer->load(['pointTransactions' => fn ($q) => $q->take(15)]);
+
         return view('admin.customers.show', compact('customer'));
+    }
+
+    /** Manually award / adjust reward points (photo / video / social review bonuses). */
+    public function awardPoints(Request $request, Customer $customer)
+    {
+        $data = $request->validate([
+            'points' => 'required|integer',
+            'type'   => 'nullable|string|max:30',
+            'note'   => 'nullable|string|max:191',
+        ]);
+
+        $customer->awardPoints(
+            (int) $data['points'],
+            $data['type'] ?: 'adjust',
+            $data['note'] ?? null,
+            null,
+            auth()->id()
+        );
+
+        return back()->with('success', "{$data['points']} points recorded for {$customer->name}.");
     }
 
     public function edit(Customer $customer)

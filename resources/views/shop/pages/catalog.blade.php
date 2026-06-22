@@ -61,6 +61,7 @@
                         <option value="price_asc" @selected($sort==='price_asc')>Price ↑</option>
                         <option value="price_desc"@selected($sort==='price_desc')>Price ↓</option>
                         <option value="rating"    @selected($sort==='rating')>Top rated</option>
+                        <option value="popular"   @selected($sort==='popular')>Most popular</option>
                         <option value="name"      @selected($sort==='name')>Name A–Z</option>
                     </select>
                 </div>

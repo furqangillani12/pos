@@ -35,6 +35,7 @@ class Product extends Model
         'meta_description',
         'avg_rating',
         'review_count',
+        'views',
         'track_inventory',
         'rank',
     ];
@@ -111,6 +112,12 @@ class Product extends Model
     public function scopeFeatured($q)
     {
         return $q->where('is_featured', true)->where('is_active', true);
+    }
+
+    /** Most-viewed first (then best reviewed) — storefront popularity. */
+    public function scopePopular($q)
+    {
+        return $q->orderByDesc('views')->orderByDesc('review_count')->orderByDesc('id');
     }
 
     public function unit(): BelongsTo

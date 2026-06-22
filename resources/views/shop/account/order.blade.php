@@ -42,6 +42,8 @@
             </div>
         </div>
 
+        @include('shop.partials.tracking-history')
+
         {{-- Items + summary --}}
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
             <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -98,7 +100,28 @@
                 <div class="bg-white rounded-2xl border border-gray-100 p-5">
                     <h3 class="font-bold text-gray-800 mb-3">Payment</h3>
                     <div class="text-sm capitalize">{{ str_replace('_', ' ', $order->payment_method) }}</div>
-                    <div class="text-xs text-gray-500 mt-1 capitalize">{{ str_replace('_', ' ', $order->payment_status) }}</div>
+                    <div class="text-xs text-gray-500 mt-1 capitalize">{{ str_replace('_', ' ', $order->online_payment_status ?: $order->payment_status) }}</div>
+
+                    @if ($order->payment_proof_path)
+                        <div class="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2"><i class="fas fa-check-circle"></i> Payment proof submitted. We'll verify it shortly.</div>
+                    @endif
+
+                    {{-- Attach / re-attach proof for an unpaid bank order --}}
+                    @if ($order->balance_amount > 0 && $order->online_payment_status !== 'cod' && !in_array($order->status, ['cancelled','returned']))
+                        <div x-data="{ open: {{ $order->payment_proof_path ? 'false' : 'true' }} }" class="mt-4 pt-4 border-t border-gray-100">
+                            <button type="button" @click="open=!open" class="text-sm font-semibold" style="color:var(--brand-cyan);">
+                                <i class="fas fa-receipt"></i> {{ $order->payment_proof_path ? 'Update payment proof' : 'I have paid — attach proof' }}
+                            </button>
+                            <form x-show="open" x-cloak method="POST" action="{{ route('shop.account.order.proof', $order) }}" enctype="multipart/form-data" class="mt-3 space-y-2">
+                                @csrf
+                                <input type="text" name="payment_sender_name" value="{{ $order->payment_sender_name }}" placeholder="Account title you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <input type="text" name="payment_sender_bank" value="{{ $order->payment_sender_bank }}" placeholder="Bank / wallet" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <input type="number" step="0.01" name="payment_sender_amount" value="{{ $order->payment_sender_amount }}" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                <input type="file" name="payment_proof" accept="image/*" required class="w-full text-sm text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                                <button class="btn btn-primary btn-block !py-2 !text-sm"><i class="fas fa-upload"></i> Submit proof</button>
+                            </form>
+                        </div>
+                    @endif
                 </div>
 
                 @php $waOrder = wa_link(shop_whatsapp_number(), 'Hi, I would like an update on my order ' . $order->order_number . '.'); @endphp

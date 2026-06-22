@@ -38,8 +38,16 @@ class ReviewController extends Controller
                 'avg_rating'   => round((float) $agg->avg_rating, 2),
                 'review_count' => (int) $agg->review_count,
             ]);
+
+            // Reward points for reviewing (#22), if the scheme is enabled.
+            $reward = (int) setting('points_per_review', 0);
+            if ($reward > 0 && ($customer = Auth::guard('customer')->user())) {
+                $customer->awardPoints($reward, 'earn_review', "Review on {$product->name}");
+            }
         });
 
-        return back()->with('shop_success', 'Thanks for your review!');
+        $reward = (int) setting('points_per_review', 0);
+        $msg = $reward > 0 ? "Thanks for your review! You earned {$reward} points." : 'Thanks for your review!';
+        return back()->with('shop_success', $msg);
     }
 }

@@ -188,4 +188,38 @@ class AccountController extends Controller
         $order->load('items.product');
         return view('shop.account.order', compact('order'));
     }
+
+    public function points()
+    {
+        $customer = Auth::guard('customer')->user();
+        $transactions = $customer->pointTransactions()->paginate(20);
+        return view('shop.account.points', compact('customer', 'transactions'));
+    }
+
+    /** Customer attaches a payment screenshot to one of their own orders. */
+    public function uploadProof(Request $request, Order $order)
+    {
+        abort_unless((int) $order->customer_id === (int) Auth::guard('customer')->id(), 404);
+
+        $data = $request->validate([
+            'payment_sender_name'   => 'nullable|string|max:191',
+            'payment_sender_bank'   => 'nullable|string|max:191',
+            'payment_sender_amount' => 'nullable|numeric|min:0',
+            'payment_proof'         => 'required|image|mimes:png,jpg,jpeg,webp|max:4096',
+        ]);
+
+        if ($order->payment_proof_path && \Storage::disk('public')->exists($order->payment_proof_path)) {
+            \Storage::disk('public')->delete($order->payment_proof_path);
+        }
+
+        $order->update([
+            'payment_proof_path'    => $request->file('payment_proof')->store('payment-proofs', 'public'),
+            'payment_sender_name'   => $data['payment_sender_name'] ?? $order->payment_sender_name,
+            'payment_sender_bank'   => $data['payment_sender_bank'] ?? $order->payment_sender_bank,
+            'payment_sender_amount' => ($data['payment_sender_amount'] ?? '') !== '' ? $data['payment_sender_amount'] : $order->payment_sender_amount,
+            'online_payment_status' => $order->online_payment_status === 'cod' ? $order->online_payment_status : 'proof_submitted',
+        ]);
+
+        return back()->with('shop_success', 'Payment proof submitted — we will verify and confirm shortly.');
+    }
 }

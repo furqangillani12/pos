@@ -223,6 +223,8 @@ class CheckoutController extends Controller
                 ]);
             }
 
+            $order->recordStatus('pending', 'Order placed');
+
             $this->cart->clear();
             Session::put('shop.last_guest_order_token', $order->receipt_token);
 

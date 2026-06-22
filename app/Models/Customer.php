@@ -52,6 +52,32 @@ class Customer extends Authenticatable
         return $this->belongsTo(Branch::class);
     }
 
+    public function pointTransactions()
+    {
+        return $this->hasMany(PointTransaction::class)->latest('id');
+    }
+
+    /**
+     * Award (or deduct, with negative points) reward points and log it.
+     * Returns the created transaction, or null when points is zero.
+     */
+    public function awardPoints(int $points, string $type = 'adjust', ?string $note = null, ?int $orderId = null, ?int $userId = null): ?PointTransaction
+    {
+        if ($points === 0) return null;
+
+        $txn = $this->pointTransactions()->create([
+            'points'   => $points,
+            'type'     => $type,
+            'note'     => $note,
+            'order_id' => $orderId,
+            'user_id'  => $userId,
+        ]);
+
+        $this->increment('loyalty_points', $points);
+
+        return $txn;
+    }
+
     /**
      * The supplier record that represents the SAME real-world party as this customer.
      * Used for offsetting A/R against A/P when one person is both customer and supplier.

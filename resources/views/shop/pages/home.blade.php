@@ -339,6 +339,45 @@
     </div>
 </section>
 
+{{-- ═════════════════ RECOMMENDED FOR YOU (#12, behaviour-based) ═════════════════ --}}
+@if (($recommended ?? collect())->isNotEmpty())
+<section class="py-8 sm:py-10" style="background:var(--paper-warm);">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6 reveal">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Picked for you</span>
+                <h2 class="display text-3xl sm:text-4xl font-bold mt-2">Recommended for you</h2>
+            </div>
+            <a href="{{ route('shop.catalog') }}" class="text-sm font-semibold inline-flex items-center gap-2 hover:gap-3 transition-all" style="color:var(--rose);">Shop all <i class="fas fa-arrow-right text-xs"></i></a>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger">
+            @foreach ($recommended as $product)
+                @include('shop.partials.product-card', compact('product'))
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- ═════════════════ RECENTLY VIEWED (#12) ═════════════════ --}}
+@if (($recentlyViewed ?? collect())->isNotEmpty())
+<section class="py-8 sm:py-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-end justify-between gap-3 mb-6 reveal">
+            <div>
+                <span class="text-xs font-bold uppercase tracking-widest" style="color:var(--rose);">Continue browsing</span>
+                <h2 class="display text-3xl sm:text-4xl font-bold mt-2">Recently viewed</h2>
+            </div>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5 reveal-stagger">
+            @foreach ($recentlyViewed as $product)
+                @include('shop.partials.product-card', compact('product'))
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 {{-- ═════════════════ BRANDS (always shown) ═════════════════ --}}
 <section class="py-8 sm:py-10 bg-white border-y border-gray-100">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

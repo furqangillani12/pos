@@ -139,6 +139,55 @@
             </div>
         </div>
 
+        <!-- Reward Points -->
+        <div class="bg-white rounded-lg border border-gray-200 mb-6">
+            <div class="px-6 py-4 border-b flex items-center justify-between">
+                <h3 class="text-lg font-medium text-gray-800"><i class="fas fa-star text-amber-500 mr-1"></i> Reward Points</h3>
+                <span class="text-2xl font-bold text-amber-600">🏆 {{ $customer->loyalty_points ?? 0 }}</span>
+            </div>
+            <div class="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {{-- Award / adjust --}}
+                <form method="POST" action="{{ route('admin.customers.award-points', $customer) }}" class="space-y-3">
+                    @csrf
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Points (+/−)</label>
+                            <input type="number" name="points" required placeholder="e.g. 50" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Type</label>
+                            <select name="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <option value="review_photo">Photo review bonus</option>
+                                <option value="review_video">Video review bonus</option>
+                                <option value="review_social">Social media review</option>
+                                <option value="adjust">Manual adjustment</option>
+                                <option value="redeem">Redeem (use negative)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <input type="text" name="note" placeholder="Note (optional)" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    <button class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold"><i class="fas fa-plus mr-1"></i> Record points</button>
+                </form>
+
+                {{-- History --}}
+                <div>
+                    <div class="text-xs font-semibold text-gray-500 uppercase mb-2">Recent history</div>
+                    @forelse ($customer->pointTransactions as $txn)
+                        <div class="flex items-center justify-between py-1.5 border-b border-gray-100 text-sm">
+                            <div>
+                                <span class="font-medium">{{ $txn->label }}</span>
+                                @if ($txn->note)<span class="text-xs text-gray-400">· {{ $txn->note }}</span>@endif
+                                <div class="text-[11px] text-gray-400">{{ $txn->created_at->format('d M Y') }}</div>
+                            </div>
+                            <span class="font-bold {{ $txn->points >= 0 ? 'text-emerald-600' : 'text-red-600' }}">{{ $txn->points >= 0 ? '+' : '' }}{{ $txn->points }}</span>
+                        </div>
+                    @empty
+                        <p class="text-sm text-gray-400">No points activity yet.</p>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+
         <!-- Customer Orders -->
         <div class="bg-white rounded-lg border border-gray-200">
             <div class="px-6 py-4 border-b">

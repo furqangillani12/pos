@@ -98,6 +98,19 @@ if (!function_exists('shop_strike_price')) {
     }
 }
 
+if (!function_exists('shop_order_points')) {
+    /**
+     * Points earned for an order total, using the "rupees per point" setting.
+     * Returns 0 when the scheme is disabled (setting unset or 0).
+     */
+    function shop_order_points($total): int
+    {
+        $per = (float) setting('points_rupees_per_point', 0);
+        if ($per <= 0) return 0;
+        return (int) floor(((float) $total) / $per);
+    }
+}
+
 if (!function_exists('order_status_norm')) {
     /** Map legacy statuses onto the current online lifecycle vocabulary. */
     function order_status_norm(?string $status): string

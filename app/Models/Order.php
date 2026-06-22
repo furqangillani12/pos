@@ -47,6 +47,17 @@ class Order extends Model
     // Add this for auto-casting
     protected $appends = ['receipt_url'];
 
+    public function statusHistory()
+    {
+        return $this->hasMany(OrderStatusHistory::class)->orderBy('created_at')->orderBy('id');
+    }
+
+    /** Append a status event to this order's tracking history. */
+    public function recordStatus(string $status, ?string $note = null): void
+    {
+        $this->statusHistory()->create(['status' => $status, 'note' => $note]);
+    }
+
     // Status constants
     const STATUS_PENDING   = 'pending';
     const STATUS_COMPLETED = 'completed';

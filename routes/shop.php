@@ -78,7 +78,9 @@ $registerShopRoutes = function () {
             Route::put('/account/password',        [AccountController::class, 'updatePassword'])->name('account.password.update');
             Route::get('/account/orders',          [AccountController::class, 'orders'])->name('account.orders');
             Route::get('/account/orders/{order}',  [AccountController::class, 'orderShow'])->name('account.order');
+            Route::post('/account/orders/{order}/proof', [AccountController::class, 'uploadProof'])->name('account.order.proof');
             Route::get('/account/statement',       [AccountController::class, 'statement'])->name('account.statement');
+            Route::get('/account/points',          [AccountController::class, 'points'])->name('account.points');
 
             Route::get('/wishlist',                        [WishlistController::class, 'index'])->name('wishlist');
             Route::post('/wishlist/toggle/{product:id}',   [WishlistController::class, 'toggle'])->name('wishlist.toggle');

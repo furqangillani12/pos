@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\Product;
+use Illuminate\Support\Facades\Session;
 
 class ProductController extends Controller
 {
@@ -14,6 +15,11 @@ class ProductController extends Controller
 
         $product->load(['category', 'brand', 'unit']);
 
+        // ── Behaviour tracking (#12) ──────────────────────────────────────
+        // Cheap atomic view counter (no model events / timestamps touched).
+        Product::whereKey($product->id)->increment('views');
+        $this->rememberView($product);
+
         $reviews = $product->approvedReviews()->with('customer:id,name')->limit(20)->get();
 
         $related = Product::onWebsite()
@@ -22,13 +28,13 @@ class ProductController extends Controller
             ->with('category', 'brand')
             ->limit(8)->get();
 
-        // Popular picks — most reviewed / best rated, excluding this product and
-        // the related ones already shown, so the rows don't repeat.
+        // Popular picks — by real view count, excluding this product and the
+        // related ones already shown, so the rows don't repeat.
         $exclude = $related->pluck('id')->push($product->id)->all();
         $popular = Product::onWebsite()
             ->whereNotIn('id', $exclude)
             ->with('category', 'brand')
-            ->orderByDesc('review_count')->orderByDesc('avg_rating')->orderByDesc('id')
+            ->popular()
             ->limit(8)->get();
 
         // Packages (built in POS) that include this product — shown as deals so the
@@ -45,5 +51,24 @@ class ProductController extends Controller
         $packages = $packages->filter(fn ($p) => $p->items->isNotEmpty())->values();
 
         return view('shop.pages.product', compact('product', 'reviews', 'related', 'popular', 'packages'));
+    }
+
+    /**
+     * Record this product in the visitor's "recently viewed" list and bump the
+     * interest score for its category — both kept in the session and used by the
+     * home page to recommend related items (#12).
+     */
+    private function rememberView(Product $product): void
+    {
+        $recent = array_values(array_diff(Session::get('shop.recent_products', []), [$product->id]));
+        array_unshift($recent, $product->id);
+        Session::put('shop.recent_products', array_slice($recent, 0, 12));
+
+        if ($product->category_id) {
+            $cats = Session::get('shop.cat_interest', []);
+            $cats[$product->category_id] = ($cats[$product->category_id] ?? 0) + 1;
+            arsort($cats);
+            Session::put('shop.cat_interest', array_slice($cats, 0, 10, true));
+        }
     }
 }

@@ -27,14 +27,25 @@
             </div>
         </div>
 
+        {{-- Reward points banner --}}
+        <a href="{{ route('shop.account.points') }}" class="block rounded-2xl p-5 mb-4 text-white reveal" style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-xs uppercase tracking-widest opacity-80">Reward points</div>
+                    <div class="text-3xl font-extrabold mt-1">🏆 {{ number_format($customer->loyalty_points ?? 0) }}</div>
+                </div>
+                <span class="text-sm font-semibold opacity-90">View history <i class="fas fa-arrow-right text-xs"></i></span>
+            </div>
+        </a>
+
         {{-- Quick links --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 reveal-stagger">
             @foreach ([
                 ['route'=>'shop.account.orders',   'icon'=>'fa-receipt',      'title'=>'My orders',  'desc'=>'View order history'],
-                ['route'=>'shop.account.statement','icon'=>'fa-file-invoice', 'title'=>'Statement',  'desc'=>'Khata & earnings'],
+                ['route'=>'shop.account.statement','icon'=>'fa-file-invoice', 'title'=>'Statement',  'desc'=>'Khata & history'],
+                ['route'=>'shop.account.points',  'icon'=>'fa-star',         'title'=>'Points',     'desc'=>'Reward points'],
                 ['route'=>'shop.wishlist',        'icon'=>'fa-heart',        'title'=>'Wishlist',   'desc'=>'Saved items'],
                 ['route'=>'shop.account.profile', 'icon'=>'fa-user',         'title'=>'Profile',    'desc'=>'Edit your details'],
-                ['route'=>'shop.account.password','icon'=>'fa-lock',         'title'=>'Password',   'desc'=>'Change password'],
             ] as $card)
                 <a href="{{ route($card['route']) }}" class="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:-translate-y-1 transition group">
                     <span class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:linear-gradient(135deg,#e8f1fb,#d6ecfa);color:var(--brand-navy);">

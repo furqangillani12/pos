@@ -223,6 +223,7 @@ Route::get('/orders/{order}/receipt-pdf', [PosController::class, 'downloadReceip
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'branch'])->group(function () {
     Route::resource('customers', CustomerController::class);
     Route::get('customers/{customer}/khata', [CustomerController::class, 'khata'])->name('customers.khata');
+    Route::post('customers/{customer}/award-points', [CustomerController::class, 'awardPoints'])->name('customers.award-points');
     Route::post('customers/{customer}/khata/payment', [CustomerController::class, 'storeKhataPayment'])->name('customers.khata.payment');
     Route::delete('customers/{customer}/khata/payment/{payment}', [CustomerController::class, 'deleteKhataPayment'])->name('customers.khata.payment.delete');
     Route::get('customers/{customer}/khata/payment/{payment}/voucher', [CustomerController::class, 'paymentVoucher'])->name('customers.khata.payment.voucher');

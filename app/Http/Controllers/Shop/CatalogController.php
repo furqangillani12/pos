@@ -65,6 +65,7 @@ class CatalogController extends Controller
             'price_asc'   => $query->orderBy('sale_price', 'asc'),
             'price_desc'  => $query->orderBy('sale_price', 'desc'),
             'rating'      => $query->orderByDesc('avg_rating')->orderByDesc('review_count'),
+            'popular'     => $query->orderByDesc('views')->orderByDesc('review_count'),
             'name'        => $query->orderBy('name'),
             default       => $query->orderByDesc('id'),
         };

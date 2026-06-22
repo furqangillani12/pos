@@ -59,6 +59,8 @@
             </div>
         @endif
 
+        @include('shop.partials.tracking-history')
+
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
             <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Items</h2></div>

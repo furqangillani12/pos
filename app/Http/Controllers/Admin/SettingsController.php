@@ -19,6 +19,7 @@ class SettingsController extends Controller
         'shop_tax_rate', 'shop_tax_type',
         'notice_title', 'notice_short', 'notice_full',
         'site_name', 'dispatch_postman_note', 'dispatch_postman_note_ur',
+        'points_rupees_per_point', 'points_per_review',
     ];
 
     public function index()
@@ -54,6 +55,8 @@ class SettingsController extends Controller
             'site_name'        => 'nullable|string|max:120',
             'dispatch_postman_note'    => 'nullable|string|max:500',
             'dispatch_postman_note_ur' => 'nullable|string|max:500',
+            'points_rupees_per_point'  => 'nullable|numeric|min:0',
+            'points_per_review'        => 'nullable|integer|min:0',
         ]);
 
         Setting::putMany($data);

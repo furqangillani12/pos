@@ -64,9 +64,37 @@ class HomeController extends Controller
             $brands = Brand::where('is_active', true)->orderBy('sort_order')->orderBy('name')->limit(8)->get();
         }
 
+        // ── Behaviour-based rows (#12) ────────────────────────────────────
+        // Recently viewed (in the order the visitor opened them).
+        $recentIds = session('shop.recent_products', []);
+        $recentlyViewed = collect();
+        if (!empty($recentIds)) {
+            $recentlyViewed = Product::onWebsite()->whereIn('id', $recentIds)
+                ->with('category', 'brand')->get()
+                ->sortBy(fn ($p) => array_search($p->id, $recentIds))->values();
+        }
+
+        // "Recommended for you" — from the category the visitor opens most,
+        // excluding what they've just seen. Falls back to popular products so the
+        // section always has something to show.
+        $catInterest = session('shop.cat_interest', []);
+        $topCat = !empty($catInterest) ? array_key_first($catInterest) : null;
+        $recommended = collect();
+        if ($topCat) {
+            $recommended = Product::onWebsite()->where('category_id', $topCat)
+                ->whereNotIn('id', $recentIds ?: [0])
+                ->with('category', 'brand')->popular()->limit(8)->get();
+        }
+        if ($recommended->isEmpty()) {
+            $recommended = Product::onWebsite()
+                ->whereNotIn('id', $recentIds ?: [0])
+                ->with('category', 'brand')->popular()->limit(8)->get();
+        }
+
         return view('shop.pages.home', compact(
             'heroBanners', 'midBanners', 'featuredCategories',
-            'featuredProducts', 'newArrivals', 'bestRated', 'brands'
+            'featuredProducts', 'newArrivals', 'bestRated', 'brands',
+            'recentlyViewed', 'recommended'
         ));
     }
 }
