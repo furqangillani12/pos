@@ -7,19 +7,28 @@
     <meta name="theme-color" content="#1b1f5c">
 
     <title>@yield('title', 'Almufeed Traders') · Almufeed Traders</title>
-    <meta name="description" content="@yield('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail branches across Pakistan.')">
 
-    {{-- Open Graph / Twitter — so shared product links preview the product image,
-         not the company logo. Pages override og_image/og_title via @section. --}}
+    {{-- Meta values are SQUISHED + escaped via {{ }}: product descriptions can
+         contain newlines / quotes that otherwise break the tag and stop Facebook
+         from generating a preview (#3). --}}
+    @php
+        $metaTitle = \Illuminate\Support\Str::of(View::getSection('og_title') ?: View::getSection('title', 'AL MUFEED TRADERS'))->squish();
+        $metaDesc  = \Illuminate\Support\Str::of(View::getSection('og_description') ?: View::getSection('description', 'AL MUFEED TRADERS — quality and affordability you can trust. Shop online from our trusted retail branches across Pakistan.'))->stripTags()->squish()->limit(200);
+        $ogImage   = trim(View::getSection('og_image')) ?: asset('assets/images/brand/almufeed-traders-square.jpg');
+    @endphp
+    <meta name="description" content="{{ $metaDesc }}">
+
+    {{-- Open Graph / Twitter — shared product links preview the product image. --}}
     <meta property="og:type" content="@yield('og_type', 'website')">
     <meta property="og:site_name" content="AL MUFEED TRADERS">
-    <meta property="og:title" content="@yield('og_title', View::getSection('title', 'AL MUFEED TRADERS'))">
-    <meta property="og:description" content="@yield('og_description', View::getSection('description', 'Quality and affordability you can trust.'))">
+    <meta property="og:title" content="{{ $metaTitle }}">
+    <meta property="og:description" content="{{ $metaDesc }}">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:image" content="@yield('og_image', asset('assets/images/brand/almufeed-traders-square.jpg'))">
+    <meta property="og:image" content="{{ $ogImage }}">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@yield('og_title', View::getSection('title', 'AL MUFEED TRADERS'))">
-    <meta name="twitter:image" content="@yield('og_image', asset('assets/images/brand/almufeed-traders-square.jpg'))">
+    <meta name="twitter:title" content="{{ $metaTitle }}">
+    <meta name="twitter:description" content="{{ $metaDesc }}">
+    <meta name="twitter:image" content="{{ $ogImage }}">
 
     <link rel="icon" type="image/png" href="{{ asset('assets/images/brand/almufeed-traders-square.jpg') }}">
 
@@ -197,7 +206,7 @@
             } finally { this.cartLoading = false; }
         },
         async removeFromCart(id) {
-            const res = await fetch('/shop/cart/remove/' + id, {
+            const res = await fetch('{{ route('shop.cart.remove', ['item' => 'ITEMID']) }}'.replace('ITEMID', id), {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
             });
@@ -655,7 +664,7 @@
         // ── Wishlist toggle helper ───────────────────────────────────────
         window.toggleWishlist = async function (productId, btn) {
             try {
-                const res = await fetch('/shop/wishlist/toggle/' + productId, {
+                const res = await fetch('{{ route('shop.wishlist.toggle', ['product' => 'PRODUCTID']) }}'.replace('PRODUCTID', productId), {
                     method: 'POST',
                     headers: {'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json'}
                 });

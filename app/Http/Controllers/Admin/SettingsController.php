@@ -18,8 +18,8 @@ class SettingsController extends Controller
         'social_tiktok', 'social_x', 'social_youtube',
         'shop_tax_rate', 'shop_tax_type',
         'notice_title', 'notice_short', 'notice_full',
-        'site_name', 'dispatch_postman_note', 'dispatch_postman_note_ur',
-        'points_rupees_per_point', 'points_per_review',
+        'site_name', 'site_name_ur', 'site_website', 'dispatch_postman_note', 'dispatch_postman_note_ur',
+        'points_rupees_per_point', 'points_per_review', 'points_value_rupees',
     ];
 
     public function index()
@@ -53,10 +53,13 @@ class SettingsController extends Controller
             'notice_short'     => 'nullable|string|max:255',
             'notice_full'      => 'nullable|string|max:2000',
             'site_name'        => 'nullable|string|max:120',
+            'site_name_ur'     => 'nullable|string|max:120',
+            'site_website'     => 'nullable|string|max:120',
             'dispatch_postman_note'    => 'nullable|string|max:500',
             'dispatch_postman_note_ur' => 'nullable|string|max:500',
             'points_rupees_per_point'  => 'nullable|numeric|min:0',
             'points_per_review'        => 'nullable|integer|min:0',
+            'points_value_rupees'      => 'nullable|numeric|min:0',
         ]);
 
         Setting::putMany($data);

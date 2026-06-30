@@ -111,6 +111,38 @@ if (!function_exists('shop_order_points')) {
     }
 }
 
+if (!function_exists('shop_point_value')) {
+    /**
+     * Rupee value of ONE reward point on redemption (setting "points_value_rupees").
+     * Decimal-friendly, e.g. 0.20 means 5 points = Rs 1. 0 disables redemption.
+     */
+    function shop_point_value(): float
+    {
+        return (float) setting('points_value_rupees', 0);
+    }
+}
+
+if (!function_exists('shop_points_to_rupees')) {
+    /** Rupee worth of a points amount, rounded to 2 dp. */
+    function shop_points_to_rupees(int $points): float
+    {
+        return round(max(0, $points) * shop_point_value(), 2);
+    }
+}
+
+if (!function_exists('shop_max_redeemable_points')) {
+    /**
+     * How many of the customer's points can actually be applied to an order,
+     * capped so the points discount never exceeds the spendable amount.
+     */
+    function shop_max_redeemable_points(int $balance, float $maxRupees): int
+    {
+        $value = shop_point_value();
+        if ($value <= 0 || $balance <= 0 || $maxRupees <= 0) return 0;
+        return (int) min($balance, floor($maxRupees / $value));
+    }
+}
+
 if (!function_exists('order_status_norm')) {
     /** Map legacy statuses onto the current online lifecycle vocabulary. */
     function order_status_norm(?string $status): string
@@ -153,42 +185,87 @@ if (!function_exists('order_track_url')) {
     }
 }
 
+if (!function_exists('order_status_tokens')) {
+    /** Placeholder map shared by the status template + message builders. */
+    function order_status_tokens($order, string $status): array
+    {
+        $name = trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? ''))
+              ?: ($order->customer?->name ?? 'there');
+        return [
+            '{order}'      => $order->order_number,
+            '{name}'       => $name,
+            '{status}'     => order_status_meta($status)['label'],
+            '{courier}'    => $order->dispatch_method ?? '',
+            '{tracking}'   => $order->tracking_id ?? '',
+            '{track_link}' => order_track_url($order) ?? '',
+            '{total}'      => 'Rs. ' . number_format((float) $order->total, 0),
+        ];
+    }
+}
+
+if (!function_exists('order_status_template')) {
+    /**
+     * The admin-editable note for a status (setting "status_msg_{status}") with
+     * placeholders expanded, or '' when none is configured. This is appended
+     * BELOW the structured detail — it never replaces it.
+     */
+    function order_status_template($order, ?string $status = null): string
+    {
+        $status = order_status_norm($status ?: $order->status);
+        $tpl = setting('status_msg_' . $status);
+        return $tpl ? strtr($tpl, order_status_tokens($order, $status)) : '';
+    }
+}
+
 if (!function_exists('order_status_message')) {
     /**
-     * Customer-facing message for a status change. Uses the admin-editable
-     * template (setting "status_msg_{status}") when present, expanding
-     * placeholders; otherwise returns a sensible default line.
+     * Full customer-facing message for a status change (WhatsApp / SMS). Always
+     * starts with a greeting and the structured order detail (name, order #,
+     * courier, tracking, track link), then appends the admin's template note
+     * below — so configuring a template adds to the message, never strips the
+     * detail (#M4/#M5).
      */
     function order_status_message($order, ?string $status = null): string
     {
         $status = order_status_norm($status ?: $order->status);
         $name   = trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? '')) ?: ($order->customer?->name ?? 'there');
         $track  = order_track_url($order);
+        $label  = order_status_meta($status)['label'];
 
-        $tokens = [
-            '{order}'      => $order->order_number,
-            '{name}'       => $name,
-            '{status}'     => order_status_meta($status)['label'],
-            '{courier}'    => $order->dispatch_method ?? '',
-            '{tracking}'   => $order->tracking_id ?? '',
-            '{track_link}' => $track ?? '',
-            '{total}'      => 'Rs. ' . number_format((float) $order->total, 0),
-        ];
+        $lines = ['Assalam-o-Alaikum', "Dear: {$name},", "your order: {$order->order_number}"];
 
-        $tpl = setting('status_msg_' . $status);
-        if ($tpl) {
-            return strtr($tpl, $tokens);
+        switch ($status) {
+            case 'dispatched':
+                $lines[] = 'has been dispatched' . ($order->dispatch_method ? " via {$order->dispatch_method}" : '') . '.';
+                if ($order->tracking_id) $lines[] = "Tracking: {$order->tracking_id}.";
+                if ($track)              $lines[] = "Track: {$track}";
+                break;
+            case 'confirmed':
+                $lines[] = 'has been confirmed and is being prepared.';
+                break;
+            case 'packed':
+                $lines[] = 'has been packed and is ready to dispatch.';
+                break;
+            case 'delivered':
+                $lines[] = 'has been delivered. Thank you for shopping with us!';
+                break;
+            case 'returned':
+                $lines[] = 'has been marked as returned.';
+                break;
+            case 'cancelled':
+                $lines[] = 'has been cancelled.';
+                break;
+            default:
+                $lines[] = 'is now ' . $label . '.';
         }
 
-        // Default copy when no template is configured.
-        if ($status === 'dispatched') {
-            return "Assalam-o-Alaikum {$name}, your order {$order->order_number} has been dispatched"
-                  . ($order->dispatch_method ? " via {$order->dispatch_method}" : '')
-                  . ($order->tracking_id ? ". Tracking: {$order->tracking_id}" : '')
-                  . ($track ? ". Track: {$track}" : '') . '.';
-        }
-        return "Assalam-o-Alaikum {$name}, your order {$order->order_number} is now "
-             . order_status_meta($status)['label'] . '. Thank you for shopping with us.';
+        $message = implode("\n", $lines);
+
+        // Append the admin note below the structured detail (if configured).
+        $extra = order_status_template($order, $status);
+        if ($extra !== '') $message .= "\n\n" . $extra;
+
+        return $message;
     }
 }
 

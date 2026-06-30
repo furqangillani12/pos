@@ -18,7 +18,11 @@ class OnlineOrderController extends Controller
 
     public function index(Request $request)
     {
-        $query = $this->scopeBranch(Order::query())
+        // Online orders are placed on ONE shared storefront; their branch_id is
+        // just which branch owns the product. The online-order manager needs to
+        // see them all in one place regardless of the selected POS branch, so
+        // these are intentionally NOT branch-scoped (unlike POS sales).
+        $query = Order::query()
             ->where('order_source', 'online')
             ->with('customer')
             ->withCount('items');
@@ -48,8 +52,8 @@ class OnlineOrderController extends Controller
 
         $orders = $query->latest()->paginate(20)->withQueryString();
 
-        // Stats
-        $statBase = $this->scopeBranch(Order::query())->where('order_source', 'online');
+        // Stats (also cross-branch — see note above).
+        $statBase = Order::query()->where('order_source', 'online');
         $stats = [
             'all'       => (clone $statBase)->count(),
             'pending'   => (clone $statBase)->where('status', 'pending')->count(),
@@ -169,6 +173,47 @@ class OnlineOrderController extends Controller
         ]);
 
         return back()->with('success', 'Dispatch photo/video attached.');
+    }
+
+    /**
+     * Edit weight + delivery charge on an online order and recompute the tax and
+     * total the same way checkout did. Keeps the customer's khata (balance) in
+     * sync by the difference. POS orders are unaffected (online-only action).
+     */
+    public function adjust(Request $request, Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+
+        $data = $request->validate([
+            'weight'           => 'nullable|numeric|min:0|max:9999',
+            'delivery_charges' => 'nullable|numeric|min:0|max:9999999',
+        ]);
+
+        DB::transaction(function () use ($order, $data) {
+            $oldTotal = (float) $order->total;
+            $delivery = (float) ($data['delivery_charges'] ?? 0);
+
+            // Same formula as checkout: tax on (subtotal − discounts + delivery).
+            $afterDiscount = max(0, (float) $order->subtotal - (float) $order->coupon_discount - (float) $order->points_discount);
+            $tax           = shop_tax_amount($afterDiscount + $delivery);
+            $newTotal      = round(max(0, $afterDiscount + $tax + $delivery), 2);
+            $delta         = round($newTotal - $oldTotal, 2);
+
+            $order->update([
+                'weight'           => $data['weight'] ?? 0,
+                'delivery_charges' => $delivery,
+                'tax'              => $tax,
+                'total'            => $newTotal,
+                'balance_amount'   => round($newTotal - (float) $order->paid_amount, 2),
+            ]);
+
+            // Reflect the change on the customer's running balance.
+            if ($order->customer && abs($delta) > 0) {
+                $order->customer->increment('current_balance', $delta);
+            }
+        });
+
+        return back()->with('success', 'Weight & delivery updated — total recalculated.');
     }
 
     /** Manually (re)send the current-status email to the customer. */

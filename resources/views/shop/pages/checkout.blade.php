@@ -14,6 +14,7 @@
         initPayment: @js($paymentMethods->first()?->name),
         sub: {{ $totals['subtotal'] }}, disc: {{ $totals['discount'] }},
         taxRate: {{ $totals['tax_rate'] }}, taxType: @js($totals['tax_type']),
+        pointsBalance: {{ $pointsBalance ?? 0 }}, pointValue: {{ $pointValue ?? 0 }}, maxRedeemable: {{ $maxRedeemable ?? 0 }},
         old: {
             first: @js(old('shipping_first_name', $customer ? (explode(' ', $customer->name)[0] ?? '') : '')),
             last:  @js(old('shipping_last_name', $customer ? \Str::after($customer->name, ' ') : '')),
@@ -271,15 +272,34 @@
                             </div>
                         @endforeach
                     </div>
+                    {{-- Reward points redemption (#B) — only when the customer has usable points --}}
+                    @if (($maxRedeemable ?? 0) > 0)
+                        <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 mb-4">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" x-model="usePoints" class="rounded text-amber-600">
+                                <span class="text-sm font-semibold text-amber-800"><i class="fas fa-star"></i> Use my reward points</span>
+                            </label>
+                            <p class="text-[11px] text-amber-700 mt-1">Balance: {{ number_format($pointsBalance) }} points · 1 point = {{ shop_price($pointValue) }}. You can redeem up to <strong>{{ number_format($maxRedeemable) }}</strong> on this order.</p>
+                            <div x-show="usePoints" x-cloak class="mt-2 flex items-center gap-2">
+                                <input type="number" min="0" max="{{ $maxRedeemable }}" step="1" x-model.number="redeemPoints"
+                                       class="w-28 px-3 py-2 border border-amber-300 rounded-lg text-sm" placeholder="0">
+                                <button type="button" @click="redeemPoints = maxRedeemable" class="text-xs font-semibold text-amber-700 underline">Use max</button>
+                                <span class="text-xs text-amber-800 ml-auto" x-text="'-' + money(pointsDiscount)"></span>
+                            </div>
+                        </div>
+                    @endif
+
                     <hr class="my-4 border-gray-100">
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-semibold">{{ shop_price($totals['subtotal']) }}</span></div>
                         @if ($totals['discount'] > 0)
                             <div class="flex justify-between text-emerald-600"><span>Coupon ({{ $coupon->code }})</span><span>-{{ shop_price($totals['discount']) }}</span></div>
                         @endif
+                        <div class="flex justify-between text-amber-600" x-show="pointsDiscount > 0" x-cloak><span><i class="fas fa-star text-[11px]"></i> Points (<span x-text="appliedPoints"></span>)</span><span x-text="'-' + money(pointsDiscount)"></span></div>
                         <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold" x-text="charge > 0 ? money(charge) : 'Free'"></span></div>
                         <div class="flex justify-between" x-show="taxAmt > 0"><span class="text-gray-500">Tax<template x-if="taxType==='percent'"><span> (<span x-text="taxRate"></span>%)</span></template></span><span class="font-semibold" x-text="money(taxAmt)"></span></div>
                     </div>
+                    <input type="hidden" name="redeem_points" :value="appliedPoints">
                     <hr class="my-4 border-gray-100">
                     <div class="flex items-baseline justify-between">
                         <span class="font-bold">Total</span>
@@ -306,6 +326,11 @@
             disc: Number(cfg.disc) || 0,
             taxRate: Number(cfg.taxRate) || 0,
             taxType: cfg.taxType || 'percent',
+            pointsBalance: Number(cfg.pointsBalance) || 0,
+            pointValue: Number(cfg.pointValue) || 0,
+            maxRedeemable: Number(cfg.maxRedeemable) || 0,
+            usePoints: false,
+            redeemPoints: 0,
             dispatch: cfg.initDispatch || '',
             payment: cfg.initPayment || '',
             looking: false,
@@ -321,13 +346,22 @@
             get districts() { return this.provinces[this.f.province] || []; },
             get charge() { return Number(this.charges[this.dispatch] ?? 0); },
             get selectedPayment() { return this.payments.find(p => p.name === this.payment) || {}; },
+            // Points redemption (#B): clamp the entered points to what's allowed,
+            // and convert to a rupee discount that also lowers the taxable base.
+            get appliedPoints() {
+                if (!this.usePoints || this.pointValue <= 0) return 0;
+                let p = Math.floor(Number(this.redeemPoints) || 0);
+                return Math.max(0, Math.min(p, this.maxRedeemable));
+            },
+            get pointsDiscount() { return Math.round(this.appliedPoints * this.pointValue * 100) / 100; },
+            get afterDiscount() { return Math.max(0, this.sub - this.disc - this.pointsDiscount); },
             get taxAmt() {
                 if (this.taxRate <= 0) return 0;
                 if (this.taxType === 'fixed') return this.taxRate;
-                const base = Math.max(0, this.sub - this.disc) + this.charge;
+                const base = this.afterDiscount + this.charge;
                 return Math.round(base * this.taxRate / 100 * 100) / 100;
             },
-            get grand() { return Math.max(0, (this.sub - this.disc) + this.taxAmt + this.charge); },
+            get grand() { return Math.max(0, this.afterDiscount + this.taxAmt + this.charge); },
             money(n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); },
             async lookupPhone() {
                 const phone = (this.f.phone || '').replace(/\D+/g, '');

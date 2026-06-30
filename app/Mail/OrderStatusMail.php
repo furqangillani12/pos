@@ -83,10 +83,12 @@ class OrderStatusMail extends Mailable
             ],
         };
 
-        // Append the admin-editable template for this status (e.g. review-points
-        // copy) when one is configured.
-        if ($key !== 'placed' && setting('status_msg_' . $key)) {
-            $content['lines'][] = order_status_message($order, $key);
+        // Append the admin-editable note for this status (e.g. review-points
+        // copy) below the email's own structured copy — template only, so the
+        // greeting/detail isn't duplicated (#M5).
+        if ($key !== 'placed') {
+            $extra = order_status_template($order, $key);
+            if ($extra !== '') $content['lines'][] = $extra;
         }
 
         return $content;

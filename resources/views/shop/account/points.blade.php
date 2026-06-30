@@ -9,6 +9,9 @@
         <div class="rounded-2xl p-6 text-white my-6 reveal" style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">
             <div class="text-xs uppercase tracking-widest opacity-80">Your balance</div>
             <div class="text-4xl font-extrabold mt-1">🏆 {{ number_format($customer->loyalty_points ?? 0) }} points</div>
+            @if (shop_point_value() > 0)
+                <div class="text-sm font-semibold mt-1 opacity-95">Worth {{ shop_price(shop_points_to_rupees((int) ($customer->loyalty_points ?? 0))) }} — redeem at checkout.</div>
+            @endif
             <p class="text-sm opacity-90 mt-2">Earn points on delivered orders and reviews. Photo, video and social-media reviews earn extra — share and let us know!</p>
         </div>
 

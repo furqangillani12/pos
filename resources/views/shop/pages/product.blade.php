@@ -131,7 +131,16 @@
                 {{-- Share / copy --}}
                 @php
                     $shareUrl  = route('shop.product', $product->slug ?? $product->id);
-                    $shareText = trim($product->name . "\n" . ($product->summary ?: \Str::limit(strip_tags($product->description), 160)) . "\n" . shop_price($price));
+                    // Copy/share layout (client request): name → code → price → full detail.
+                    $rawDetail = $product->description ?: $product->summary ?: '';
+                    $rawDetail = preg_replace('/<\s*br\s*\/?>/i', "\n", $rawDetail);
+                    $rawDetail = preg_replace('#</\s*(p|div|li|h[1-6])\s*>#i', "\n", $rawDetail);
+                    $detail    = trim(preg_replace("/[ \t]*\n{3,}/", "\n\n", strip_tags($rawDetail)));
+                    $shareLines = [$product->name];
+                    if ($product->barcode) $shareLines[] = 'Item code: ' . $product->barcode;
+                    $shareLines[] = shop_price($price);
+                    if ($detail !== '') { $shareLines[] = ''; $shareLines[] = $detail; }
+                    $shareText = implode("\n", $shareLines);
                 @endphp
                 <div class="mt-4 flex flex-wrap items-center gap-2 text-sm">
                     <span class="text-gray-500 mr-1">Share:</span>

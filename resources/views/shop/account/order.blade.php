@@ -44,6 +44,8 @@
 
         @include('shop.partials.tracking-history')
 
+        @include('shop.partials.dispatch-media')
+
         {{-- Items + summary --}}
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
             <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
@@ -69,6 +71,9 @@
                         <div class="flex justify-between"><span class="text-gray-500">Subtotal</span><span class="font-semibold">{{ shop_price($order->subtotal) }}</span></div>
                         @if ($order->coupon_discount > 0)
                             <div class="flex justify-between text-emerald-600"><span>Coupon</span><span>-{{ shop_price($order->coupon_discount) }}</span></div>
+                        @endif
+                        @if (($order->points_discount ?? 0) > 0)
+                            <div class="flex justify-between text-amber-600"><span><i class="fas fa-star text-[11px]"></i> Points ({{ (int) $order->points_redeemed }})</span><span>-{{ shop_price($order->points_discount) }}</span></div>
                         @endif
                         <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold">{{ shop_price($order->delivery_charges ?? 0) }}</span></div>
                     </div>
@@ -102,8 +107,13 @@
                     <div class="text-sm capitalize">{{ str_replace('_', ' ', $order->payment_method) }}</div>
                     <div class="text-xs text-gray-500 mt-1 capitalize">{{ str_replace('_', ' ', $order->online_payment_status ?: $order->payment_status) }}</div>
 
-                    @if ($order->payment_proof_path)
-                        <div class="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2"><i class="fas fa-check-circle"></i> Payment proof submitted. We'll verify it shortly.</div>
+                    @php
+                        $isPaid = in_array($order->online_payment_status, ['paid', 'bank_paid'], true) || $order->payment_status === 'paid';
+                    @endphp
+                    @if ($isPaid)
+                        <div class="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2"><i class="fas fa-check-circle"></i> Payment received — thank you!</div>
+                    @elseif ($order->payment_proof_path)
+                        <div class="mt-3 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2"><i class="fas fa-clock"></i> Payment proof submitted. We'll verify it shortly.</div>
                     @endif
 
                     {{-- Attach / re-attach proof for an unpaid bank order --}}
@@ -124,7 +134,7 @@
                     @endif
                 </div>
 
-                @php $waOrder = wa_link(shop_whatsapp_number(), 'Hi, I would like an update on my order ' . $order->order_number . '.'); @endphp
+                @php $waOrder = wa_link(shop_whatsapp_number(), 'Assalam-o-Alaikum! I would like an update on my order ' . $order->order_number . '.'); @endphp
                 @if ($waOrder)
                     <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn btn-block !text-sm" style="background:#25D366;color:#fff;">
                         <i class="fab fa-whatsapp"></i> Message us about this order

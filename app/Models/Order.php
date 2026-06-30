@@ -29,6 +29,7 @@ class Order extends Model
         'shipping_province', 'shipping_district', 'shipping_tehsil',
         'from_name', 'from_phone', 'from_address', 'dispatch_media_path',
         'coupon_code', 'coupon_discount',
+        'points_redeemed', 'points_discount',
         'online_payment_status', 'online_payment_ref',
         'payment_proof_path', 'payment_sender_name', 'payment_sender_bank', 'payment_sender_amount',
         'order_notes_customer',

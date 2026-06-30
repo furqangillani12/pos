@@ -133,7 +133,7 @@
 
         {{-- RIGHT: summary, customer, shipping, payment --}}
         <div class="space-y-4">
-            {{-- Summary --}}
+            {{-- Summary (weight + delivery editable; total recalculates) --}}
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                 <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Summary</h3>
                 <div class="space-y-2 text-sm">
@@ -141,9 +141,30 @@
                     @if ($order->coupon_discount > 0)
                         <div class="flex justify-between text-emerald-600"><span>Coupon ({{ $order->coupon_code }})</span><span>-Rs. {{ number_format($order->coupon_discount, 0) }}</span></div>
                     @endif
-                    <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold">Rs. {{ number_format($order->delivery_charges ?? 0, 0) }}</span></div>
-                    @if ($order->weight) <div class="flex justify-between text-xs text-gray-500"><span>Weight</span><span>{{ number_format($order->weight, 2) }} kg</span></div> @endif
+                    @if (($order->points_discount ?? 0) > 0)
+                        <div class="flex justify-between text-amber-600"><span>Points ({{ (int) $order->points_redeemed }})</span><span>-Rs. {{ number_format($order->points_discount, 0) }}</span></div>
+                    @endif
+                    @if (($order->tax ?? 0) > 0)
+                        <div class="flex justify-between"><span class="text-gray-500">Tax</span><span class="font-semibold">Rs. {{ number_format($order->tax, 0) }}</span></div>
+                    @endif
                 </div>
+
+                <form method="POST" action="{{ route('admin.online-orders.adjust', $order) }}" class="mt-3 pt-3 border-t border-gray-100 space-y-2">
+                    @csrf
+                    @method('PATCH')
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="block">
+                            <span class="text-[11px] text-gray-500">Delivery (Rs.)</span>
+                            <input type="number" step="0.01" min="0" name="delivery_charges" value="{{ number_format((float) ($order->delivery_charges ?? 0), 2, '.', '') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        </label>
+                        <label class="block">
+                            <span class="text-[11px] text-gray-500">Weight (kg)</span>
+                            <input type="number" step="0.001" min="0" name="weight" value="{{ number_format((float) ($order->weight ?? 0), 3, '.', '') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        </label>
+                    </div>
+                    <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg"><i class="fas fa-calculator"></i> Update &amp; recalculate total</button>
+                </form>
+
                 <hr class="my-3 border-gray-100">
                 <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-xl font-extrabold" style="color:#0c1f3d;">Rs. {{ number_format($order->total, 0) }}</span></div>
             </div>

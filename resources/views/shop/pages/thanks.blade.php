@@ -43,9 +43,9 @@
                     <i class="fas fa-link text-amber-600 mt-1"></i>
                     <div class="flex-1">
                         <div class="font-bold text-gray-800 text-sm">Save this link to track your order any time</div>
-                        <div class="text-xs text-gray-600 mt-1 break-all">{{ url('/shop/track-order/' . $order->receipt_token) }}</div>
+                        <div class="text-xs text-gray-600 mt-1 break-all">{{ route('shop.track.view', $order->receipt_token) }}</div>
                         <div class="flex flex-wrap gap-2 mt-3">
-                            <a href="{{ url('/shop/track-order/' . $order->receipt_token) }}" class="btn btn-dark !text-xs"><i class="fas fa-truck"></i> Track this order</a>
+                            <a href="{{ route('shop.track.view', $order->receipt_token) }}" class="btn btn-dark !text-xs"><i class="fas fa-truck"></i> Track this order</a>
                             @if ($waOrder)
                                 <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn !text-xs" style="background:#25D366;color:#fff;"><i class="fab fa-whatsapp"></i> WhatsApp us</a>
                             @endif

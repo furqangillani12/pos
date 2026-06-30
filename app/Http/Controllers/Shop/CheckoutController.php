@@ -45,9 +45,17 @@ class CheckoutController extends Controller
 
         $provinces = config('pk_geo.provinces', []);
 
+        // Points redemption (#B): how many points the logged-in customer holds
+        // and what one is worth, so the form can offer "use my points".
+        $pointsBalance = (int) ($customer->loyalty_points ?? 0);
+        $pointValue    = shop_point_value();
+        $afterCoupon   = max(0, $totals['subtotal'] - $totals['discount']);
+        $maxRedeemable = $customer ? shop_max_redeemable_points($pointsBalance, $afterCoupon) : 0;
+
         return view('shop.pages.checkout', compact(
             'items', 'totals', 'coupon', 'customer', 'isGuest',
-            'dispatchMethods', 'paymentMethods', 'deliveryCharges', 'weight', 'provinces'
+            'dispatchMethods', 'paymentMethods', 'deliveryCharges', 'weight', 'provinces',
+            'pointsBalance', 'pointValue', 'maxRedeemable'
         ));
     }
 
@@ -109,6 +117,7 @@ class CheckoutController extends Controller
             'payment_method'       => ['required', 'string', 'max:100', Rule::in($paymentNames)],
             'order_notes_customer' => 'nullable|string|max:1000',
             'email'                => 'required|email|max:191',
+            'redeem_points'        => 'nullable|integer|min:0',
             // Optional bank-transfer proof submitted at checkout.
             'payment_sender_name'  => 'nullable|string|max:191',
             'payment_sender_bank'  => 'nullable|string|max:191',
@@ -129,9 +138,22 @@ class CheckoutController extends Controller
         $weight   = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
         $delivery = $this->resolveDelivery($data['dispatch_method'], $weight);
 
+        // Points redemption (#B) — logged-in customers only, capped so the points
+        // discount can never exceed the after-coupon subtotal. Applied like a
+        // discount, so (as in the POS) it also lowers the taxable base.
+        $afterCoupon    = max(0, $totals['subtotal'] - $totals['discount']);
+        $redeemPoints   = 0;
+        $pointsDiscount = 0.0;
+        if ($customer && shop_point_value() > 0) {
+            $requested      = (int) $request->input('redeem_points', 0);
+            $maxRedeemable  = shop_max_redeemable_points((int) ($customer->loyalty_points ?? 0), $afterCoupon);
+            $redeemPoints   = max(0, min($requested, $maxRedeemable));
+            $pointsDiscount = shop_points_to_rupees($redeemPoints);
+        }
+
         // Tax computed the SAME way as the POS receipt: exclusive, on
         // (subtotal − discount + delivery). Driven by the storefront tax setting.
-        $afterDiscount = max(0, $totals['subtotal'] - $totals['discount']);
+        $afterDiscount = max(0, $afterCoupon - $pointsDiscount);
         $taxableBase   = $afterDiscount + $delivery;
         $tax           = shop_tax_amount($taxableBase);
         $grandTotal    = max(0, $afterDiscount + $tax + $delivery);
@@ -149,7 +171,7 @@ class CheckoutController extends Controller
 
         $hasProof = $proofPath || !empty($data['payment_sender_name']) || $data['payment_sender_amount'] !== null;
 
-        $order = DB::transaction(function () use ($items, $customer, $isGuest, $data, $totals, $coupon, $delivery, $grandTotal, $weight, $tax, $isCod, $proofPath, $hasProof) {
+        $order = DB::transaction(function () use ($items, $customer, $isGuest, $data, $totals, $coupon, $delivery, $grandTotal, $weight, $tax, $isCod, $proofPath, $hasProof, $redeemPoints, $pointsDiscount) {
 
             $branchId = $items->first()->branch_id ?? \App\Models\Branch::query()->value('id');
 
@@ -166,6 +188,8 @@ class CheckoutController extends Controller
                 'discount'         => $totals['discount'],
                 'coupon_code'      => $coupon?->code,
                 'coupon_discount'  => $totals['discount'],
+                'points_redeemed'  => $redeemPoints,
+                'points_discount'  => $pointsDiscount,
                 'tax'              => $tax,
                 'tax_rate'         => $totals['tax_rate'],
                 'tax_type'         => $totals['tax_type'],
@@ -221,6 +245,11 @@ class CheckoutController extends Controller
                 $customer->update([
                     'current_balance' => round((float) ($customer->current_balance ?? 0) + $grandTotal, 2),
                 ]);
+
+                // Deduct redeemed points (#B) and log the transaction.
+                if ($redeemPoints > 0) {
+                    $customer->awardPoints(-$redeemPoints, 'redeem_order', "Redeemed on order {$order->order_number}", $order->id);
+                }
             }
 
             $order->recordStatus('pending', 'Order placed');

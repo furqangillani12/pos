@@ -61,6 +61,8 @@
 
         @include('shop.partials.tracking-history')
 
+        @include('shop.partials.dispatch-media')
+
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
             <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Items</h2></div>
@@ -110,7 +112,7 @@
                     <div class="text-xs text-gray-500 mt-1 capitalize">{{ str_replace('_', ' ', $order->payment_status) }}</div>
                 </div>
 
-                @php $waOrder = wa_link(shop_whatsapp_number(), 'Hi, I would like an update on my order ' . $order->order_number . '.'); @endphp
+                @php $waOrder = wa_link(shop_whatsapp_number(), 'Assalam-o-Alaikum! I would like an update on my order ' . $order->order_number . '.'); @endphp
                 @if ($waOrder)
                     <a href="{{ $waOrder }}" target="_blank" rel="noopener" class="btn btn-block !text-sm" style="background:#25D366;color:#fff;">
                         <i class="fab fa-whatsapp"></i> Message us about this order

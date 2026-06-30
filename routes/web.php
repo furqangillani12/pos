@@ -317,6 +317,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/online-orders/{order}',             [\App\Http\Controllers\Admin\OnlineOrderController::class, 'show'])->name('online-orders.show');
     Route::patch('/online-orders/{order}/status',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'updateStatus'])->name('online-orders.status');
     Route::patch('/online-orders/{order}/mark-paid', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'markPaid'])->name('online-orders.mark-paid');
+    Route::patch('/online-orders/{order}/adjust',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'adjust'])->name('online-orders.adjust');
     Route::post('/online-orders/{order}/notify',      [\App\Http\Controllers\Admin\OnlineOrderController::class, 'notify'])->name('online-orders.notify');
     Route::get('/online-orders/{order}/slip',         [\App\Http\Controllers\Admin\OnlineOrderController::class, 'slip'])->name('online-orders.slip');
     Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');

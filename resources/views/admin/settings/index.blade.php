@@ -121,14 +121,19 @@
                         <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-star text-amber-500 mr-1"></i> Reward points</div>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Rupees per 1 point (on delivered orders)</label>
-                        <input type="number" step="1" min="0" name="points_rupees_per_point" value="{{ old('points_rupees_per_point', $site['points_rupees_per_point'] ?? '') }}" placeholder="0 = off, e.g. 100" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Rupees per 1 point earned (on delivered orders)</label>
+                        <input type="number" step="any" min="0" name="points_rupees_per_point" value="{{ old('points_rupees_per_point', $site['points_rupees_per_point'] ?? '') }}" placeholder="0 = off, e.g. 100" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                         <p class="text-[11px] text-gray-400 mt-1">e.g. 100 → customer earns 1 point per Rs.100 when the order is delivered. 0 disables.</p>
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Points per approved review</label>
                         <input type="number" step="1" min="0" name="points_per_review" value="{{ old('points_per_review', $site['points_per_review'] ?? '') }}" placeholder="0 = off, e.g. 20" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                         <p class="text-[11px] text-gray-400 mt-1">Photo/video/social-media bonuses can be awarded manually from the customer page.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Rupee value of 1 point (redemption)</label>
+                        <input type="number" step="any" min="0" name="points_value_rupees" value="{{ old('points_value_rupees', $site['points_value_rupees'] ?? '') }}" placeholder="0 = off, e.g. 0.20" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <p class="text-[11px] text-gray-400 mt-1">Decimals allowed. e.g. 0.20 → 5 points = Rs.1 discount at checkout. 0 disables redemption.</p>
                     </div>
                 </div>
                 <div class="mt-4 flex justify-end">
