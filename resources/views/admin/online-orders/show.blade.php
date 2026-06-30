@@ -15,7 +15,7 @@
             <p class="text-xs text-gray-500 mt-1">Placed {{ $order->created_at->format('d M Y · h:i A') }}@if(!$order->customer_id) · <span class="font-semibold text-gray-600">GUEST</span>@endif</p>
         </div>
         <div class="flex flex-wrap items-center gap-2">
-            <a href="{{ url('/shop/track-order/' . $order->receipt_token) }}" target="_blank"
+            <a href="{{ route('shop.track.view', $order->receipt_token) }}" target="_blank"
                class="inline-flex items-center gap-1.5 px-3 py-2 bg-white border border-gray-300 hover:border-gray-400 text-gray-700 rounded-lg text-xs font-semibold">
                 <i class="fas fa-eye"></i> Public tracking page
             </a>
