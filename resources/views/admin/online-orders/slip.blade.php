@@ -115,15 +115,17 @@
         ? ['name' => $order->from_name, 'name_ur' => $order->from_name, 'phone' => $order->from_phone, 'addr' => $order->from_address]
         : ['name' => $company['name'], 'name_ur' => $company['name_ur'], 'phone' => $company['phone'], 'addr' => $company['addr']];
 
-    // ── Payment / COD (#audio3): if the order is already settled, it is NOT a
-    // COD parcel and no amount is collected on delivery. COD amount = balance due.
+    // ── COD amount to collect on delivery. Operator can override it on the order
+    // page (dispatch_cod_amount); blank falls back to auto: paid → 0, else balance.
+    // Matches the real TCS slip which just prints "COD Amount: Rs. X" (X may be 0),
+    // with no "paid/prepaid" wording — set 0 when the customer already paid online.
     $isPaid = in_array($order->online_payment_status, ['paid', 'bank_paid'], true)
         || $order->payment_status === 'paid'
         || (float) $order->balance_amount <= 0;
-    $codByMethod = ($order->online_payment_status === 'cod')
-        || (bool) \App\Models\PaymentMethod::where('name', $order->payment_method)->value('is_cod');
-    $isCod  = $codByMethod && ! $isPaid;
-    $codAmt = $isCod ? (float) $order->balance_amount : 0.0;
+    $codAmt = $order->dispatch_cod_amount !== null
+        ? (float) $order->dispatch_cod_amount
+        : ($isPaid ? 0.0 : (float) $order->balance_amount);
+    $isCod  = $codAmt > 0;
 
     // Barcodes print ONLY once (no doubling — #audio2): tracking barcode + number,
     // and a COD-amount barcode. Order number shows once, in its own box.
@@ -246,14 +248,9 @@
             {{-- COD amount + barcode, then parcel facts + QR --}}
             <div class="side">
                 <div class="cod {{ $isCod ? 'due' : '' }}">
-                    @if ($isCod)
-                        <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
-                        <div class="amt">Rs. {{ number_format($codAmt, 0) }}</div>
-                        <div><svg id="barcode-cod"></svg></div>
-                    @else
-                        <div class="tag paid">{!! $bi('Prepaid — No COD', 'ادا شدہ') !!}</div>
-                        <div class="amt paid">Rs. 0</div>
-                    @endif
+                    <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
+                    <div class="amt {{ $isCod ? '' : 'paid' }}">Rs. {{ number_format($codAmt, 0) }}</div>
+                    <div><svg id="barcode-cod"></svg></div>
                 </div>
                 <div class="parcel">
                     <div class="facts">
@@ -289,10 +286,9 @@
             // Tracking barcode (Code128). The readable number prints once below it.
             try { JsBarcode('#barcode-track', @json((string) $order->tracking_id), { format: 'CODE128', width: 1.6, height: 34, displayValue: false, margin: 0 }); } catch (e) {}
             @endif
-            @if ($isCod)
-            // COD-amount barcode — encodes the rupee amount collected on delivery.
+            // COD-amount barcode — encodes the rupee amount collected on delivery
+            // (prints even for 0, matching the reference TCS slip).
             try { JsBarcode('#barcode-cod', @json((string) (int) $codAmt), { format: 'CODE128', width: 1.4, height: 30, displayValue: false, margin: 0 }); } catch (e) {}
-            @endif
             // QR = order's public tracking / payment page (scannable).
             try { new QRCode(document.getElementById('qr-pay'), { text: @json($payUrl), width: 70, height: 70, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
         });

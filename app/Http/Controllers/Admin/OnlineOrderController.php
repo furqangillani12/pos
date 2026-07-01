@@ -185,11 +185,13 @@ class OnlineOrderController extends Controller
         abort_unless($order->order_source === 'online', 404);
 
         $data = $request->validate([
-            'weight'           => 'nullable|numeric|min:0|max:9999',
-            'delivery_charges' => 'nullable|numeric|min:0|max:9999999',
+            'weight'              => 'nullable|numeric|min:0|max:9999',
+            'delivery_charges'    => 'nullable|numeric|min:0|max:9999999',
+            // Editable COD amount for the dispatch slip (blank = auto: paid ? 0 : balance).
+            'dispatch_cod_amount' => 'nullable|numeric|min:0|max:9999999',
         ]);
 
-        DB::transaction(function () use ($order, $data) {
+        DB::transaction(function () use ($request, $order, $data) {
             $oldTotal = (float) $order->total;
             $delivery = (float) ($data['delivery_charges'] ?? 0);
 
@@ -199,12 +201,17 @@ class OnlineOrderController extends Controller
             $newTotal      = round(max(0, $afterDiscount + $tax + $delivery), 2);
             $delta         = round($newTotal - $oldTotal, 2);
 
+            // Blank COD field clears the override (back to auto); a number stores it.
+            $codRaw = $request->input('dispatch_cod_amount');
+            $codOverride = ($codRaw === null || $codRaw === '') ? null : round((float) $codRaw, 2);
+
             $order->update([
-                'weight'           => $data['weight'] ?? 0,
-                'delivery_charges' => $delivery,
-                'tax'              => $tax,
-                'total'            => $newTotal,
-                'balance_amount'   => round($newTotal - (float) $order->paid_amount, 2),
+                'weight'              => $data['weight'] ?? 0,
+                'delivery_charges'    => $delivery,
+                'tax'                 => $tax,
+                'total'               => $newTotal,
+                'balance_amount'      => round($newTotal - (float) $order->paid_amount, 2),
+                'dispatch_cod_amount' => $codOverride,
             ]);
 
             // Reflect the change on the customer's running balance.

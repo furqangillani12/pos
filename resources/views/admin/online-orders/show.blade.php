@@ -162,6 +162,20 @@
                             <input type="number" step="0.001" min="0" name="weight" value="{{ number_format((float) ($order->weight ?? 0), 3, '.', '') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         </label>
                     </div>
+                    @php
+                        $isPaidNow = in_array($order->online_payment_status, ['paid', 'bank_paid'], true)
+                            || $order->payment_status === 'paid'
+                            || (float) $order->balance_amount <= 0;
+                        $codAuto = $isPaidNow ? 0 : (float) $order->balance_amount;
+                    @endphp
+                    <label class="block">
+                        <span class="text-[11px] text-gray-500">COD amount to collect on slip (Rs.)</span>
+                        <input type="number" step="0.01" min="0" name="dispatch_cod_amount"
+                               value="{{ $order->dispatch_cod_amount !== null ? number_format((float) $order->dispatch_cod_amount, 2, '.', '') : '' }}"
+                               placeholder="Auto: Rs. {{ number_format($codAuto, 0) }}"
+                               class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                        <span class="text-[10px] text-gray-400">Blank = auto ({{ $isPaidNow ? 'paid → Rs. 0' : 'unpaid → balance' }}). Set 0 if the customer already paid online.</span>
+                    </label>
                     <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg"><i class="fas fa-calculator"></i> Update &amp; recalculate total</button>
                 </form>
 

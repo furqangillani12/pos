@@ -28,6 +28,7 @@ class Order extends Model
         'shipping_city', 'shipping_country', 'shipping_post_code',
         'shipping_province', 'shipping_district', 'shipping_tehsil',
         'from_name', 'from_phone', 'from_address', 'dispatch_media_path',
+        'dispatch_cod_amount',
         'coupon_code', 'coupon_discount',
         'points_redeemed', 'points_discount',
         'online_payment_status', 'online_payment_ref',
