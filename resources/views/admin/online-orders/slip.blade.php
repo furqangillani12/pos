@@ -21,12 +21,12 @@
         .sheet { width: 210mm; margin: 16px auto; background: #fff; border: 2px solid #111827; }
         .cell { border: 1px solid #111827; }
 
-        /* Header (orange framed) : courier logo | title | company logo */
-        .head { display: flex; border: 3px solid #e07b2c; }
+        /* Header : courier logo | title | company logo (black dividers) */
+        .head { display: flex; border-bottom: 2px solid #111827; }
         .head > div { padding: 6px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .head .courier { flex: 1; border-right: 2px solid #e07b2c; }
+        .head .courier { flex: 1; border-right: 2px solid #111827; }
         .head .title   { flex: 1.4; }
-        .head .brand   { flex: 1; border-left: 2px solid #e07b2c; }
+        .head .brand   { flex: 1; border-left: 2px solid #111827; }
         .head .title .t { font-size: 22px; font-weight: 800; letter-spacing: .01em; }
         .head .title .sub { font-size: 12px; font-weight: 700; color: #111827; margin-top: 2px; }
         .head .logo { max-height: 46px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto; }
@@ -45,7 +45,7 @@
         .row3 .empty { font-size: 11px; color: #9ca3af; padding: 8px 0; }
 
         /* Main 3 columns : from | to | codes/parcel */
-        .main { display: flex; border-left: 2px solid #111827; border-right: 2px solid #111827; }
+        .main { display: flex; border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; }
         .main > div { padding: 7px 10px; }
         .main .from { flex: 1; border-right: 1px solid #111827; display: flex; flex-direction: column; }
         .main .to   { flex: 1.5; border-right: 1px solid #111827; }
@@ -77,7 +77,7 @@
         .side .parcel .qrwrap { text-align: center; }
         .side .parcel .qrwrap .k { font-size: 9px; font-weight: 800; color: #6b7280; }
 
-        .note { border: 2px solid #111827; border-top: none; padding: 6px 10px; text-align: center; }
+        .note { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 6px 10px; text-align: center; }
         .note .k { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #6b7280; }
         .note .urdu { font-size: 12px; }
         .note .en { font-size: 11px; }
