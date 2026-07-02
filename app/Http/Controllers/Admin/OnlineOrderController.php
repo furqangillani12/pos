@@ -142,8 +142,16 @@ class OnlineOrderController extends Controller
         // Default language comes from settings; a ?lang= URL param overrides per-print.
         $defaultLang = in_array(setting('dispatch_slip_lang'), ['ur', 'en', 'both'], true) ? setting('dispatch_slip_lang') : 'en';
         $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : $defaultLang;
-        // Sender block: company by default, or the reseller's "From" address.
-        $from        = $request->input('from') === 'reseller' && $order->from_name ? 'reseller' : 'company';
+        // Sender ("From") block default:
+        //   • regular customer                    → show the company as sender
+        //   • reseller/wholesaler + own address   → show the reseller's address
+        //   • reseller/wholesaler, no own address → hide From (white-label)
+        $resellerType = in_array($order->customer_type ?: optional($order->customer)->customer_type, ['reseller', 'wholesale'], true);
+        $fromDefault  = $resellerType ? ($order->from_name ? 'reseller' : 'hide') : 'company';
+        $from = in_array($request->input('from'), ['company', 'reseller', 'hide'], true) ? $request->input('from') : $fromDefault;
+        if ($from === 'reseller' && ! $order->from_name) {
+            $from = 'hide';
+        }
         $withLogo    = $request->boolean('logo', true);
         $withDetails = $request->boolean('details', true);
         $dispatchMethod = \App\Models\DispatchMethod::where('name', $order->dispatch_method)->first();

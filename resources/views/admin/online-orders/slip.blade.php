@@ -125,12 +125,19 @@
         'website' => setting('site_website', 'www.almufeed.com.pk'),
     ];
 
-    // "From" prints ONLY for a reseller who supplied their own address; a normal
-    // customer order hides the From column entirely.
+    // "From" (sender) box — controller decides the default per customer type:
+    //   • regular customer            → company sender (shown)
+    //   • reseller w/ own address     → reseller sender (shown)
+    //   • reseller w/o own address    → hidden
+    // $from is 'company' | 'reseller' | 'hide' (operator can override via toolbar).
     $isReseller = $from === 'reseller' && $order->from_name;
+    $showFrom   = $from !== 'hide';
+    $senderName = $isReseller
+        ? $order->from_name
+        : ($lang === 'ur' ? $company['name_ur'] : $company['name']);
     $sender = $isReseller
         ? ['name' => $order->from_name, 'phone' => $order->from_phone, 'addr' => $order->from_address]
-        : null;
+        : ['name' => $company['name'], 'phone' => $company['phone'], 'addr' => $company['addr']];
 
     // ── COD amount to collect on delivery. Operator can override it on the order
     // page (dispatch_cod_amount); blank falls back to auto: paid → 0, else balance.
@@ -169,12 +176,13 @@
         <a href="{{ $q(['lang'=>'en']) }}" class="{{ $lang==='en'?'on':'' }}">English</a>
         <a href="{{ $q(['lang'=>'both']) }}" class="{{ $lang==='both'?'on':'' }}">Both</a>
         <a href="{{ $q(['lang'=>'ur']) }}" class="{{ $lang==='ur'?'on':'' }}">اردو</a>
+        <span style="width:1px;height:18px;background:#e5e7eb;"></span>
+        <strong style="font-size:12px;">From:</strong>
+        <a href="{{ $q(['from'=>'company']) }}" class="{{ $from==='company'?'on':'' }}">Company</a>
         @if ($order->from_name)
-            <span style="width:1px;height:18px;background:#e5e7eb;"></span>
-            <strong style="font-size:12px;">From:</strong>
-            <a href="{{ $q(['from'=>'company']) }}" class="{{ $from!=='reseller'?'on':'' }}">Hide</a>
             <a href="{{ $q(['from'=>'reseller']) }}" class="{{ $from==='reseller'?'on':'' }}">Reseller</a>
         @endif
+        <a href="{{ $q(['from'=>'hide']) }}" class="{{ $from==='hide'?'on':'' }}">Hide</a>
         @if (! $hasTracking)
             <span style="font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;padding:4px 8px;border-radius:6px;">⚠ Add a tracking number to print the barcode</span>
         @endif
@@ -234,10 +242,10 @@
 
         {{-- ── Main: [From — reseller only] · To · COD/Parcel ── --}}
         <div class="main">
-            @if ($isReseller)
+            @if ($showFrom)
                 <div class="from">
                     <div class="lead">{{ $showUr ? 'مرسل / From' : 'From' }}</div>
-                    <div class="fname">{{ $sender['name'] }}</div>
+                    <div class="fname">{{ $senderName }}</div>
                     <div class="fbody">
                         @if ($sender['phone'])☎ {{ $sender['phone'] }}<br>@endif
                         {{ $sender['addr'] }}
