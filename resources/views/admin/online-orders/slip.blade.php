@@ -19,70 +19,76 @@
 
         /* ── Landscape A5 sheet ── */
         .sheet { width: 210mm; margin: 16px auto; background: #fff; border: 2px solid #111827; }
-        .cell { border: 1px solid #111827; }
 
-        /* Header : courier logo | title | company logo (black dividers) */
-        .head { display: flex; border-bottom: 2px solid #111827; }
-        .head > div { padding: 6px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .head .courier { flex: 1; border-right: 2px solid #111827; }
+        /* Header : courier logo | title (top) | company logo — NO dividers between */
+        .head { display: flex; align-items: flex-start; border-bottom: 2px solid #111827; }
+        .head > div { padding: 3px 10px 6px; display: flex; flex-direction: column; align-items: center; text-align: center; }
+        .head .courier { flex: 1; }
         .head .title   { flex: 1.4; }
-        .head .brand   { flex: 1; border-left: 2px solid #111827; }
-        .head .title .t { font-size: 22px; font-weight: 800; letter-spacing: .01em; }
+        .head .brand   { flex: 1; }
+        .head .title .t { font-size: 24px; font-weight: 800; line-height: 1.05; }
         .head .title .sub { font-size: 12px; font-weight: 700; color: #111827; margin-top: 2px; }
-        .head .logo { max-height: 46px; max-width: 150px; object-fit: contain; display: block; margin: 0 auto; }
-        .head .cname { font-size: 12px; font-weight: 800; margin-top: 2px; }
+        .head .clogo { max-height: 62px; max-width: 190px; object-fit: contain; margin-top: 4px; }
+        .head .blogo { max-height: 46px; max-width: 160px; object-fit: contain; margin-top: 4px; }
+        .head .cname { font-size: 13px; font-weight: 800; margin-top: 3px; }
         .head .ph { font-size: 11px; color: #6b7280; font-weight: 700; }
 
-        /* Row of 3 : tracking+barcode | order no | date */
+        /* Row : tracking+barcode | order no + QR | date */
         .row3 { display: flex; border-left: 2px solid #111827; border-right: 2px solid #111827; }
         .row3 > div { flex: 1; padding: 5px 8px; border-bottom: 2px solid #111827; text-align: center; }
         .row3 > div + div { border-left: 1px solid #111827; }
         .row3 .k { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
-        .row3 .track svg { max-width: 210px; height: 34px; }
-        .row3 .trackno { font-size: 12px; font-weight: 800; letter-spacing: .04em; }
-        .row3 .ordno { font-size: 18px; font-weight: 800; }
-        .row3 .date { font-size: 14px; font-weight: 700; margin-top: 4px; }
-        .row3 .empty { font-size: 11px; color: #9ca3af; padding: 8px 0; }
+        .row3 .track { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .row3 .track svg { max-width: 230px; height: 36px; }
+        .row3 .track .trackno { font-size: 15px; font-weight: 800; letter-spacing: .05em; margin-top: 1px; }
+        .row3 .track .empty { font-size: 11px; color: #9ca3af; padding: 10px 0; }
+        .row3 .orderbox { display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .row3 .orderbox .ordno { font-size: 19px; font-weight: 800; }
+        .row3 .orderbox .oqr { display: flex; flex-direction: column; align-items: center; }
+        .row3 .orderbox .oqr .k { font-size: 8px; }
+        .row3 .date { font-size: 15px; font-weight: 700; margin-top: 3px; }
 
-        /* Main 3 columns : from | to | codes/parcel */
+        /* Main : [from] | to | codes/parcel */
         .main { display: flex; border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; }
         .main > div { padding: 7px 10px; }
-        .main .from { flex: 1; border-right: 1px solid #111827; display: flex; flex-direction: column; }
-        .main .to   { flex: 1.5; border-right: 1px solid #111827; }
+        .main .from { flex: 1; border-right: 1px solid #111827; }
+        .main .to   { flex: 1.7; border-right: 1px solid #111827; }
         .main .side { flex: 1; padding: 0; display: flex; flex-direction: column; }
         .lead { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; }
 
-        .to .cname { font-size: 20px; font-weight: 800; line-height: 1.15; }
-        .to .cphone { font-size: 15px; font-weight: 800; margin-top: 2px; }
-        .to .caddr { font-size: 14px; font-weight: 600; margin-top: 4px; line-height: 1.4; }
-        .to .cmeta { font-size: 13px; margin-top: 5px; }
+        .to .cname { font-size: 21px; font-weight: 800; line-height: 1.15; }
+        .to .cphone { font-size: 16px; font-weight: 800; margin-top: 2px; }
+        .to .caddr { font-size: 15px; font-weight: 600; margin-top: 4px; line-height: 1.4; }
+        .to .cmeta { font-size: 13px; margin-top: 5px; line-height: 1.5; }
         .to .cmeta b { font-weight: 800; }
 
-        .from .fname { font-size: 14px; font-weight: 800; margin-top: 2px; }
-        .from .fname.urdu { font-size: 15px; }
+        .from .fname { font-size: 15px; font-weight: 800; margin-top: 2px; }
         .from .fbody { font-size: 12px; font-weight: 600; margin-top: 3px; line-height: 1.4; }
-        .from .remarks { margin-top: auto; border-top: 1px dashed #9ca3af; padding-top: 4px; }
-        .from .remarks .k { font-size: 10px; font-weight: 800; color: #6b7280; }
-        .from .remarks .space { height: 34px; }
 
         .side .cod { border-bottom: 1px solid #111827; padding: 7px 10px; text-align: center; }
         .side .cod.due { background: #fff7ed; }
-        .side .cod .amt { font-size: 22px; font-weight: 800; line-height: 1.1; }
+        .side .cod .amt { font-size: 23px; font-weight: 800; line-height: 1.1; }
         .side .cod .tag { font-size: 11px; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: #b45309; }
-        .side .cod .paid { color: #059669; }
+        .side .cod .amt.paid { color: #059669; }
         .side .cod svg { max-width: 180px; height: 30px; margin-top: 3px; }
         .side .parcel { flex: 1; padding: 7px 10px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-        .side .parcel .facts { font-size: 12px; font-weight: 700; line-height: 1.5; }
-        .side .parcel .facts b { font-size: 15px; font-weight: 800; }
-        .side .parcel .qrwrap { text-align: center; }
-        .side .parcel .qrwrap .k { font-size: 9px; font-weight: 800; color: #6b7280; }
+        .side .parcel .facts { font-size: 13px; font-weight: 700; line-height: 1.6; }
+        .side .parcel .facts b { font-size: 16px; font-weight: 800; }
+        .side .parcel .wqr { text-align: center; }
+        .side .parcel .wqr .wt { font-size: 12px; font-weight: 800; margin-top: 1px; }
 
-        .note { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 6px 10px; text-align: center; }
-        .note .k { font-size: 10px; font-weight: 800; text-transform: uppercase; color: #6b7280; }
-        .note .urdu { font-size: 12px; }
-        .note .en { font-size: 11px; }
+        /* Remarks — separate manual (handwriting) box below the address */
+        .remarks { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 5px 10px; }
+        .remarks .k { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+        .remarks .space { height: 26px; }
 
-        .footer { background: #111827; color: #fff; padding: 6px 10px; font-size: 11px; display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+        /* Postman note — full width, no heading label */
+        .note { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 7px 14px; text-align: center; }
+        .note .urdu { font-size: 13px; line-height: 1.6; }
+        .note .en { font-size: 12px; line-height: 1.5; }
+
+        /* Dark footer — spread across the full line */
+        .footer { background: #111827; color: #fff; padding: 8px 16px; font-size: 12px; display: flex; align-items: center; justify-content: space-around; gap: 14px; flex-wrap: wrap; }
         .footer span { white-space: nowrap; }
 
         @media print {
@@ -97,8 +103,8 @@
     $showEn = $lang !== 'ur';
     $showUr = $lang !== 'en';
 
-    // Per-branch slip (#audio3, prev): the order's own branch supplies the logo +
-    // contact, falling back to the global website/brand settings.
+    // Per-branch slip: the order's own branch supplies the logo + contact,
+    // falling back to the global website/brand settings.
     $branch     = $order->branch;
     $branchLogo = $branch?->logo ? asset('storage/'.$branch->logo) : asset('assets/images/brand/almufeed-traders.png');
     $company = [
@@ -109,16 +115,15 @@
         'website' => setting('site_website', 'www.almufeed.com.pk'),
     ];
 
-    // Reseller "From": only rendered when the reseller supplied an address.
+    // "From" prints ONLY for a reseller who supplied their own address; a normal
+    // customer order hides the From column entirely.
     $isReseller = $from === 'reseller' && $order->from_name;
     $sender = $isReseller
-        ? ['name' => $order->from_name, 'name_ur' => $order->from_name, 'phone' => $order->from_phone, 'addr' => $order->from_address]
-        : ['name' => $company['name'], 'name_ur' => $company['name_ur'], 'phone' => $company['phone'], 'addr' => $company['addr']];
+        ? ['name' => $order->from_name, 'phone' => $order->from_phone, 'addr' => $order->from_address]
+        : null;
 
     // ── COD amount to collect on delivery. Operator can override it on the order
     // page (dispatch_cod_amount); blank falls back to auto: paid → 0, else balance.
-    // Matches the real TCS slip which just prints "COD Amount: Rs. X" (X may be 0),
-    // with no "paid/prepaid" wording — set 0 when the customer already paid online.
     $isPaid = in_array($order->online_payment_status, ['paid', 'bank_paid'], true)
         || $order->payment_status === 'paid'
         || (float) $order->balance_amount <= 0;
@@ -127,13 +132,10 @@
         : ($isPaid ? 0.0 : (float) $order->balance_amount);
     $isCod  = $codAmt > 0;
 
-    // Barcodes print ONLY once (no doubling — #audio2): tracking barcode + number,
-    // and a COD-amount barcode. Order number shows once, in its own box.
     $hasTracking = (bool) $order->tracking_id;
 
-    // QR — scannable, opens the order's public tracking / payment page.
-    $payUrl = $order->receipt_token ? route('shop.track.view', $order->receipt_token) : url('/');
-
+    // Order-tracking QR — scannable, opens the order's public tracking page.
+    $payUrl    = $order->receipt_token ? route('shop.track.view', $order->receipt_token) : url('/');
     $weightTxt = (rtrim(rtrim(number_format((float) $order->weight, 3), '0'), '.') ?: '0') . ' kg';
     $pieces    = (int) $order->items->sum('quantity');
 
@@ -154,13 +156,13 @@
 <body>
     <div class="toolbar">
         <strong style="font-size:12px;">Language:</strong>
-        <a href="{{ $q(['lang'=>'both']) }}" class="{{ $lang==='both'?'on':'' }}">Both</a>
         <a href="{{ $q(['lang'=>'en']) }}" class="{{ $lang==='en'?'on':'' }}">English</a>
+        <a href="{{ $q(['lang'=>'both']) }}" class="{{ $lang==='both'?'on':'' }}">Both</a>
         <a href="{{ $q(['lang'=>'ur']) }}" class="{{ $lang==='ur'?'on':'' }}">اردو</a>
-        <span style="width:1px;height:18px;background:#e5e7eb;"></span>
-        <strong style="font-size:12px;">From:</strong>
-        <a href="{{ $q(['from'=>'company']) }}" class="{{ $from==='company'?'on':'' }}">Company</a>
         @if ($order->from_name)
+            <span style="width:1px;height:18px;background:#e5e7eb;"></span>
+            <strong style="font-size:12px;">From:</strong>
+            <a href="{{ $q(['from'=>'company']) }}" class="{{ $from!=='reseller'?'on':'' }}">Hide</a>
             <a href="{{ $q(['from'=>'reseller']) }}" class="{{ $from==='reseller'?'on':'' }}">Reseller</a>
         @endif
         @if (! $hasTracking)
@@ -171,40 +173,45 @@
     </div>
 
     <div class="sheet">
-        {{-- ── Header: courier logo · title · company logo ── --}}
+        {{-- ── Header: courier logo · title (top) · company logo — no dividers ── --}}
         <div class="head">
             <div class="courier">
                 @if ($dispatchMethod?->logo)
-                    <img class="logo" src="{{ asset('storage/'.$dispatchMethod->logo) }}" alt="" onerror="this.style.display='none'">
+                    <img class="clogo" src="{{ asset('storage/'.$dispatchMethod->logo) }}" alt="" onerror="this.style.display='none'">
                 @else
-                    <div class="ph urdu">کوریئر کمپنی لوگو</div>
+                    <div class="ph urdu">کوریئر</div>
+                    <div class="cname">{{ $order->dispatch_method ?: 'Courier' }}</div>
                 @endif
-                <div class="cname">{{ $order->dispatch_method ?: 'Courier' }}</div>
             </div>
             <div class="title">
                 <div class="t">Dispatch Slip</div>
                 <div class="sub">{{ $isCod ? 'COD Parcel' : 'General Parcel' }}</div>
             </div>
             <div class="brand">
-                <img class="logo" src="{{ $branchLogo }}" alt="" onerror="this.style.display='none'">
+                <img class="blogo" src="{{ $branchLogo }}" alt="" onerror="this.style.display='none'">
                 <div class="cname urdu">{{ $company['name_ur'] }}</div>
             </div>
         </div>
 
-        {{-- ── Row: Tracking ID + barcode · Order No · Date ── --}}
+        {{-- ── Row: Tracking+barcode · Order No + QR · Date ── --}}
         <div class="row3">
             <div class="track">
-                <div class="k">{!! $bi('Tracking ID', 'ٹریکنگ نمبر') !!}</div>
                 @if ($hasTracking)
-                    <div><svg id="barcode-track"></svg></div>
-                    <div class="trackno">{{ $order->tracking_id }}</div>
+                    <svg id="barcode-track"></svg>
+                    <div class="trackno">{{ $showUr ? 'ٹریکنگ' : 'Tracking' }} {{ $order->tracking_id }}</div>
                 @else
-                    <div class="empty">{{ $showUr ? 'ٹریکنگ نمبر بعد میں' : '—' }}</div>
+                    <div class="empty">{{ $showUr ? 'ٹریکنگ نمبر بعد میں' : 'Tracking added later' }}</div>
                 @endif
             </div>
             <div>
                 <div class="k">{!! $bi('Order No', 'آرڈر نمبر') !!}</div>
-                <div class="ordno">{{ $order->order_number }}</div>
+                <div class="orderbox">
+                    <div class="ordno">{{ $order->order_number }}</div>
+                    <div class="oqr">
+                        <div id="qr-track"></div>
+                        <div class="k">{{ $showUr ? 'ٹریک' : 'Track' }}</div>
+                    </div>
+                </div>
             </div>
             <div>
                 <div class="k">{!! $bi('Date', 'تاریخ') !!}</div>
@@ -212,23 +219,20 @@
             </div>
         </div>
 
-        {{-- ── Main: From · To · COD/Parcel ── --}}
+        {{-- ── Main: [From — reseller only] · To · COD/Parcel ── --}}
         <div class="main">
-            {{-- FROM (reseller / company) + manual remarks box --}}
-            <div class="from">
-                <div class="lead">{{ $showUr ? 'مرسل / From' : 'From' }}</div>
-                <div class="fname {{ $isReseller ? '' : 'urdu' }}">{{ $isReseller ? $sender['name'] : $sender['name_ur'] }}</div>
-                <div class="fbody">
-                    @if ($sender['phone'])☎ {{ $sender['phone'] }}<br>@endif
-                    {{ $sender['addr'] }}
+            @if ($isReseller)
+                <div class="from">
+                    <div class="lead">{{ $showUr ? 'مرسل / From' : 'From' }}</div>
+                    <div class="fname">{{ $sender['name'] }}</div>
+                    <div class="fbody">
+                        @if ($sender['phone'])☎ {{ $sender['phone'] }}<br>@endif
+                        {{ $sender['addr'] }}
+                    </div>
                 </div>
-                <div class="remarks">
-                    <div class="k">{!! $bi('Remarks', 'ریمارکس') !!}</div>
-                    <div class="space"></div>
-                </div>
-            </div>
+            @endif
 
-            {{-- TO — stylish customer block (#audio2) --}}
+            {{-- TO — stylish customer block --}}
             <div class="to">
                 <div class="lead">{{ $showUr ? 'وصول کنندہ / To' : 'To' }}</div>
                 <div class="cname">{{ $order->shipping_first_name }} {{ $order->shipping_last_name }}</div>
@@ -238,14 +242,14 @@
                 </div>
                 <div class="cmeta">
                     @if ($order->shipping_tehsil)<b>{!! $bi('Tehsil', 'تحصیل') !!}:</b> {{ $order->shipping_tehsil }} &nbsp; @endif
-                    <b>{!! $bi('District/City', 'ضلع/شہر') !!}:</b> {{ collect([$order->shipping_district, $order->shipping_city])->filter()->implode(' / ') ?: '—' }}
+                    <b>{!! $bi('District', 'ضلع') !!}:</b> {{ $order->shipping_district ?: $order->shipping_city ?: '—' }}
                     @if ($order->shipping_post_code) — {{ $order->shipping_post_code }}@endif
                     <br>
                     <b>{!! $bi('Province', 'صوبہ') !!}:</b> {{ $order->shipping_province ?: '—' }} ({{ $order->shipping_country ?: 'Pakistan' }})
                 </div>
             </div>
 
-            {{-- COD amount + barcode, then parcel facts + QR --}}
+            {{-- COD amount + barcode, then parcel facts + weight QR --}}
             <div class="side">
                 <div class="cod {{ $isCod ? 'due' : '' }}">
                     <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
@@ -255,24 +259,28 @@
                 <div class="parcel">
                     <div class="facts">
                         <div>{!! $bi('Pieces', 'تعداد') !!}: <b>{{ $pieces }}</b> {{ $showEn ? 'in 1 parcel' : '' }}</div>
-                        <div>{!! $bi('Weight', 'وزن') !!}: <b>{{ $weightTxt }}</b></div>
                     </div>
-                    <div class="qrwrap">
-                        <div id="qr-pay"></div>
-                        <div class="k">{!! $bi('Scan', 'اسکین') !!}</div>
+                    <div class="wqr">
+                        <div id="qr-weight"></div>
+                        <div class="wt">{{ $showUr ? 'وزن' : 'Weight' }}: {{ $weightTxt }}</div>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- ── Postman note (full width) ── --}}
+        {{-- ── Remarks — separate blank box for handwriting ── --}}
+        <div class="remarks">
+            <span class="k">{!! $bi('Remarks', 'ریمارکس') !!}</span>
+            <div class="space"></div>
+        </div>
+
+        {{-- ── Postman note (full width, no heading) ── --}}
         <div class="note">
-            <div class="k">{!! $bi('Note for postman', 'ڈاک صاحب کے لیے' ) !!}</div>
             @if ($showUr)<div class="urdu">{{ $postmanUr }}</div>@endif
             @if ($showEn)<div class="en">{{ $postmanEn }}</div>@endif
         </div>
 
-        {{-- ── Dark footer: company address · contact · web ── --}}
+        {{-- ── Dark footer: contact · web · address spread across the line ── --}}
         <div class="footer">
             @if ($company['phone'])<span>☎ {{ $company['phone'] }}</span>@endif
             @if ($company['website'])<span>🌐 {{ $company['website'] }}</span>@endif
@@ -283,14 +291,15 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             @if ($hasTracking)
-            // Tracking barcode (Code128). The readable number prints once below it.
-            try { JsBarcode('#barcode-track', @json((string) $order->tracking_id), { format: 'CODE128', width: 1.6, height: 34, displayValue: false, margin: 0 }); } catch (e) {}
+            // Tracking barcode (Code128); readable number prints once below it.
+            try { JsBarcode('#barcode-track', @json((string) $order->tracking_id), { format: 'CODE128', width: 1.6, height: 36, displayValue: false, margin: 0 }); } catch (e) {}
             @endif
-            // COD-amount barcode — encodes the rupee amount collected on delivery
-            // (prints even for 0, matching the reference TCS slip).
+            // COD-amount barcode — encodes the rupee amount collected on delivery.
             try { JsBarcode('#barcode-cod', @json((string) (int) $codAmt), { format: 'CODE128', width: 1.4, height: 30, displayValue: false, margin: 0 }); } catch (e) {}
-            // QR = order's public tracking / payment page (scannable).
-            try { new QRCode(document.getElementById('qr-pay'), { text: @json($payUrl), width: 70, height: 70, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
+            // Order-tracking QR — sits beside the order number.
+            try { new QRCode(document.getElementById('qr-track'), { text: @json($payUrl), width: 58, height: 58, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
+            // Weight QR — encodes the parcel weight, with the weight printed below.
+            try { new QRCode(document.getElementById('qr-weight'), { text: @json($weightTxt), width: 56, height: 56, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
         });
     </script>
 </body>

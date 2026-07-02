@@ -139,7 +139,7 @@ class OnlineOrderController extends Controller
         abort_unless($order->order_source === 'online', 404);
         $order->load('items.product', 'customer', 'branch');
 
-        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : 'both';
+        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : 'en';
         // Sender block: company by default, or the reseller's "From" address.
         $from        = $request->input('from') === 'reseller' && $order->from_name ? 'reseller' : 'company';
         $withLogo    = $request->boolean('logo', true);
