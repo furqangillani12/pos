@@ -139,7 +139,9 @@ class OnlineOrderController extends Controller
         abort_unless($order->order_source === 'online', 404);
         $order->load('items.product', 'customer', 'branch');
 
-        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : 'en';
+        // Default language comes from settings; a ?lang= URL param overrides per-print.
+        $defaultLang = in_array(setting('dispatch_slip_lang'), ['ur', 'en', 'both'], true) ? setting('dispatch_slip_lang') : 'en';
+        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : $defaultLang;
         // Sender block: company by default, or the reseller's "From" address.
         $from        = $request->input('from') === 'reseller' && $order->from_name ? 'reseller' : 'company';
         $withLogo    = $request->boolean('logo', true);

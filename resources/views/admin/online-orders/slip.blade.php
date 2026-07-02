@@ -251,7 +251,8 @@
                 <div class="cname">{{ $order->shipping_first_name }} {{ $order->shipping_last_name }}</div>
                 <div class="cphone">☎ {{ $order->shipping_phone }}</div>
                 <div class="caddr">
-                    {{ $order->shipping_address1 }}@if ($order->shipping_address2), {{ $order->shipping_address2 }}@endif
+                    {{ $order->shipping_address1 }}
+                    @if ($order->shipping_address2)<br>{{ $order->shipping_address2 }}@endif
                 </div>
                 <div class="cmeta">
                     @if ($order->shipping_tehsil)<b>{!! $bi('Tehsil', 'تحصیل') !!}:</b> {{ $order->shipping_tehsil }} &nbsp; @endif

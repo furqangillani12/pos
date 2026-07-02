@@ -51,25 +51,11 @@
                 {{-- Contact + phone lookup --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
                     <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-address-card" style="color:var(--brand-cyan);"></i> Contact</h2>
-                    <div class="grid sm:grid-cols-2 gap-4">
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Cell number *</label>
-                            <div class="relative">
-                                <input type="text" name="shipping_phone" required x-model="f.phone" placeholder="03xx-xxxxxxx"
-                                       class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                <button type="button" @click="lookupPhone()" title="Find my saved address"
-                                        class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 flex items-center justify-center">
-                                    <i class="fas" :class="looking ? 'fa-circle-notch fa-spin' : 'fa-magnifying-glass'"></i>
-                                </button>
-                            </div>
-                            <p class="text-[11px] text-gray-500 mt-1">Tap the search icon to auto-fill if you've ordered before. More than one number? Add it in the address.</p>
-                        </div>
-                        <div>
-                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Email *</label>
-                            <input type="email" name="email" required value="{{ old('email', $customer?->email) }}" placeholder="you@example.com"
-                                   class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <p class="text-[11px] text-gray-500 mt-1">Order confirmation & updates are sent here.</p>
-                        </div>
+                    <div>
+                        <label class="text-xs font-semibold text-gray-600 mb-1 block">Email *</label>
+                        <input type="email" name="email" required value="{{ old('email', $customer?->email) }}" placeholder="you@example.com"
+                               class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                        <p class="text-[11px] text-gray-500 mt-1">Order confirmation & updates are sent here.</p>
                     </div>
                 </div>
 
@@ -87,10 +73,22 @@
                         </div>
 
                         <div class="sm:col-span-2">
+                            <label class="text-xs font-semibold text-gray-600 mb-1 block">Cell number *</label>
+                            <div class="relative">
+                                <input type="text" name="shipping_phone" required x-model="f.phone" placeholder="03xx-xxxxxxx"
+                                       class="w-full px-3 py-2.5 pr-10 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <button type="button" @click="lookupPhone()" title="Find my saved address"
+                                        class="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-md text-gray-500 hover:bg-gray-100 flex items-center justify-center">
+                                    <i class="fas" :class="looking ? 'fa-circle-notch fa-spin' : 'fa-magnifying-glass'"></i>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-gray-500 mt-1">Tap the search icon to auto-fill from a previous order (district, tehsil, everything). More than one number? Add it in the address.</p>
+                        </div>
+
+                        <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Country *</label>
-                            <select name="shipping_country" x-model="f.country" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                @foreach ($countries as $c)<option value="{{ $c }}">{{ $c }}</option>@endforeach
-                            </select>
+                            <input type="text" name="shipping_country" x-model="f.country" list="dl-countries" autocomplete="off" placeholder="Search country" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <datalist id="dl-countries">@foreach ($countries as $c)<option value="{{ $c }}"></option>@endforeach</datalist>
                         </div>
 
                         {{-- Pakistan cascade --}}
@@ -98,17 +96,13 @@
                             <div class="sm:col-span-2 grid sm:grid-cols-3 gap-4">
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">Province</label>
-                                    <select name="shipping_province" x-model="f.province" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <option value="">Select province</option>
-                                        <template x-for="p in provinceNames" :key="p"><option :value="p" x-text="p"></option></template>
-                                    </select>
+                                    <input type="text" name="shipping_province" x-model="f.province" list="dl-provinces" autocomplete="off" placeholder="Search province" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <datalist id="dl-provinces"><template x-for="p in provinceNames" :key="p"><option :value="p"></option></template></datalist>
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">District</label>
-                                    <select name="shipping_district" x-model="f.district" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500" :disabled="!f.province">
-                                        <option value="">Select district</option>
-                                        <template x-for="d in districts" :key="d"><option :value="d" x-text="d"></option></template>
-                                    </select>
+                                    <input type="text" name="shipping_district" x-model="f.district" list="dl-districts" autocomplete="off" placeholder="Search district" :disabled="!f.province" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100">
+                                    <datalist id="dl-districts"><template x-for="d in districts" :key="d"><option :value="d"></option></template></datalist>
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">Tehsil</label>
