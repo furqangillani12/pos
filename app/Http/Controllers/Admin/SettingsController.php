@@ -19,6 +19,7 @@ class SettingsController extends Controller
         'shop_tax_rate', 'shop_tax_type',
         'notice_title', 'notice_short', 'notice_full',
         'site_name', 'site_name_ur', 'site_website', 'dispatch_postman_note', 'dispatch_postman_note_ur',
+        'dispatch_logo_en', 'dispatch_logo_ur',
         'points_rupees_per_point', 'points_per_review', 'points_value_rupees',
     ];
 
@@ -57,10 +58,31 @@ class SettingsController extends Controller
             'site_website'     => 'nullable|string|max:120',
             'dispatch_postman_note'    => 'nullable|string|max:500',
             'dispatch_postman_note_ur' => 'nullable|string|max:500',
+            'dispatch_logo_en'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
+            'dispatch_logo_ur'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
             'points_rupees_per_point'  => 'nullable|numeric|min:0',
             'points_per_review'        => 'nullable|integer|min:0',
             'points_value_rupees'      => 'nullable|numeric|min:0',
         ]);
+
+        // Dispatch-slip logos: store uploaded files, keep the existing path when
+        // no new file is sent (a checkbox can clear it).
+        foreach (['dispatch_logo_en', 'dispatch_logo_ur'] as $key) {
+            unset($data[$key]);
+            if ($request->hasFile($key)) {
+                $old = setting($key);
+                if ($old && \Storage::disk('public')->exists($old)) {
+                    \Storage::disk('public')->delete($old);
+                }
+                $data[$key] = $request->file($key)->store('dispatch-logos', 'public');
+            } elseif ($request->boolean("remove_{$key}")) {
+                $old = setting($key);
+                if ($old && \Storage::disk('public')->exists($old)) {
+                    \Storage::disk('public')->delete($old);
+                }
+                $data[$key] = '';
+            }
+        }
 
         Setting::putMany($data);
 

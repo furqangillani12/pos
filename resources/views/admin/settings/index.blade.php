@@ -20,7 +20,7 @@
                 </h2>
                 <span class="text-xs text-gray-400">Shown on the storefront footer</span>
             </div>
-            <form action="{{ route('admin.settings.site.update') }}" method="POST" class="p-5">
+            <form action="{{ route('admin.settings.site.update') }}" method="POST" enctype="multipart/form-data" class="p-5">
                 @csrf
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -107,6 +107,31 @@
                         <input type="text" name="site_name" value="{{ old('site_name', $site['site_name'] ?? '') }}" placeholder="AL MUFEED TRADERS" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
                     <div></div>
+
+                    {{-- Language-specific slip logos: English slip → EN logo, Urdu slip → UR logo --}}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Slip logo — English</label>
+                        @if (!empty($site['dispatch_logo_en']))
+                            <div class="flex items-center gap-2 mb-1">
+                                <img src="{{ asset('storage/'.$site['dispatch_logo_en']) }}" alt="" class="h-10 border border-gray-200 rounded bg-white p-1">
+                                <label class="text-[11px] text-rose-600 inline-flex items-center gap-1"><input type="checkbox" name="remove_dispatch_logo_en" value="1"> Remove</label>
+                            </div>
+                        @endif
+                        <input type="file" name="dispatch_logo_en" accept="image/*" class="w-full text-xs text-gray-600 file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+                        <p class="text-[11px] text-gray-400 mt-1">Shown on the English / Both slip. PNG/JPG/SVG, ≤1&nbsp;MB.</p>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Slip logo — اردو</label>
+                        @if (!empty($site['dispatch_logo_ur']))
+                            <div class="flex items-center gap-2 mb-1">
+                                <img src="{{ asset('storage/'.$site['dispatch_logo_ur']) }}" alt="" class="h-10 border border-gray-200 rounded bg-white p-1">
+                                <label class="text-[11px] text-rose-600 inline-flex items-center gap-1"><input type="checkbox" name="remove_dispatch_logo_ur" value="1"> Remove</label>
+                            </div>
+                        @endif
+                        <input type="file" name="dispatch_logo_ur" accept="image/*" class="w-full text-xs text-gray-600 file:mr-2 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-gray-100 file:text-gray-700">
+                        <p class="text-[11px] text-gray-400 mt-1">Shown on the Urdu slip. Falls back to the English logo if empty.</p>
+                    </div>
+
                     <div class="sm:col-span-2">
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Postman note — English</label>
                         <textarea name="dispatch_postman_note" rows="2" placeholder="Dear postman: if you face any difficulty…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">{{ old('dispatch_postman_note', $site['dispatch_postman_note'] ?? '') }}</textarea>

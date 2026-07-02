@@ -105,10 +105,18 @@
     $showEn = $lang !== 'ur';
     $showUr = $lang !== 'en';
 
-    // Per-branch slip: the order's own branch supplies the logo + contact,
-    // falling back to the global website/brand settings.
-    $branch     = $order->branch;
-    $branchLogo = $branch?->logo ? asset('storage/'.$branch->logo) : asset('assets/images/brand/almufeed-traders.png');
+    // Per-branch slip: the order's own branch supplies contact info, falling
+    // back to the global website/brand settings.
+    $branch = $order->branch;
+    // Slip logo is language-specific (settings): Urdu slip → Urdu logo, English/
+    // Both → English logo, each falling back to the other, then branch/static logo.
+    $logoEn   = setting('dispatch_logo_en');
+    $logoUr   = setting('dispatch_logo_ur');
+    $slipLogo = $lang === 'ur' ? ($logoUr ?: $logoEn) : ($logoEn ?: $logoUr);
+    $hasSlipLogo = (bool) $slipLogo;
+    $brandLogo = $slipLogo
+        ? asset('storage/'.$slipLogo)
+        : ($branch?->logo ? asset('storage/'.$branch->logo) : asset('assets/images/brand/almufeed-traders.png'));
     $company = [
         'name'    => $branch?->name ?: setting('site_name', 'AL MUFEED TRADERS'),
         'name_ur' => setting('site_name_ur', 'المفید اسلامی ثقافتی مرکز'),
@@ -190,8 +198,10 @@
                 <div class="sub">{{ $isCod ? 'COD Parcel' : 'General Parcel' }}</div>
             </div>
             <div class="brand">
-                <img class="blogo" src="{{ $branchLogo }}" alt="" onerror="this.style.display='none'">
-                <div class="cname urdu">{{ $company['name_ur'] }}</div>
+                <img class="blogo" src="{{ $brandLogo }}" alt="" onerror="this.style.display='none'">
+                @unless ($hasSlipLogo)
+                    <div class="cname urdu">{{ $company['name_ur'] }}</div>
+                @endunless
             </div>
         </div>
 
