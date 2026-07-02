@@ -47,6 +47,7 @@
         .row3 .orderbox .oqr { display: flex; flex-direction: column; align-items: center; }
         .row3 .orderbox .oqr .k { font-size: 8px; }
         .row3 .date { font-size: 15px; font-weight: 700; margin-top: 3px; }
+        .row3 .time { font-size: 12px; font-weight: 600; color: #374151; }
 
         /* Main : [from] | to | codes/parcel */
         .main { display: flex; border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; }
@@ -81,6 +82,7 @@
         .remarks { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 5px 10px; }
         .remarks .k { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
         .remarks .space { height: 26px; }
+        .remarks .rtext { font-size: 13px; font-weight: 600; margin-top: 2px; line-height: 1.4; }
 
         /* Postman note — full width, no heading label */
         .note { border-left: 2px solid #111827; border-right: 2px solid #111827; border-bottom: 2px solid #111827; padding: 7px 14px; text-align: center; }
@@ -216,6 +218,7 @@
             <div>
                 <div class="k">{!! $bi('Date', 'تاریخ') !!}</div>
                 <div class="date">{{ $order->created_at?->format('d M Y') }}</div>
+                <div class="time">{{ $order->created_at?->format('h:i A') }}</div>
             </div>
         </div>
 
@@ -254,7 +257,6 @@
                 <div class="cod {{ $isCod ? 'due' : '' }}">
                     <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
                     <div class="amt {{ $isCod ? '' : 'paid' }}">Rs. {{ number_format($codAmt, 0) }}</div>
-                    <div><svg id="barcode-cod"></svg></div>
                 </div>
                 <div class="parcel">
                     <div class="facts">
@@ -268,11 +270,13 @@
             </div>
         </div>
 
-        {{-- ── Remarks — separate blank box for handwriting ── --}}
-        <div class="remarks">
-            <span class="k">{!! $bi('Remarks', 'ریمارکس') !!}</span>
-            <div class="space"></div>
-        </div>
+        {{-- ── Remarks — only prints when the operator typed something ── --}}
+        @if (trim((string) $order->dispatch_remarks) !== '')
+            <div class="remarks">
+                <span class="k">{!! $bi('Remarks', 'ریمارکس') !!}</span>
+                <div class="rtext">{{ $order->dispatch_remarks }}</div>
+            </div>
+        @endif
 
         {{-- ── Postman note (full width, no heading) ── --}}
         <div class="note">
@@ -294,8 +298,6 @@
             // Tracking barcode (Code128); readable number prints once below it.
             try { JsBarcode('#barcode-track', @json((string) $order->tracking_id), { format: 'CODE128', width: 1.6, height: 36, displayValue: false, margin: 0 }); } catch (e) {}
             @endif
-            // COD-amount barcode — encodes the rupee amount collected on delivery.
-            try { JsBarcode('#barcode-cod', @json((string) (int) $codAmt), { format: 'CODE128', width: 1.4, height: 30, displayValue: false, margin: 0 }); } catch (e) {}
             // Order-tracking QR — sits beside the order number.
             try { new QRCode(document.getElementById('qr-track'), { text: @json($payUrl), width: 58, height: 58, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
             // Weight QR — encodes the parcel weight, with the weight printed below.

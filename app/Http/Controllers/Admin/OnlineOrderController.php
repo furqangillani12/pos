@@ -189,6 +189,8 @@ class OnlineOrderController extends Controller
             'delivery_charges'    => 'nullable|numeric|min:0|max:9999999',
             // Editable COD amount for the dispatch slip (blank = auto: paid ? 0 : balance).
             'dispatch_cod_amount' => 'nullable|numeric|min:0|max:9999999',
+            // Remarks printed on the dispatch slip (blank = empty box for handwriting).
+            'dispatch_remarks'    => 'nullable|string|max:500',
         ]);
 
         DB::transaction(function () use ($request, $order, $data) {
@@ -212,6 +214,7 @@ class OnlineOrderController extends Controller
                 'total'               => $newTotal,
                 'balance_amount'      => round($newTotal - (float) $order->paid_amount, 2),
                 'dispatch_cod_amount' => $codOverride,
+                'dispatch_remarks'    => $data['dispatch_remarks'] ?? null,
             ]);
 
             // Reflect the change on the customer's running balance.

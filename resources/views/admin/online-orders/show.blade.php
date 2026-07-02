@@ -176,6 +176,13 @@
                                class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         <span class="text-[10px] text-gray-400">Blank = auto ({{ $isPaidNow ? 'paid → Rs. 0' : 'unpaid → balance' }}). Set 0 if the customer already paid online.</span>
                     </label>
+                    <label class="block">
+                        <span class="text-[11px] text-gray-500">Dispatch slip remarks</span>
+                        <textarea name="dispatch_remarks" rows="2" maxlength="500"
+                                  placeholder="e.g. Handle with care · Call before delivery"
+                                  class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">{{ $order->dispatch_remarks }}</textarea>
+                        <span class="text-[10px] text-gray-400">Prints in the slip's Remarks box. Blank = empty box for handwriting.</span>
+                    </label>
                     <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-gray-800 hover:bg-gray-900 text-white text-xs font-semibold rounded-lg"><i class="fas fa-calculator"></i> Update &amp; recalculate total</button>
                 </form>
 
