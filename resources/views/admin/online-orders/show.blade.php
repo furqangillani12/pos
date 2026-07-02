@@ -155,11 +155,11 @@
                     <div class="grid grid-cols-2 gap-2">
                         <label class="block">
                             <span class="text-[11px] text-gray-500">Delivery (Rs.)</span>
-                            <input type="number" step="0.01" min="0" name="delivery_charges" value="{{ number_format((float) ($order->delivery_charges ?? 0), 2, '.', '') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            <input type="text" inputmode="decimal" name="delivery_charges" value="{{ rtrim(rtrim(number_format((float) ($order->delivery_charges ?? 0), 2, '.', ''), '0'), '.') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         </label>
                         <label class="block">
                             <span class="text-[11px] text-gray-500">Weight (kg)</span>
-                            <input type="number" step="0.001" min="0" name="weight" value="{{ number_format((float) ($order->weight ?? 0), 3, '.', '') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            <input type="text" inputmode="decimal" name="weight" value="{{ rtrim(rtrim(number_format((float) ($order->weight ?? 0), 3, '.', ''), '0'), '.') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         </label>
                     </div>
                     @php
@@ -170,8 +170,8 @@
                     @endphp
                     <label class="block">
                         <span class="text-[11px] text-gray-500">COD amount to collect on slip (Rs.)</span>
-                        <input type="number" step="0.01" min="0" name="dispatch_cod_amount"
-                               value="{{ $order->dispatch_cod_amount !== null ? number_format((float) $order->dispatch_cod_amount, 2, '.', '') : '' }}"
+                        <input type="text" inputmode="decimal" name="dispatch_cod_amount"
+                               value="{{ $order->dispatch_cod_amount !== null ? rtrim(rtrim(number_format((float) $order->dispatch_cod_amount, 2, '.', ''), '0'), '.') : '' }}"
                                placeholder="Auto: Rs. {{ number_format($codAuto, 0) }}"
                                class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         <span class="text-[10px] text-gray-400">Blank = auto ({{ $isPaidNow ? 'paid → Rs. 0' : 'unpaid → balance' }}). Set 0 if the customer already paid online.</span>
