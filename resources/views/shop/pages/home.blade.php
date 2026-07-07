@@ -126,29 +126,6 @@
     </div>
 </section>
 
-{{-- ═════════════════ TRUST STRIP ═════════════════ --}}
-<section id="features" class="bg-white border-b border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 grid grid-cols-2 lg:grid-cols-4 gap-6 reveal-stagger">
-        @foreach ([
-            ['fa-truck',          'Fast delivery',   'Same-day from local branch'],
-            ['fa-shield-halved',  'Secure shopping', '100% authentic products'],
-            ['fa-rotate-left',    'Easy returns',    '7-day return policy'],
-            ['fa-headset',        'Real support',    'Talk to a real person'],
-        ] as [$icon, $title, $sub])
-            <div class="flex items-start gap-3">
-                <span class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style="background:linear-gradient(135deg,#e8f1fb,#f6ecd8);color:var(--rose);">
-                    <i class="fas {{ $icon }}"></i>
-                </span>
-                <div>
-                    <div class="font-bold text-gray-900 text-sm">{{ $title }}</div>
-                    <div class="text-[12px] text-gray-500 mt-0.5">{{ $sub }}</div>
-                </div>
-            </div>
-        @endforeach
-    </div>
-</section>
-
 {{-- ═════════════════ FEATURED CATEGORIES (always shown) ═════════════════ --}}
 <section id="categories" class="py-8 sm:py-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -412,6 +389,29 @@
             From everyday essentials to special occasion pieces — Almufeed brings the best of our shops directly to your door.
         </p>
         <a href="{{ route('shop.catalog') }}" class="btn btn-primary"><i class="fas fa-bag-shopping"></i> Browse the full catalog</a>
+    </div>
+</section>
+
+{{-- ═════════════════ TRUST STRIP (moved to the bottom per client) ═════════════════ --}}
+<section id="features" class="bg-white border-t border-gray-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 grid grid-cols-2 lg:grid-cols-4 gap-6 reveal-stagger">
+        @foreach ([
+            ['fa-truck',          'Fast delivery',   'Same-day from local branch'],
+            ['fa-shield-halved',  'Secure shopping', '100% authentic products'],
+            ['fa-rotate-left',    'Easy returns',    '7-day return policy'],
+            ['fa-headset',        'Real support',    'Talk to a real person'],
+        ] as [$icon, $title, $sub])
+            <div class="flex items-start gap-3">
+                <span class="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                      style="background:linear-gradient(135deg,#e8f1fb,#f6ecd8);color:var(--rose);">
+                    <i class="fas {{ $icon }}"></i>
+                </span>
+                <div>
+                    <div class="font-bold text-gray-900 text-sm">{{ $title }}</div>
+                    <div class="text-[12px] text-gray-500 mt-0.5">{{ $sub }}</div>
+                </div>
+            </div>
+        @endforeach
     </div>
 </section>
 

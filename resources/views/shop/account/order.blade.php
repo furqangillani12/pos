@@ -42,6 +42,15 @@
             </div>
         </div>
 
+        {{-- Customer can confirm receipt of a parcel that's on its way --}}
+        @if (in_array($order->status, ['dispatched', 'shipped'], true))
+            <form method="POST" action="{{ route('shop.account.order.delivered', $order) }}" class="mb-6 reveal"
+                  onsubmit="return confirm('Confirm that you have received this parcel?');">
+                @csrf
+                <button class="btn btn-primary btn-block !py-2"><i class="fas fa-box-open"></i> I've received it — mark as delivered</button>
+            </form>
+        @endif
+
         @include('shop.partials.tracking-history')
 
         @include('shop.partials.dispatch-media')
@@ -114,6 +123,23 @@
                         <div class="mt-3 text-xs text-emerald-700 bg-emerald-50 rounded-lg px-3 py-2"><i class="fas fa-check-circle"></i> Payment received — thank you!</div>
                     @elseif ($order->payment_proof_path)
                         <div class="mt-3 text-xs text-amber-700 bg-amber-50 rounded-lg px-3 py-2"><i class="fas fa-clock"></i> Payment proof submitted. We'll verify it shortly.</div>
+                    @endif
+
+                    {{-- Uploaded payment proof — viewable + downloadable by the customer --}}
+                    @if ($order->payment_proof_path)
+                        <div class="mt-3">
+                            <div class="text-xs text-gray-500 mb-1"><i class="fas fa-receipt"></i> Your payment proof</div>
+                            <a href="{{ asset('storage/'.$order->payment_proof_path) }}" target="_blank" rel="noopener" class="block">
+                                <img src="{{ asset('storage/'.$order->payment_proof_path) }}" alt="Payment proof" class="w-full rounded-lg border border-gray-200" style="max-width:220px;">
+                            </a>
+                            <div class="flex items-center gap-3 mt-2">
+                                <a href="{{ asset('storage/'.$order->payment_proof_path) }}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 text-xs font-semibold" style="color:var(--brand-cyan);"><i class="fas fa-up-right-from-square text-[11px]"></i> View full</a>
+                                <a href="{{ asset('storage/'.$order->payment_proof_path) }}" download class="inline-flex items-center gap-1 text-xs font-semibold" style="color:var(--brand-cyan);"><i class="fas fa-download text-[11px]"></i> Download</a>
+                            </div>
+                            @if ($order->payment_sender_amount)
+                                <div class="text-xs text-gray-500 mt-1">Amount sent: {{ shop_price($order->payment_sender_amount) }}</div>
+                            @endif
+                        </div>
                     @endif
 
                     {{-- Attach / re-attach proof for an unpaid bank order --}}

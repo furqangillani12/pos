@@ -222,4 +222,36 @@ class AccountController extends Controller
 
         return back()->with('shop_success', 'Payment proof submitted — we will verify and confirm shortly.');
     }
+
+    /**
+     * Let a customer confirm receipt of their own parcel by marking it delivered.
+     * Only allowed once the order is already on its way (dispatched/shipped), so
+     * a customer can only CONFIRM delivery — not move an order backwards or skip
+     * fulfilment steps. Storefront-only; POS orders are never touched here.
+     */
+    public function markDelivered(Request $request, Order $order)
+    {
+        abort_unless((int) $order->customer_id === (int) Auth::guard('customer')->id(), 404);
+
+        if (! in_array($order->status, ['dispatched', 'shipped'], true)) {
+            return back()->with('shop_error', 'This order can’t be marked delivered right now.');
+        }
+
+        \DB::transaction(function () use ($order) {
+            $order->update(['status' => 'delivered']);
+            $order->recordStatus('delivered', 'Confirmed delivered by customer');
+
+            // Loyalty points on delivery — once per order (same guard as admin).
+            if ($order->customer) {
+                $already = \App\Models\PointTransaction::where('order_id', $order->id)
+                    ->where('type', 'earn_order')->exists();
+                $points = shop_order_points($order->total);
+                if (! $already && $points > 0) {
+                    $order->customer->awardPoints($points, 'earn_order', "Order {$order->order_number}", $order->id);
+                }
+            }
+        });
+
+        return back()->with('shop_success', 'Thank you — your order is marked delivered.');
+    }
 }

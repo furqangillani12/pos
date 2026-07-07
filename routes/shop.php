@@ -79,6 +79,7 @@ $registerShopRoutes = function () {
             Route::get('/account/orders',          [AccountController::class, 'orders'])->name('account.orders');
             Route::get('/account/orders/{order}',  [AccountController::class, 'orderShow'])->name('account.order');
             Route::post('/account/orders/{order}/proof', [AccountController::class, 'uploadProof'])->name('account.order.proof');
+            Route::post('/account/orders/{order}/delivered', [AccountController::class, 'markDelivered'])->name('account.order.delivered');
             Route::get('/account/statement',       [AccountController::class, 'statement'])->name('account.statement');
             Route::get('/account/points',          [AccountController::class, 'points'])->name('account.points');
 
