@@ -156,7 +156,16 @@ class OnlineOrderController extends Controller
         $withDetails = $request->boolean('details', true);
         $dispatchMethod = \App\Models\DispatchMethod::where('name', $order->dispatch_method)->first();
 
-        return view('admin.online-orders.slip', compact('order', 'lang', 'from', 'withLogo', 'withDetails', 'dispatchMethod'));
+        // Dispatch date = when the order first hit dispatched/shipped (legacy).
+        $dispatchedAt = $order->statusHistory()
+            ->whereIn('status', ['dispatched', 'shipped'])
+            ->orderBy('id')
+            ->value('created_at');
+
+        // Print scale so a slip fits smaller courier labels: 100 / 85 / 70 %.
+        $scale = in_array((int) $request->input('scale'), [100, 85, 70], true) ? (int) $request->input('scale') : 100;
+
+        return view('admin.online-orders.slip', compact('order', 'lang', 'from', 'withLogo', 'withDetails', 'dispatchMethod', 'dispatchedAt', 'scale'));
     }
 
     /** Printable picking checklist (#18): image, name, barcode, price, qty. */
