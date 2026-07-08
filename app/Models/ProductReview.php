@@ -9,11 +9,13 @@ class ProductReview extends Model
 {
     protected $fillable = [
         'product_id', 'customer_id', 'order_id',
-        'rating', 'title', 'body', 'status',
+        'rating', 'title', 'body', 'media', 'status', 'points_awarded',
     ];
 
     protected $casts = [
-        'rating' => 'integer',
+        'rating'         => 'integer',
+        'media'          => 'array',
+        'points_awarded' => 'boolean',
     ];
 
     public function product(): BelongsTo
@@ -29,5 +31,19 @@ class ProductReview extends Model
     public function scopeApproved($q)
     {
         return $q->where('status', 'approved');
+    }
+
+    public function scopePending($q)
+    {
+        return $q->where('status', 'pending');
+    }
+
+    /** Normalised media list: [['path' => ..., 'type' => 'image'|'video'], ...]. */
+    public function mediaItems(): array
+    {
+        return collect($this->media ?? [])
+            ->filter(fn ($m) => is_array($m) && ! empty($m['path']))
+            ->values()
+            ->all();
     }
 }

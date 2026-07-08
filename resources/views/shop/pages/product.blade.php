@@ -188,6 +188,19 @@
                         </div>
                         @if ($r->title)<div class="font-semibold text-gray-800">{{ $r->title }}</div>@endif
                         @if ($r->body)<p class="text-gray-600 mt-1">{{ $r->body }}</p>@endif
+                        @if (count($r->mediaItems()))
+                            <div class="flex flex-wrap gap-2 mt-2">
+                                @foreach ($r->mediaItems() as $m)
+                                    <a href="{{ asset('storage/'.$m['path']) }}" target="_blank" rel="noopener" class="block">
+                                        @if ($m['type'] === 'video')
+                                            <video src="{{ asset('storage/'.$m['path']) }}" class="w-16 h-16 object-cover rounded-lg border border-gray-200" muted></video>
+                                        @else
+                                            <img src="{{ asset('storage/'.$m['path']) }}" class="w-16 h-16 object-cover rounded-lg border border-gray-200" alt="review photo">
+                                        @endif
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 @empty
                     <p class="text-gray-500 italic">No reviews yet — be the first!</p>
@@ -195,7 +208,7 @@
             </div>
 
             @auth('customer')
-                <form method="POST" action="{{ route('shop.review.store', $product->slug) }}"
+                <form method="POST" action="{{ route('shop.review.store', $product->slug) }}" enctype="multipart/form-data"
                       class="bg-white rounded-2xl border border-gray-100 p-5 sticky top-24 self-start"
                       x-data="{ rating: 5 }">
                     @csrf
@@ -210,6 +223,11 @@
                     </div>
                     <input type="text" name="title" placeholder="Headline (optional)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm mb-2">
                     <textarea name="body" rows="3" placeholder="Tell others what you think..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"></textarea>
+                    <label class="block text-xs font-semibold text-gray-600 mt-3 mb-1"><i class="fas fa-camera"></i> Add photos / video (optional)</label>
+                    <input type="file" name="media[]" multiple accept="image/png,image/jpeg,image/webp,video/mp4,video/webm,video/quicktime"
+                           class="w-full text-xs text-gray-600 file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700">
+                    <p class="text-[11px] text-gray-400 mt-1">Up to 5 files, 20 MB each. Your review appears after our team approves it.</p>
+                    @error('media.*')<p class="text-[11px] text-red-600 mt-1">{{ $message }}</p>@enderror
                     <button type="submit" class="btn btn-dark btn-block mt-3 !text-xs">Submit review</button>
                 </form>
             @else

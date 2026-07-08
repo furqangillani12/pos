@@ -803,6 +803,18 @@
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.banners.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-image mr-2 text-xs"></i> Banners
                     </a>
+                    <a href="{{ route('admin.reviews.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.reviews.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-star mr-2 text-xs"></i> Reviews
+                        @php
+                            try {
+                                $pendingReviews = \App\Models\ProductReview::where('status', 'pending')->count();
+                            } catch (\Throwable $e) { $pendingReviews = 0; }
+                        @endphp
+                        @if ($pendingReviews > 0)
+                            <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 ml-1 rounded-full bg-amber-400 text-[10px] font-bold text-gray-900">{{ $pendingReviews }}</span>
+                        @endif
+                    </a>
                     <a href="{{ url(env('SHOP_PREFIX', 'shop')) }}" target="_blank"
                        class="block px-4 py-2 rounded-md transition hover:bg-cyan-50 hover:text-cyan-700">
                         <i class="fas fa-external-link-alt mr-2 text-xs"></i> View site

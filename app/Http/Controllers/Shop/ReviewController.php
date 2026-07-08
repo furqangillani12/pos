@@ -14,40 +14,39 @@ class ReviewController extends Controller
     public function store(Request $request, Product $product)
     {
         $data = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'title'  => 'nullable|string|max:191',
-            'body'   => 'nullable|string|max:2000',
+            'rating'  => 'required|integer|min:1|max:5',
+            'title'   => 'nullable|string|max:191',
+            'body'    => 'nullable|string|max:2000',
+            'media'   => 'nullable|array|max:5',
+            'media.*' => 'file|mimes:png,jpg,jpeg,webp,mp4,webm,mov|max:20480',
+        ], [
+            'media.*.max'   => 'Each photo/video must be 20 MB or smaller.',
+            'media.*.mimes' => 'Only images (PNG/JPG/WebP) or videos (MP4/WebM/MOV) are allowed.',
         ]);
 
-        DB::transaction(function () use ($data, $product) {
+        // Store any uploaded photos / videos.
+        $media = [];
+        foreach ((array) $request->file('media', []) as $file) {
+            $path = $file->store('review-media', 'public');
+            $isVideo = str_starts_with((string) $file->getMimeType(), 'video');
+            $media[] = ['path' => $path, 'type' => $isVideo ? 'video' : 'image'];
+        }
+
+        DB::transaction(function () use ($data, $product, $media) {
+            // Reviews now wait for admin approval before they show or earn points,
+            // so a mistaken / spam review can be rejected (client request).
             ProductReview::create([
-                'product_id'  => $product->id,
-                'customer_id' => Auth::guard('customer')->id(),
-                'rating'      => $data['rating'],
-                'title'       => $data['title'] ?? null,
-                'body'        => $data['body'] ?? null,
-                'status'      => 'approved',
+                'product_id'     => $product->id,
+                'customer_id'    => Auth::guard('customer')->id(),
+                'rating'         => $data['rating'],
+                'title'          => $data['title'] ?? null,
+                'body'           => $data['body'] ?? null,
+                'media'          => $media ?: null,
+                'status'         => 'pending',
+                'points_awarded' => false,
             ]);
-
-            // Recompute aggregates
-            $agg = ProductReview::where('product_id', $product->id)
-                ->where('status', 'approved')
-                ->selectRaw('AVG(rating) as avg_rating, COUNT(*) as review_count')
-                ->first();
-            $product->update([
-                'avg_rating'   => round((float) $agg->avg_rating, 2),
-                'review_count' => (int) $agg->review_count,
-            ]);
-
-            // Reward points for reviewing (#22), if the scheme is enabled.
-            $reward = (int) setting('points_per_review', 0);
-            if ($reward > 0 && ($customer = Auth::guard('customer')->user())) {
-                $customer->awardPoints($reward, 'earn_review', "Review on {$product->name}");
-            }
         });
 
-        $reward = (int) setting('points_per_review', 0);
-        $msg = $reward > 0 ? "Thanks for your review! You earned {$reward} points." : 'Thanks for your review!';
-        return back()->with('shop_success', $msg);
+        return back()->with('shop_success', 'Thanks for your review! It will appear once our team approves it.');
     }
 }

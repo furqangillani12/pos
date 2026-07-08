@@ -322,6 +322,12 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/online-orders/{order}/slip',         [\App\Http\Controllers\Admin\OnlineOrderController::class, 'slip'])->name('online-orders.slip');
     Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');
     Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
+
+    // ── Product review moderation ──
+    Route::get('/reviews',                    [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
+    Route::patch('/reviews/{review}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
+    Route::patch('/reviews/{review}/reject',  [\App\Http\Controllers\Admin\ReviewController::class, 'reject'])->name('reviews.reject');
+    Route::delete('/reviews/{review}',        [\App\Http\Controllers\Admin\ReviewController::class, 'destroy'])->name('reviews.destroy');
 });
 
 // ── Linked customer ↔ supplier (offset feature) ──
