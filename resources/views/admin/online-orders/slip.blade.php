@@ -30,7 +30,7 @@
            title stays vertically centred. */
         .head { display: flex; align-items: flex-end; }
         .head > div { padding: 3px 10px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; }
-        .head .courier { flex: 1.2; }
+        .head .courier { flex: 1.2; align-self: center; }
         .head .title   { flex: 1.2; align-self: center; }
         .head .brand   { flex: 1.4; }
         /* No vertical padding around the logos → they sit flush, no space below. */
