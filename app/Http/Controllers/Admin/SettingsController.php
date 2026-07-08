@@ -60,7 +60,7 @@ class SettingsController extends Controller
             'dispatch_postman_note_ur' => 'nullable|string|max:500',
             'dispatch_logo_en'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
             'dispatch_logo_ur'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
-            'dispatch_slip_lang'       => 'nullable|in:en,ur,both',
+            'dispatch_slip_lang'       => 'nullable|in:en,ur',
             'points_rupees_per_point'  => 'nullable|numeric|min:0',
             'points_per_review'        => 'nullable|integer|min:0',
             'points_value_rupees'      => 'nullable|numeric|min:0',

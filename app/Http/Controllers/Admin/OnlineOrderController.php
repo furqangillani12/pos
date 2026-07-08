@@ -140,8 +140,8 @@ class OnlineOrderController extends Controller
         $order->load('items.product', 'customer', 'branch');
 
         // Default language comes from settings; a ?lang= URL param overrides per-print.
-        $defaultLang = in_array(setting('dispatch_slip_lang'), ['ur', 'en', 'both'], true) ? setting('dispatch_slip_lang') : 'en';
-        $lang        = in_array($request->input('lang'), ['ur', 'en', 'both']) ? $request->input('lang') : $defaultLang;
+        $defaultLang = in_array(setting('dispatch_slip_lang'), ['ur', 'en'], true) ? setting('dispatch_slip_lang') : 'en';
+        $lang        = in_array($request->input('lang'), ['ur', 'en'], true) ? $request->input('lang') : $defaultLang;
         // Sender ("From") block default:
         //   • regular customer                    → show the company as sender
         //   • reseller/wholesaler + own address   → show the reseller's address

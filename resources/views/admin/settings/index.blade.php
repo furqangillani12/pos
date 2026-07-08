@@ -110,9 +110,8 @@
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Slip language</label>
                         @php $slipLang = old('dispatch_slip_lang', $site['dispatch_slip_lang'] ?? 'en'); @endphp
                         <select name="dispatch_slip_lang" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
-                            <option value="en"   {{ $slipLang === 'en'   ? 'selected' : '' }}>English</option>
-                            <option value="ur"   {{ $slipLang === 'ur'   ? 'selected' : '' }}>اردو (Urdu)</option>
-                            <option value="both" {{ $slipLang === 'both' ? 'selected' : '' }}>Both</option>
+                            <option value="en" {{ $slipLang === 'en' ? 'selected' : '' }}>English</option>
+                            <option value="ur" {{ $slipLang === 'ur' ? 'selected' : '' }}>اردو (Urdu)</option>
                         </select>
                         <p class="text-[11px] text-gray-400 mt-1">Default language the dispatch slip opens in.</p>
                     </div>

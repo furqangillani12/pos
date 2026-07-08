@@ -121,7 +121,9 @@
             body { background: #fff; }
             .toolbar { display: none; }
             .sheet { margin: 0; border: 2px solid #111827; width: auto; }
-            @page { size: A5 landscape; margin: 6mm; }
+            /* No forced orientation — the print dialog keeps both Portrait and
+               Landscape options (landscape is recommended for the widest look). */
+            @page { margin: 6mm; }
         }
     </style>
 </head>
@@ -202,7 +204,6 @@
     <div class="toolbar">
         <strong style="font-size:12px;">Language:</strong>
         <a href="{{ $q(['lang'=>'en']) }}" class="{{ $lang==='en'?'on':'' }}">English</a>
-        <a href="{{ $q(['lang'=>'both']) }}" class="{{ $lang==='both'?'on':'' }}">Both</a>
         <a href="{{ $q(['lang'=>'ur']) }}" class="{{ $lang==='ur'?'on':'' }}">اردو</a>
         <span style="width:1px;height:18px;background:#e5e7eb;"></span>
         <strong style="font-size:12px;">From:</strong>
