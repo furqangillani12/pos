@@ -56,6 +56,13 @@
         .row3 .orderbox .oqr .k { font-size: 8px; }
         .row3 .date { font-size: 15px; font-weight: 700; margin-top: 3px; }
         .row3 .time { font-size: 12px; font-weight: 600; color: #374151; }
+        /* COD amount + barcode, sitting in the top row (line 1: amount, line 2: barcode) */
+        .row3 .codcell { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .row3 .codcell.due { background: #fff7ed; }
+        .row3 .codcell .cline { font-size: 13px; font-weight: 800; color: #111827; }
+        .row3 .codcell .cline b { font-size: 22px; font-weight: 900; }
+        .row3 .codcell .cline b.paid { color: #059669; }
+        .row3 .codcell svg { max-width: 210px; height: 30px; margin-top: 4px; }
 
         /* Main : [from] | to | codes/parcel */
         .main { display: flex; }
@@ -86,6 +93,13 @@
         .side .parcel .facts b { font-size: 16px; font-weight: 800; }
         .side .parcel .wqr { text-align: center; }
         .side .parcel .wqr .wt { font-size: 12px; font-weight: 800; margin-top: 1px; }
+        /* Booking + Dispatch dates — clean two-row box (moved from the top row) */
+        .side .datebox { border-bottom: 1px solid #111827; padding: 6px 10px; }
+        .side .datebox .drow { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 0; }
+        .side .datebox .drow + .drow { border-top: 1px dashed #9ca3af; }
+        .side .datebox .dk { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .03em; color: #6b7280; }
+        .side .datebox .dv { font-size: 14px; font-weight: 800; text-align: right; }
+        .side .datebox .dv small { display: block; font-size: 10px; font-weight: 600; color: #6b7280; }
 
         /* Remarks — separate manual (handwriting) box below the address */
         .remarks { padding: 5px 10px; }
@@ -252,12 +266,11 @@
                     </div>
                 </div>
             </div>
-            <div>
-                <div class="k">{!! $bi('Booking Date', 'بکنگ تاریخ') !!}</div>
-                <div class="date">{{ $order->created_at?->format('d M Y') }}</div>
-                <div class="time">{{ $order->created_at?->format('h:i A') }}</div>
-                <div class="k" style="margin-top:5px;">{!! $bi('Dispatch Date', 'ڈسپیچ تاریخ') !!}</div>
-                <div class="date">{{ $dispatchedAt ? \Illuminate\Support\Carbon::parse($dispatchedAt)->format('d M Y') : '—' }}</div>
+            <div class="codcell {{ $isCod ? 'due' : '' }}">
+                <div class="cline">{!! $bi('COD Amount', 'وصولی رقم') !!}: <b class="{{ $isCod ? '' : 'paid' }}">Rs. {{ number_format($codAmt, 0) }}</b></div>
+                @if ($isCod)
+                    <svg id="barcode-cod"></svg>
+                @endif
             </div>
         </div>
 
@@ -294,12 +307,15 @@
 
             {{-- COD amount + barcode, then parcel facts + weight QR --}}
             <div class="side">
-                <div class="cod {{ $isCod ? 'due' : '' }}">
-                    <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
-                    <div class="amt {{ $isCod ? '' : 'paid' }}">Rs. {{ number_format($codAmt, 0) }}</div>
-                    @if ($isCod)
-                        <svg id="barcode-cod"></svg>
-                    @endif
+                <div class="datebox">
+                    <div class="drow">
+                        <span class="dk">{!! $bi('Booking', 'بکنگ') !!}</span>
+                        <span class="dv">{{ $order->created_at?->format('d M Y') }}<small>{{ $order->created_at?->format('h:i A') }}</small></span>
+                    </div>
+                    <div class="drow">
+                        <span class="dk">{!! $bi('Dispatch', 'ڈسپیچ') !!}</span>
+                        <span class="dv">{{ $dispatchedAt ? \Illuminate\Support\Carbon::parse($dispatchedAt)->format('d M Y') : '—' }}</span>
+                    </div>
                 </div>
                 <div class="parcel">
                     <div class="facts">
