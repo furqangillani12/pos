@@ -26,17 +26,19 @@
         .sheet > div + div { margin-top: 5px; }
 
         /* Header : courier logo | title (top) | company logo — NO dividers between */
-        .head { display: flex; align-items: flex-start; }
-        .head > div { padding: 4px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        .head { display: flex; align-items: center; }
+        .head > div { padding: 3px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .head .courier { flex: 1; }
         .head .title   { flex: 1.4; }
         .head .brand   { flex: 1; }
+        /* Kill all vertical space around the logos so they sit tight in the header. */
+        .head .courier, .head .brand { padding-top: 0; padding-bottom: 0; }
         .head .title .t { font-size: 24px; font-weight: 800; line-height: 1.05; }
         .head .title .sub { font-size: 12px; font-weight: 700; color: #111827; margin-top: 2px; }
         /* Both logos share one height so a big courier logo lifts ours too (no gap). */
-        .head .clogo { max-height: 68px; max-width: 200px; object-fit: contain; }
-        .head .blogo { max-height: 68px; max-width: 200px; object-fit: contain; }
-        .head .cname { font-size: 13px; font-weight: 800; margin-top: 2px; }
+        .head .clogo { max-height: 84px; max-width: 210px; object-fit: contain; display: block; }
+        .head .blogo { max-height: 84px; max-width: 210px; object-fit: contain; display: block; }
+        .head .cname { font-size: 13px; font-weight: 800; margin-top: 0; }
         .head .ph { font-size: 11px; color: #111827; font-weight: 700; }
 
         /* Row : tracking+barcode | order no + QR | date */
@@ -247,7 +249,6 @@
                     <div class="ordno">{{ $order->order_number }}</div>
                     <div class="oqr">
                         <div id="qr-track"></div>
-                        <div class="k">{{ $showUr ? 'ٹریک' : 'Track' }}</div>
                     </div>
                 </div>
             </div>
@@ -296,6 +297,9 @@
                 <div class="cod {{ $isCod ? 'due' : '' }}">
                     <div class="tag">{!! $bi('COD Amount', 'وصولی رقم') !!}</div>
                     <div class="amt {{ $isCod ? '' : 'paid' }}">Rs. {{ number_format($codAmt, 0) }}</div>
+                    @if ($isCod)
+                        <svg id="barcode-cod"></svg>
+                    @endif
                 </div>
                 <div class="parcel">
                     <div class="facts">
@@ -336,6 +340,10 @@
             @if ($hasTracking)
             // Tracking barcode (Code128); readable number prints once below it.
             try { JsBarcode('#barcode-track', @json((string) $order->tracking_id), { format: 'CODE128', width: 1.6, height: 36, displayValue: false, margin: 0 }); } catch (e) {}
+            @endif
+            @if ($isCod)
+            // COD amount barcode — scanning it reads back the amount to collect.
+            try { JsBarcode('#barcode-cod', @json((string) (int) round($codAmt)), { format: 'CODE128', width: 1.5, height: 26, displayValue: false, margin: 0 }); } catch (e) {}
             @endif
             // Order-tracking QR — sits beside the order number.
             try { new QRCode(document.getElementById('qr-track'), { text: @json($payUrl), width: 58, height: 58, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
