@@ -25,20 +25,20 @@
         .sheet > div { border: 2px solid #111827; }
         .sheet > div + div { margin-top: 5px; }
 
-        /* Header : courier logo | title (top) | company logo — NO dividers between */
-        .head { display: flex; align-items: center; }
-        .head > div { padding: 3px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+        /* Header : courier logo | title | company logo — NO dividers between.
+           Logos are bottom-aligned so there is never empty space BELOW them; the
+           title stays vertically centred. */
+        .head { display: flex; align-items: flex-end; }
+        .head > div { padding: 3px 10px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; text-align: center; }
         .head .courier { flex: 1.2; }
-        .head .title   { flex: 1.1; }
-        .head .brand   { flex: 1.5; }
-        /* Kill all vertical space around the logos so they sit tight in the header. */
+        .head .title   { flex: 1.2; align-self: center; }
+        .head .brand   { flex: 1.4; }
+        /* No vertical padding around the logos → they sit flush, no space below. */
         .head .courier, .head .brand { padding-top: 0; padding-bottom: 0; }
         .head .title .t { font-size: 24px; font-weight: 800; line-height: 1.05; }
         .head .title .sub { font-size: 12px; font-weight: 700; color: #111827; margin-top: 2px; }
-        /* Wide logos are width-limited, so give them room to grow taller and fill
-           the header height — no empty space below the company logo. */
-        .head .clogo { max-height: 96px; max-width: 240px; object-fit: contain; display: block; }
-        .head .blogo { max-height: 96px; max-width: 320px; object-fit: contain; display: block; }
+        .head .clogo { max-height: 74px; max-width: 210px; object-fit: contain; display: block; }
+        .head .blogo { max-height: 74px; max-width: 290px; object-fit: contain; display: block; }
         .head .cname { font-size: 13px; font-weight: 800; margin-top: 0; }
         .head .ph { font-size: 11px; color: #111827; font-weight: 700; }
 
