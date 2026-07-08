@@ -88,6 +88,15 @@
                     </div>
                     <hr class="my-3 border-gray-100">
                     <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-lg font-extrabold" style="color:var(--brand-navy);">{{ shop_price($order->total) }}</span></div>
+
+                    {{-- Previous khata + what's left to clear (logged-in customers) --}}
+                    @if (($order->previous_balance ?? 0) > 0)
+                        <div class="mt-3 rounded-lg bg-amber-50 border border-amber-100 p-3 text-sm">
+                            <div class="flex justify-between"><span class="text-amber-800">Previous balance (khata)</span><span class="font-semibold">{{ shop_price($order->previous_balance) }}</span></div>
+                            <div class="flex justify-between mt-1"><span class="text-amber-800">This order</span><span class="font-semibold">{{ shop_price($order->total) }}</span></div>
+                            <div class="flex justify-between mt-1 pt-1 border-t border-amber-200 font-bold text-amber-900"><span>Total to clear</span><span>{{ shop_price(($order->previous_balance ?? 0) + ($order->balance_amount ?? 0)) }}</span></div>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="bg-white rounded-2xl border border-gray-100 p-5">

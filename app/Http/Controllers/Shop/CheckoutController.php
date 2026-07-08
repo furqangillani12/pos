@@ -262,6 +262,8 @@ class CheckoutController extends Controller
 
         // Order-received confirmation email (safe no-op if no email / mail fails).
         \App\Mail\OrderStatusMail::dispatchFor($order, 'placed');
+        // Heads-up alert to the store team so they can action it quickly (#3).
+        \App\Mail\NewOrderAdminMail::dispatchFor($order);
 
         return redirect()->route('shop.checkout.thanks', $order)->with('shop_success', 'Order placed!');
     }

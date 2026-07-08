@@ -130,7 +130,9 @@ class Order extends Model
     public function calculateTotals()
     {
         $this->subtotal = $this->items->sum('total_price');
-        $afterDiscount  = $this->subtotal - $this->discount;
+        // Subtract BOTH the coupon/discount and any redeemed-points discount, so
+        // the total always reflects points (matches the storefront checkout).
+        $afterDiscount  = max(0, $this->subtotal - $this->discount - (float) ($this->points_discount ?? 0));
         $this->tax      = $afterDiscount * ($this->tax_rate / 100);
         $this->total    = $afterDiscount + $this->tax + $this->delivery_charges;
 

@@ -300,6 +300,14 @@
                         <span class="text-2xl font-extrabold" style="color:var(--brand-navy);" x-text="money(grand)"></span>
                     </div>
 
+                    {{-- Returning customer's previous khata, so they see the full amount due --}}
+                    @if ($customer && (float) ($customer->current_balance ?? 0) > 0)
+                        <div class="mt-4 rounded-lg bg-amber-50 border border-amber-100 p-3 text-sm">
+                            <div class="flex justify-between"><span class="text-amber-800">Previous balance (khata)</span><span class="font-semibold">{{ shop_price($customer->current_balance) }}</span></div>
+                            <div class="flex justify-between mt-1 pt-1 border-t border-amber-200 font-bold text-amber-900"><span>Total to send (incl. previous)</span><span x-text="money(grand + {{ (float) $customer->current_balance }})"></span></div>
+                        </div>
+                    @endif
+
                     <button type="submit" class="btn btn-primary btn-block mt-5" {{ $dispatchMethods->isEmpty() || $paymentMethods->isEmpty() ? 'disabled' : '' }}><i class="fas fa-lock"></i> Place order</button>
                     <p class="text-[11px] text-gray-400 text-center mt-3">By placing your order you agree to our <a href="{{ route('shop.terms') }}" class="underline">terms</a>.</p>
                 </div>
