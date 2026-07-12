@@ -113,16 +113,17 @@
         .note .urdu { font-size: 14px; font-weight: 700; line-height: 1.65; }
         .note .en { font-size: 11px; font-weight: 700; line-height: 1.5; white-space: nowrap; }
 
-        /* Dark footer — white, bold, big, spread across the full line */
-        .footer { background: #111827; color: #fff; padding: 10px 16px; display: flex; align-items: center; justify-content: space-around; gap: 14px; flex-wrap: wrap; }
-        .footer span { white-space: nowrap; font-size: 14px; font-weight: 800; }
+        /* Dark footer — phone · website · address all on ONE line, never wraps */
+        .footer { background: #111827; color: #fff; padding: 8px 12px; display: flex; align-items: center; justify-content: space-around; gap: 10px; flex-wrap: nowrap; overflow: hidden; }
+        .footer span { white-space: nowrap; font-size: 11px; font-weight: 800; }
 
         @media print {
             body { background: #fff; }
             .toolbar { display: none; }
-            .sheet { margin: 0; border: 2px solid #111827; width: auto; }
-            /* No forced orientation — the print dialog keeps both Portrait and
-               Landscape options (landscape is recommended for the widest look). */
+            /* Keep the sheet at its fixed 210mm width so the layout NEVER reflows.
+               Portrait or landscape, the browser just scales the whole slip to fit
+               the page (Fit to page) — same alignment, nothing overflows. */
+            .sheet { margin: 0 auto; border: 2px solid #111827; width: 210mm; }
             @page { margin: 6mm; }
         }
     </style>
