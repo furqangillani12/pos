@@ -25,11 +25,14 @@ class HomeController extends Controller
                 ->orderBy('sort_order')->orderBy('name')->limit(12)->get();
         }
 
-        // New arrivals first — its ids are excluded from the fallback sections
-        // below so the three product rows never show the same items.
+        // New arrivals first — ordered by updated_at so a freshly ADDED product
+        // *or* any product the admin edits/updates bubbles back to the top (stock
+        // changes go to a separate table, so selling a product doesn't affect this).
+        // Its ids are excluded from the fallback sections below so the three
+        // product rows never show the same items.
         $newArrivals = Product::onWebsite()
             ->with('category', 'brand')
-            ->orderByDesc('created_at')->limit(8)->get();
+            ->orderByDesc('updated_at')->limit(8)->get();
         $usedIds = $newArrivals->pluck('id')->all();
 
         // Featured / best picks — curated when flagged, else a distinct set.
