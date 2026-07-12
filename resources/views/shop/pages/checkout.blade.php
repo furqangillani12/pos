@@ -8,6 +8,7 @@
 <section class="py-10 sm:py-14"
     x-data="checkoutForm({
         provinces: @js($provinces),
+        countries: @js($countries),
         charges: @js($deliveryCharges),
         payments: @js($paymentMethods->map(fn($p)=>['name'=>$p->name,'label'=>$p->label,'is_cod'=>(bool)$p->is_cod,'account_title'=>$p->account_title,'account_number'=>$p->account_number,'bank_name'=>$p->bank_name,'instructions'=>$p->instructions])->values()),
         initDispatch: @js($dispatchMethods->first()?->name),
@@ -87,8 +88,19 @@
 
                         <div class="sm:col-span-2">
                             <label class="text-xs font-semibold text-gray-600 mb-1 block">Country *</label>
-                            <input type="text" name="shipping_country" x-model="f.country" list="dl-countries" autocomplete="off" placeholder="Search country" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <datalist id="dl-countries">@foreach ($countries as $c)<option value="{{ $c }}"></option>@endforeach</datalist>
+                            <div class="relative" @click.away="openDd.country=false">
+                                <input type="text" name="shipping_country" x-model="f.country" autocomplete="off" placeholder="Select or search country"
+                                       @focus="openDd.country=true" @click="openDd.country=true" @input="openDd.country=true"
+                                       class="w-full px-3 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                <ul x-show="openDd.country" x-cloak x-transition.opacity.duration.100ms
+                                    class="absolute z-40 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+                                    <template x-for="opt in filterList(countries, f.country)" :key="opt">
+                                        <li @click="f.country=opt; openDd.country=false" class="px-3 py-2.5 hover:bg-cyan-50 cursor-pointer" :class="{'bg-cyan-50 font-semibold text-cyan-800': f.country===opt}" x-text="opt"></li>
+                                    </template>
+                                    <template x-if="filterList(countries, f.country).length===0"><li class="px-3 py-2.5 text-gray-400">No match</li></template>
+                                </ul>
+                            </div>
                         </div>
 
                         {{-- Pakistan cascade --}}
@@ -96,13 +108,36 @@
                             <div class="sm:col-span-2 grid sm:grid-cols-3 gap-4">
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">Province</label>
-                                    <input type="text" name="shipping_province" x-model="f.province" list="dl-provinces" autocomplete="off" placeholder="Search province" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <datalist id="dl-provinces"><template x-for="p in provinceNames" :key="p"><option :value="p"></option></template></datalist>
+                                    <div class="relative" @click.away="openDd.province=false">
+                                        <input type="text" name="shipping_province" x-model="f.province" autocomplete="off" placeholder="Select province"
+                                               @focus="openDd.province=true" @click="openDd.province=true" @input="openDd.province=true"
+                                               class="w-full px-3 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                        <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                        <ul x-show="openDd.province" x-cloak x-transition.opacity.duration.100ms
+                                            class="absolute z-40 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+                                            <template x-for="opt in filterList(provinceNames, f.province)" :key="opt">
+                                                <li @click="f.province=opt; f.district=''; openDd.province=false" class="px-3 py-2.5 hover:bg-cyan-50 cursor-pointer" :class="{'bg-cyan-50 font-semibold text-cyan-800': f.province===opt}" x-text="opt"></li>
+                                            </template>
+                                            <template x-if="filterList(provinceNames, f.province).length===0"><li class="px-3 py-2.5 text-gray-400">No match</li></template>
+                                        </ul>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">District</label>
-                                    <input type="text" name="shipping_district" x-model="f.district" list="dl-districts" autocomplete="off" placeholder="Search district" :disabled="!f.province" class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100">
-                                    <datalist id="dl-districts"><template x-for="d in districts" :key="d"><option :value="d"></option></template></datalist>
+                                    <div class="relative" @click.away="openDd.district=false">
+                                        <input type="text" name="shipping_district" x-model="f.district" autocomplete="off" :disabled="!f.province"
+                                               :placeholder="f.province ? 'Select district' : 'Pick a province first'"
+                                               @focus="f.province && (openDd.district=true)" @click="f.province && (openDd.district=true)" @input="openDd.district=true"
+                                               class="w-full px-3 py-2.5 pr-9 border border-gray-200 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100">
+                                        <i class="fas fa-chevron-down absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                                        <ul x-show="openDd.district" x-cloak x-transition.opacity.duration.100ms
+                                            class="absolute z-40 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg text-sm">
+                                            <template x-for="opt in filterList(districts, f.district)" :key="opt">
+                                                <li @click="f.district=opt; openDd.district=false" class="px-3 py-2.5 hover:bg-cyan-50 cursor-pointer" :class="{'bg-cyan-50 font-semibold text-cyan-800': f.district===opt}" x-text="opt"></li>
+                                            </template>
+                                            <template x-if="districts.length===0"><li class="px-3 py-2.5 text-gray-400">Pick a province first</li></template>
+                                        </ul>
+                                    </div>
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold text-gray-600 mb-1 block">Tehsil</label>
@@ -322,6 +357,8 @@
     window.checkoutForm = function (cfg) {
         return {
             provinces: cfg.provinces || {},
+            countries: cfg.countries || [],
+            openDd: { country: false, province: false, district: false },
             charges: cfg.charges || {},
             payments: cfg.payments || [],
             sub: Number(cfg.sub) || 0,
@@ -365,6 +402,16 @@
             },
             get grand() { return Math.max(0, this.afterDiscount + this.taxAmt + this.charge); },
             money(n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); },
+            // Filter a dropdown list by what's typed. Empty query (or an exact
+            // match) shows the whole list so the box opens as a full dropdown.
+            filterList(list, q) {
+                list = list || [];
+                q = (q || '').toString().toLowerCase().trim();
+                if (!q) return list;
+                if (list.some(x => String(x).toLowerCase() === q)) return list;
+                const hit = list.filter(x => String(x).toLowerCase().includes(q));
+                return hit.length ? hit : list;
+            },
             async lookupPhone() {
                 const phone = (this.f.phone || '').replace(/\D+/g, '');
                 if (phone.length < 7) { window.toast && window.toast('Enter a valid phone first', 'error'); return; }
