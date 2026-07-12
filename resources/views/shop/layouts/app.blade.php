@@ -225,26 +225,24 @@
     @endphp
     @if ($hasTopText || $hasTopLoc)
         <style>
-            .tm-bar { overflow: hidden; white-space: nowrap; }
-            .tm-track { display: inline-flex; align-items: center; animation: tm-scroll 18s linear infinite; }
+            .tm-bar { overflow: hidden; }
+            /* padding-left:100% parks the text just off the RIGHT edge; the animation
+               then slides it all the way across and off the LEFT edge (full width). */
+            .tm-track { display: inline-block; white-space: nowrap; padding-left: 100%; animation: tm-scroll 16s linear infinite; }
             .tm-bar:hover .tm-track { animation-play-state: paused; }
             .tm-item { display: inline-flex; align-items: center; gap: .5rem; padding: 7px 0; }
-            .tm-sep { display: inline-block; width: 4.5rem; }
             .tm-dot { opacity: .6; }
-            @keyframes tm-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-            @media (prefers-reduced-motion: reduce) { .tm-track { animation: none; } }
+            @keyframes tm-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+            @media (prefers-reduced-motion: reduce) { .tm-bar { text-align: center; } .tm-track { animation: none; padding-left: 0; } }
         </style>
         <div class="tm-bar text-white text-xs font-medium" style="background:var(--brand-navy);">
             <div class="tm-track">
-                @for ($i = 0; $i < 2; $i++)
-                    <span class="tm-item" @if ($i === 1) aria-hidden="true" @endif>
-                        <i class="fas fa-truck" style="color:var(--gold);"></i>
-                        @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
-                        @if ($hasTopText && $hasTopLoc)<span class="tm-dot">·</span>@endif
-                        @if ($hasTopLoc)<span>{{ $topbarLoc }}</span>@endif
-                        <span class="tm-sep"></span>
-                    </span>
-                @endfor
+                <span class="tm-item">
+                    <i class="fas fa-truck" style="color:var(--gold);"></i>
+                    @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
+                    @if ($hasTopText && $hasTopLoc)<span class="tm-dot">·</span>@endif
+                    @if ($hasTopLoc)<span>{{ $topbarLoc }}</span>@endif
+                </span>
             </div>
         </div>
     @endif
