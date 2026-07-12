@@ -224,12 +224,27 @@
         $hasTopLoc  = trim((string) $topbarLoc) !== '';
     @endphp
     @if ($hasTopText || $hasTopLoc)
-        <div class="text-white text-xs font-medium" style="background:var(--brand-navy);">
-            <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
-                <i class="fas fa-truck text-[10px]" style="color:var(--gold);"></i>
-                @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
-                @if ($hasTopText && $hasTopLoc)<span class="hidden sm:inline opacity-60 mx-2">·</span>@endif
-                @if ($hasTopLoc)<span class="hidden sm:inline">{{ $topbarLoc }}</span>@endif
+        <style>
+            .tm-bar { overflow: hidden; white-space: nowrap; }
+            .tm-track { display: inline-flex; align-items: center; animation: tm-scroll 28s linear infinite; }
+            .tm-bar:hover .tm-track { animation-play-state: paused; }
+            .tm-item { display: inline-flex; align-items: center; gap: .5rem; padding: 7px 0; }
+            .tm-sep { display: inline-block; width: 4.5rem; }
+            .tm-dot { opacity: .6; }
+            @keyframes tm-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+            @media (prefers-reduced-motion: reduce) { .tm-track { animation: none; } }
+        </style>
+        <div class="tm-bar text-white text-xs font-medium" style="background:var(--brand-navy);">
+            <div class="tm-track">
+                @for ($i = 0; $i < 2; $i++)
+                    <span class="tm-item" @if ($i === 1) aria-hidden="true" @endif>
+                        <i class="fas fa-truck" style="color:var(--gold);"></i>
+                        @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
+                        @if ($hasTopText && $hasTopLoc)<span class="tm-dot">·</span>@endif
+                        @if ($hasTopLoc)<span>{{ $topbarLoc }}</span>@endif
+                        <span class="tm-sep"></span>
+                    </span>
+                @endfor
             </div>
         </div>
     @endif
