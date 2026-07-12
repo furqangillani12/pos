@@ -226,7 +226,7 @@
     @if ($hasTopText || $hasTopLoc)
         <style>
             .tm-bar { overflow: hidden; white-space: nowrap; }
-            .tm-track { display: inline-flex; align-items: center; animation: tm-scroll 28s linear infinite; }
+            .tm-track { display: inline-flex; align-items: center; animation: tm-scroll 18s linear infinite; }
             .tm-bar:hover .tm-track { animation-play-state: paused; }
             .tm-item { display: inline-flex; align-items: center; gap: .5rem; padding: 7px 0; }
             .tm-sep { display: inline-block; width: 4.5rem; }
