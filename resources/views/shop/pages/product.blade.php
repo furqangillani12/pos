@@ -36,7 +36,7 @@
         <div class="grid lg:grid-cols-2 gap-10">
             {{-- Gallery --}}
             <div x-data="{ active: 0 }" class="reveal">
-                <div class="aspect-square rounded-3xl overflow-hidden bg-gray-100 mb-4 relative">
+                <div class="rounded-3xl overflow-hidden bg-gray-100 mb-4 relative" style="aspect-ratio:4/5;">
                     <template x-for="(img, i) in {{ $gallery->map(fn($g) => shop_image($g))->toJson() }}" :key="i">
                         <img :src="img" :alt="'{{ addslashes($product->name) }}'"
                              class="w-full h-full object-cover absolute inset-0 transition-opacity duration-500"
@@ -47,7 +47,7 @@
                     <div class="grid grid-cols-5 gap-2">
                         @foreach ($gallery as $i => $g)
                             <button @click="active = {{ $i }}" type="button"
-                                    class="aspect-square rounded-xl overflow-hidden border-2 transition"
+                                    class="rounded-xl overflow-hidden border-2 transition" style="aspect-ratio:4/5;"
                                     :class="active === {{ $i }} ? 'border-blue-500' : 'border-transparent'">
                                 <img src="{{ shop_image($g) }}" class="w-full h-full object-cover">
                             </button>
