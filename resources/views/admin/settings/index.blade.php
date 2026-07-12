@@ -39,6 +39,15 @@
                         <label class="block text-xs font-semibold text-gray-600 mb-1">Address</label>
                         <input type="text" name="site_address" value="{{ old('site_address', $site['site_address'] ?? '') }}" placeholder="PanjGirain, Tehsil Darya Khan, Bhakkar" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Top bar message <span class="text-gray-400 font-normal">(the strip at the very top of the website)</span></label>
+                        <input type="text" name="topbar_text" value="{{ old('topbar_text', $site['topbar_text'] ?? 'Free delivery across Pakistan on orders above Rs. 5,000') }}" placeholder="Free delivery across Pakistan on orders above Rs. 5,000" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Top bar location <span class="text-gray-400 font-normal">(shown after the message · leave empty to use the Address above)</span></label>
+                        <input type="text" name="topbar_location" value="{{ old('topbar_location', $site['topbar_location'] ?? '') }}" placeholder="PanjGirain, Tehsil Darya Khan, District Bhakkar" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                        <p class="text-[11px] text-gray-400 mt-1">Leave both fields empty to hide the top bar entirely.</p>
+                    </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1"><i class="fab fa-facebook-f text-blue-600 mr-1"></i> Facebook URL</label>
                         <input type="url" name="social_facebook" value="{{ old('social_facebook', $site['social_facebook'] ?? '') }}" placeholder="https://facebook.com/..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">

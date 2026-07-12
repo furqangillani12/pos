@@ -216,15 +216,23 @@
     }"
     x-init="initStorefront($el); $watch('miniCartOpen', v => v && loadCart())">
 
-    {{-- ═════════════════ Announcement bar ═════════════════ --}}
-    <div class="text-white text-xs font-medium" style="background:var(--brand-navy);">
-        <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
-            <i class="fas fa-truck text-[10px]" style="color:var(--gold);"></i>
-            <span>Free delivery across Pakistan on orders above Rs. 5,000</span>
-            <span class="hidden sm:inline opacity-60 mx-2">·</span>
-            <span class="hidden sm:inline">PanjGirain, Tehsil Darya Khan, District Bhakkar</span>
+    {{-- ═════════════════ Announcement bar (admin-editable in Settings) ═════════════════ --}}
+    @php
+        $topbarText = setting('topbar_text', 'Free delivery across Pakistan on orders above Rs. 5,000');
+        $topbarLoc  = trim((string) setting('topbar_location')) !== '' ? setting('topbar_location') : setting('site_address');
+        $hasTopText = trim((string) $topbarText) !== '';
+        $hasTopLoc  = trim((string) $topbarLoc) !== '';
+    @endphp
+    @if ($hasTopText || $hasTopLoc)
+        <div class="text-white text-xs font-medium" style="background:var(--brand-navy);">
+            <div class="max-w-7xl mx-auto px-4 py-2 flex items-center justify-center gap-2">
+                <i class="fas fa-truck text-[10px]" style="color:var(--gold);"></i>
+                @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
+                @if ($hasTopText && $hasTopLoc)<span class="hidden sm:inline opacity-60 mx-2">·</span>@endif
+                @if ($hasTopLoc)<span class="hidden sm:inline">{{ $topbarLoc }}</span>@endif
+            </div>
         </div>
-    </div>
+    @endif
 
     {{-- ═════════════════ Header ═════════════════ --}}
     <header class="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-gray-200/60"

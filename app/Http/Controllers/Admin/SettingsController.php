@@ -19,6 +19,7 @@ class SettingsController extends Controller
         'shop_tax_rate', 'shop_tax_type',
         'notice_title', 'notice_short', 'notice_full',
         'site_name', 'site_name_ur', 'site_website', 'dispatch_postman_note', 'dispatch_postman_note_ur',
+        'topbar_text', 'topbar_location',
         'dispatch_logo_en', 'dispatch_logo_ur', 'dispatch_slip_lang',
         'points_rupees_per_point', 'points_per_review', 'points_value_rupees',
     ];
@@ -56,6 +57,8 @@ class SettingsController extends Controller
             'site_name'        => 'nullable|string|max:120',
             'site_name_ur'     => 'nullable|string|max:120',
             'site_website'     => 'nullable|string|max:120',
+            'topbar_text'      => 'nullable|string|max:191',
+            'topbar_location'  => 'nullable|string|max:191',
             'dispatch_postman_note'    => 'nullable|string|max:500',
             'dispatch_postman_note_ur' => 'nullable|string|max:500',
             'dispatch_logo_en'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
