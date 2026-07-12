@@ -394,7 +394,7 @@
     </main>
 
     {{-- ═════════════════ Footer ═════════════════ --}}
-    <footer class="mt-20 bg-gray-900 text-gray-300">
+    <footer class="{{ request()->routeIs('shop.home') ? '' : 'mt-20' }} bg-gray-900 text-gray-300">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div>
                 <img src="{{ asset('assets/images/brand/almufeed-traders.png') }}"

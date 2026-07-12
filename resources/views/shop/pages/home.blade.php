@@ -394,7 +394,7 @@
 
 {{-- ═════════════════ TRUST STRIP (moved to the bottom per client) ═════════════════ --}}
 <section id="features" class="bg-white border-t border-gray-100">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-9 grid grid-cols-2 lg:grid-cols-4 gap-6 reveal-stagger">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-9 pb-6 grid grid-cols-2 lg:grid-cols-4 gap-6 reveal-stagger">
         @foreach ([
             ['fa-truck',          'Fast delivery',   'Same-day from local branch'],
             ['fa-shield-halved',  'Secure shopping', '100% authentic products'],
