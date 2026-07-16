@@ -47,6 +47,8 @@ class CatalogController extends Controller
             $query->where(function ($w) use ($q) {
                 $w->where('name', 'like', "%{$q}%")
                   ->orWhere('summary', 'like', "%{$q}%")
+                  ->orWhere('description', 'like', "%{$q}%")
+                  ->orWhere('note', 'like', "%{$q}%")
                   ->orWhere('barcode', 'like', "%{$q}%");
             });
         }

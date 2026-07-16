@@ -17,6 +17,7 @@ class Product extends Model
         'barcode',
         'description',
         'summary',
+        'note',
         'price',
         'sale_price',
         'resale_price',
@@ -207,6 +208,8 @@ class Product extends Model
             $query->where(function ($q) use ($filters) {
                 $q->where('name', 'like', '%' . $filters['search'] . '%')
                     ->orWhere('description', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('note', 'like', '%' . $filters['search'] . '%')
+                    ->orWhere('barcode', 'like', '%' . $filters['search'] . '%')
                     ->orWhere('rank', 'like', '%' . $filters['search'] . '%'); // Added rank to search
             });
         }

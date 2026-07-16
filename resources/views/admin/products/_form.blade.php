@@ -59,6 +59,15 @@
                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">{{ old('description', $product->description ?? '') }}</textarea>
         </div>
 
+        <!-- Important Note -->
+        <div>
+            <label for="note" class="block text-sm font-medium text-gray-700">Important Note</label>
+            <textarea name="note" id="note" rows="2"
+                placeholder="Koi ahem baat is product se related (e.g. handle with care, limited stock)…"
+                class="mt-1 block w-full border border-amber-300 bg-amber-50 rounded-md shadow-sm py-2 px-3 sm:text-sm">{{ old('note', $product->note ?? '') }}</textarea>
+            <p class="mt-1 text-xs text-gray-500">Website par product ke sath aur search me bhi shamil hoga.</p>
+        </div>
+
         <!-- Rank/Box Placement -->
         <div>
             <label for="rank" class="block text-sm font-medium text-gray-700">Box Placement / Rank</label>

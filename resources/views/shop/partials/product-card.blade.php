@@ -3,6 +3,9 @@
     $price     = shop_product_price($product);
     $strike    = shop_strike_price($product);
     $hasSale   = $strike !== null;
+    // Discount % off the strike (retail) price — resellers see this instead of a
+    // plain "SALE" so they can read their margin at a glance (client feedback #19).
+    $pctOff    = ($hasSale && $strike > 0) ? (int) round(($strike - $price) / $strike * 100) : 0;
     $cover     = shop_image($product->image);
     $badge     = $hasSale ? 'sale' : ($product->condition_label ?? 'default');
     $inWishlist = auth('customer')->check()
@@ -17,7 +20,7 @@
             <span class="chip absolute top-3 left-3 z-10"
                   style="background:{{ $badge === 'sale' ? '#fee2e2' : ($badge === 'new' ? '#e8f1fb' : '#cfeefb') }};
                          color:{{ $badge === 'sale' ? '#b91c1c' : ($badge === 'new' ? '#0e7490' : '#92400e') }};">
-                {{ $badge === 'sale' ? 'SALE' : ($badge === 'new' ? 'NEW' : 'HOT') }}
+                {{ $badge === 'sale' ? (($pctOff > 0) ? $pctOff.'% OFF' : 'SALE') : ($badge === 'new' ? 'NEW' : 'HOT') }}
             </span>
         @endif
 
@@ -55,8 +58,11 @@
             <span class="font-bold text-base" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
             @if ($hasSale)
                 <span class="text-xs text-gray-400 line-through">{{ shop_price($strike) }}</span>
+                @if ($pctOff > 0)
+                    <span class="text-[10px] font-bold text-emerald-600">{{ $pctOff }}% off</span>
+                @endif
                 @if (shop_is_reseller())
-                    <span class="text-[10px] font-semibold text-emerald-600">retail · save {{ shop_price($strike - $price) }}</span>
+                    <span class="text-[10px] font-semibold text-emerald-600">· retail save {{ shop_price($strike - $price) }}</span>
                 @endif
             @endif
         </div>

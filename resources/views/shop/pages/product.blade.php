@@ -82,17 +82,26 @@
                 <div class="flex items-baseline flex-wrap gap-x-3 gap-y-1 mt-6">
                     <span class="text-3xl font-extrabold" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
                     @if ($hasSale)
+                        @php $pctOff = $strike > 0 ? (int) round(($strike - $price) / $strike * 100) : 0; @endphp
                         <span class="text-lg text-gray-400 line-through">{{ shop_price($strike) }}</span>
+                        @if ($pctOff > 0)
+                            <span class="chip" style="background:#dcfce7;color:#047857;">{{ $pctOff }}% OFF</span>
+                        @endif
                         @if (shop_is_reseller())
-                            <span class="chip" style="background:#dcfce7;color:#047857;">Retail price · you save {{ shop_price($strike - $price) }}</span>
-                        @else
-                            <span class="chip" style="background:#fee2e2;color:#b91c1c;">SAVE {{ shop_price($strike - $price) }}</span>
+                            <span class="chip" style="background:#eef2ff;color:#3730a3;">Retail price · you save {{ shop_price($strike - $price) }}</span>
                         @endif
                     @endif
                 </div>
 
                 @if ($product->summary)
                     <p class="text-gray-600 mt-5 leading-relaxed">{{ $product->summary }}</p>
+                @endif
+
+                @if ($product->note)
+                    <div class="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                        <i class="fas fa-circle-info text-amber-500 mt-0.5"></i>
+                        <p class="text-sm text-amber-800 leading-relaxed">{{ $product->note }}</p>
+                    </div>
                 @endif
 
                 <div class="mt-6 inline-flex items-center gap-2 text-sm">

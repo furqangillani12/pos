@@ -143,13 +143,16 @@
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 reveal-stagger">
                 @foreach ($featuredCategories as $cat)
                     <a href="{{ route('shop.category', $cat->slug) }}"
-                       class="group relative rounded-2xl overflow-hidden bg-gray-100 hover:shadow-xl transition" style="aspect-ratio:1;">
-                        <img src="{{ shop_image($cat->photo) }}" alt="{{ $cat->name }}" loading="lazy"
-                             class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
-                        <div class="absolute inset-0" style="background:linear-gradient(180deg,transparent 45%,rgba(31,21,23,.78));"></div>
-                        <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
-                            <div class="font-bold text-base">{{ $cat->name }}</div>
-                            <div class="text-[11px] opacity-85 inline-flex items-center gap-1 mt-1 group-hover:gap-2 transition-all">
+                       class="group block rounded-2xl overflow-hidden bg-white border border-gray-100 hover:shadow-xl transition">
+                        {{-- Clean image — no text/overlay on the picture itself (client #14) --}}
+                        <div class="bg-gray-100 overflow-hidden" style="aspect-ratio:1;">
+                            <img src="{{ shop_image($cat->photo) }}" alt="{{ $cat->name }}" loading="lazy"
+                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                        </div>
+                        {{-- Text sits BELOW the image --}}
+                        <div class="p-3 text-center">
+                            <div class="font-bold text-sm text-gray-900 line-clamp-1">{{ $cat->name }}</div>
+                            <div class="text-[11px] text-gray-500 inline-flex items-center gap-1 mt-0.5 group-hover:gap-2 transition-all" style="color:var(--brand-navy);">
                                 Shop now <i class="fas fa-arrow-right text-[9px]"></i>
                             </div>
                         </div>

@@ -133,6 +133,34 @@ class OnlineOrderController extends Controller
         return back()->with('success', 'Order status updated to ' . ucfirst($data['status']) . '.');
     }
 
+    /**
+     * Edit the shipping address of an online order (#9). Customers sometimes
+     * enter the wrong address; staff fix it at confirmation so the dispatch slip
+     * prints correctly.
+     */
+    public function updateAddress(Request $request, Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+
+        $data = $request->validate([
+            'shipping_first_name' => 'nullable|string|max:191',
+            'shipping_last_name'  => 'nullable|string|max:191',
+            'shipping_phone'      => 'nullable|string|max:40',
+            'shipping_address1'   => 'required|string|max:255',
+            'shipping_address2'   => 'nullable|string|max:255',
+            'shipping_tehsil'     => 'nullable|string|max:191',
+            'shipping_district'   => 'nullable|string|max:191',
+            'shipping_city'       => 'nullable|string|max:191',
+            'shipping_province'   => 'nullable|string|max:191',
+            'shipping_post_code'  => 'nullable|string|max:40',
+            'shipping_country'    => 'nullable|string|max:191',
+        ]);
+
+        $order->update($data);
+
+        return back()->with('success', 'Shipping address updated.');
+    }
+
     /** Printable bilingual dispatch slip (#15/#16/#17). */
     public function slip(Request $request, Order $order)
     {

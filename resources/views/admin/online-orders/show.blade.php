@@ -254,9 +254,17 @@
             </div>
 
             {{-- Shipping --}}
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
-                <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Shipping</h3>
-                <div class="text-sm text-gray-700 leading-relaxed">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5" x-data="{ editAddr: false }">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-sm font-semibold text-gray-700 uppercase tracking-wide">Shipping</h3>
+                    <button type="button" @click="editAddr = !editAddr"
+                            class="text-xs font-semibold text-cyan-700 hover:underline">
+                        <i class="fas fa-pen text-[10px]"></i> <span x-text="editAddr ? 'Cancel' : 'Edit'"></span>
+                    </button>
+                </div>
+
+                {{-- Read-only view --}}
+                <div class="text-sm text-gray-700 leading-relaxed" x-show="!editAddr">
                     {{ $order->shipping_first_name }} {{ $order->shipping_last_name }}<br>
                     <i class="fas fa-phone text-xs text-gray-400"></i> {{ $order->shipping_phone }}<br>
                     {{ $order->shipping_address1 }}<br>
@@ -268,6 +276,29 @@
                     @if ($order->shipping_province){{ $order->shipping_province }}@if ($order->shipping_post_code) — {{ $order->shipping_post_code }}@endif<br>@endif
                     <span class="text-gray-500">{{ $order->shipping_country }}</span>
                 </div>
+
+                {{-- Edit form (#9) — fix a wrong address before dispatch --}}
+                <form x-show="editAddr" x-cloak method="POST" action="{{ route('admin.online-orders.address', $order) }}" class="space-y-2">
+                    @csrf @method('PATCH')
+                    <div class="grid grid-cols-2 gap-2">
+                        <input name="shipping_first_name" value="{{ old('shipping_first_name', $order->shipping_first_name) }}" placeholder="First name" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_last_name"  value="{{ old('shipping_last_name', $order->shipping_last_name) }}"  placeholder="Last name"  class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                    </div>
+                    <input name="shipping_phone" value="{{ old('shipping_phone', $order->shipping_phone) }}" placeholder="Phone" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                    <input name="shipping_address1" value="{{ old('shipping_address1', $order->shipping_address1) }}" placeholder="Address line 1" required class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                    <input name="shipping_address2" value="{{ old('shipping_address2', $order->shipping_address2) }}" placeholder="Address line 2 (optional)" class="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input name="shipping_tehsil"   value="{{ old('shipping_tehsil', $order->shipping_tehsil) }}"   placeholder="Tehsil"   class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_district" value="{{ old('shipping_district', $order->shipping_district) }}" placeholder="District" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_city"     value="{{ old('shipping_city', $order->shipping_city) }}"     placeholder="City"     class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_province" value="{{ old('shipping_province', $order->shipping_province) }}" placeholder="Province" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_post_code" value="{{ old('shipping_post_code', $order->shipping_post_code) }}" placeholder="Post code" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                        <input name="shipping_country"  value="{{ old('shipping_country', $order->shipping_country ?: 'Pakistan') }}" placeholder="Country" class="border border-gray-300 rounded-md px-2 py-1.5 text-sm">
+                    </div>
+                    <button class="w-full bg-cyan-700 hover:bg-cyan-800 text-white text-sm font-semibold rounded-md py-1.5">
+                        <i class="fas fa-save"></i> Save address
+                    </button>
+                </form>
                 <div class="text-xs text-gray-500 mt-3"><i class="fas fa-truck"></i> {{ $order->dispatch_method }}</div>
                 @if ($order->tracking_id)
                     <div class="text-xs text-gray-700 mt-1"><i class="fas fa-hashtag"></i> {{ $order->tracking_id }}
