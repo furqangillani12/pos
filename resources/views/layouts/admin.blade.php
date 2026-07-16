@@ -803,6 +803,18 @@
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.banners.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-image mr-2 text-xs"></i> Banners
                     </a>
+                    <a href="{{ route('admin.product-requests.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.product-requests.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-bell mr-2 text-xs"></i> Product Requests
+                        @php
+                            try {
+                                $newRequests = \App\Models\ProductRequest::where('status', 'new')->count();
+                            } catch (\Throwable $e) { $newRequests = 0; }
+                        @endphp
+                        @if ($newRequests > 0)
+                            <span class="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 ml-1 rounded-full bg-amber-400 text-[10px] font-bold text-gray-900">{{ $newRequests }}</span>
+                        @endif
+                    </a>
                     <a href="{{ route('admin.reviews.index') }}"
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.reviews.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-star mr-2 text-xs"></i> Reviews

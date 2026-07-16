@@ -39,8 +39,13 @@
                          x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
                          @if ($i !== 0) style="display:none" @endif>
 
-                        <img src="{{ shop_image($b->image) }}" alt="{{ $b->title ?? 'AL MUFEED TRADERS' }}"
-                             class="absolute inset-0 w-full h-full object-cover">
+                        <picture>
+                            @if ($b->mobile_image)
+                                <source media="(max-width: 640px)" srcset="{{ shop_image($b->mobile_image) }}">
+                            @endif
+                            <img src="{{ shop_image($b->image) }}" alt="{{ $b->title ?? 'AL MUFEED TRADERS' }}"
+                                 class="absolute inset-0 w-full h-full object-cover">
+                        </picture>
                         {{-- wine-tinted scrim for text legibility --}}
                         <div class="absolute inset-0"
                              style="background:linear-gradient(90deg, rgba(31,21,23,.86) 0%, rgba(31,21,23,.55) 42%, rgba(31,21,23,.12) 100%);"></div>

@@ -29,14 +29,25 @@
         <input type="number" name="sort_order" value="{{ old('sort_order', $banner->sort_order ?? 0) }}" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
     </div>
     <div class="sm:col-span-2">
-        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Image URL (or upload below)</label>
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Desktop image URL (or upload below)</label>
         <input type="text" name="image" value="{{ old('image', $banner->image ?? '') }}" placeholder="https://... or banners/banner.jpg" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
     </div>
     <div class="sm:col-span-2">
-        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Upload image</label>
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Upload desktop image <span class="text-gray-400 font-normal">(wide — shown on computer/tablet)</span></label>
         <input type="file" name="image_file" accept="image/*" class="w-full text-sm">
         @if (!empty($banner?->image))
             <img src="{{ shop_image($banner->image) }}" class="mt-2 max-h-32 rounded border">
+        @endif
+    </div>
+    <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Mobile image URL <span class="text-gray-400 font-normal">(optional — tall/square for phones; falls back to desktop)</span></label>
+        <input type="text" name="mobile_image" value="{{ old('mobile_image', $banner->mobile_image ?? '') }}" placeholder="https://... or banners/banner-mobile.jpg" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm">
+    </div>
+    <div class="sm:col-span-2">
+        <label class="block text-xs font-semibold text-gray-700 mb-1.5">Upload mobile image</label>
+        <input type="file" name="mobile_image_file" accept="image/*" class="w-full text-sm">
+        @if (!empty($banner?->mobile_image))
+            <img src="{{ shop_image($banner->mobile_image) }}" class="mt-2 max-h-32 rounded border">
         @endif
     </div>
     <div>

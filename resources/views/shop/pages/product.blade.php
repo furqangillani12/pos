@@ -137,6 +137,14 @@
                     @endauth
                 </div>
 
+                @if ($stock <= 0)
+                    {{-- Out of stock → let the customer ask us to arrange it (#17) --}}
+                    <button type="button" onclick="requestItem({{ $product->id }}, @js($product->name))"
+                            class="mt-3 inline-flex items-center gap-2 text-sm font-semibold rounded-xl px-5 py-2.5 border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                        <i class="far fa-bell"></i> Request to arrange this product
+                    </button>
+                @endif
+
                 {{-- Share / copy --}}
                 @php
                     $shareUrl  = route('shop.product', $product->slug ?? $product->id);

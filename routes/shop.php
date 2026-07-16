@@ -42,6 +42,8 @@ $registerShopRoutes = function () {
         Route::get('/brand/{brand:slug}',     [CatalogController::class, 'brand'])->name('brand');
         Route::get('/search',                 [CatalogController::class, 'search'])->name('search');
         Route::get('/product/{product:slug}', [ShopProductController::class, 'show'])->name('product');
+        // Restock / arrange-this-product request for out-of-stock items (#17). Guests allowed.
+        Route::post('/product/{product}/request', [ShopProductController::class, 'requestItem'])->name('product.request');
 
         // ── Static pages ────────────────────────────────────────────────────
         Route::view('/about',   'shop.pages.about')->name('about');

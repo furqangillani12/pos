@@ -350,13 +350,36 @@
         <!-- Image -->
         <div class="grid grid-cols-1 gap-6">
             <div>
-                <label for="image" class="block text-sm font-medium text-gray-700">Product Image</label>
-                <input type="file" name="image" id="image"
+                <label for="image" class="block text-sm font-medium text-gray-700">Main Product Image</label>
+                <input type="file" name="image" id="image" accept="image/*"
                     class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
                 @if (isset($product) && $product->image)
                     <div class="mt-2">
                         <img src="{{ asset('storage/' . $product->image) }}" alt="{{ $product->name }}"
                             class="h-20 w-20 object-cover rounded">
+                    </div>
+                @endif
+            </div>
+
+            <!-- Gallery (multiple images) -->
+            <div>
+                <label for="gallery" class="block text-sm font-medium text-gray-700">More Images (Gallery)</label>
+                <input type="file" name="gallery[]" id="gallery" accept="image/*" multiple
+                    class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                <p class="mt-1 text-xs text-gray-500">Ek se zyada tasveerein select kar sakte hain. Website product page par slider me dikhengi.</p>
+                @if (isset($product) && !empty($product->gallery))
+                    <div class="mt-3">
+                        <div class="flex flex-wrap gap-2">
+                            @foreach ($product->gallery as $i => $g)
+                                <label class="relative group cursor-pointer">
+                                    <img src="{{ shop_image($g) }}" class="h-16 w-16 object-cover rounded border">
+                                    <span class="absolute -top-1.5 -right-1.5 bg-white rounded-full border shadow px-1 text-[10px] flex items-center gap-0.5">
+                                        <input type="checkbox" name="remove_gallery[]" value="{{ $g }}" class="h-3 w-3"> ✕
+                                    </span>
+                                </label>
+                            @endforeach
+                        </div>
+                        <p class="mt-1 text-xs text-gray-400">Kisi tasveer ke ✕ pe tick lagayein to save par wo hat jayegi. Nayi upload existing me add hoti hain.</p>
                     </div>
                 @endif
             </div>

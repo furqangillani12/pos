@@ -60,7 +60,9 @@ class ProductController extends Controller
             'weight_g'         => 'nullable|integer|min:0',
             'stock_quantity'   => 'required|numeric|min:0',
             'reorder_level'    => 'required|numeric|min:0',
-            'image'            => 'nullable|image|max:2048',
+            'image'            => 'nullable|image|max:5120',
+            'gallery'          => 'nullable|array',
+            'gallery.*'        => 'image|max:5120',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
@@ -81,6 +83,15 @@ class ProductController extends Controller
 
         if ($request->hasFile('image')) {
             $validated['image'] = $request->file('image')->store('products', 'public');
+        }
+
+        // Gallery (#5): store each uploaded image; saved as a JSON array on the product.
+        if ($request->hasFile('gallery')) {
+            $gallery = [];
+            foreach ($request->file('gallery') as $file) {
+                $gallery[] = $file->store('products', 'public');
+            }
+            $validated['gallery'] = $gallery;
         }
 
         // Assign to current branch
@@ -139,7 +150,9 @@ class ProductController extends Controller
             'weight_g'         => 'nullable|integer|min:0',
             'stock_quantity'   => 'required|numeric|min:0',
             'reorder_level'    => 'required|numeric|min:0',
-            'image'            => 'nullable|image|max:2048',
+            'image'            => 'nullable|image|max:5120',
+            'gallery'          => 'nullable|array',
+            'gallery.*'        => 'image|max:5120',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
@@ -158,13 +171,29 @@ class ProductController extends Controller
 
         unset($validated['weight_kg'], $validated['weight_g']);
         $validated['weight'] = $weight;
-        
+
         if ($request->hasFile('image')) {
             if ($product->image) {
                 Storage::disk('public')->delete($product->image);
             }
             $validated['image'] = $request->file('image')->store('products', 'public');
         }
+
+        // Gallery (#5): keep existing minus any ticked for removal, then append new uploads.
+        $gallery = $product->gallery ?? [];
+        $remove  = (array) $request->input('remove_gallery', []);
+        foreach ($remove as $rm) {
+            if (in_array($rm, $gallery, true)) {
+                Storage::disk('public')->delete($rm);
+            }
+        }
+        $gallery = array_values(array_diff($gallery, $remove));
+        if ($request->hasFile('gallery')) {
+            foreach ($request->file('gallery') as $file) {
+                $gallery[] = $file->store('products', 'public');
+            }
+        }
+        $validated['gallery'] = $gallery ?: null;
 
         $product->update($validated);
 

@@ -25,6 +25,9 @@ class BannerController extends Controller
         if ($request->hasFile('image_file')) {
             $data['image'] = $request->file('image_file')->store('banners', 'public');
         }
+        if ($request->hasFile('mobile_image_file')) {
+            $data['mobile_image'] = $request->file('mobile_image_file')->store('banners', 'public');
+        }
         Banner::create($data);
         return redirect()->route('admin.banners.index')->with('success', 'Banner added.');
     }
@@ -39,6 +42,9 @@ class BannerController extends Controller
         $data = $this->validated($request);
         if ($request->hasFile('image_file')) {
             $data['image'] = $request->file('image_file')->store('banners', 'public');
+        }
+        if ($request->hasFile('mobile_image_file')) {
+            $data['mobile_image'] = $request->file('mobile_image_file')->store('banners', 'public');
         }
         $banner->update($data);
         return redirect()->route('admin.banners.index')->with('success', 'Banner updated.');
@@ -63,8 +69,10 @@ class BannerController extends Controller
             'subtitle'   => 'nullable|string|max:191',
             'cta_text'   => 'nullable|string|max:50',
             'cta_url'    => 'nullable|string|max:500',
-            'image'      => 'nullable|string|max:500',
-            'image_file' => 'nullable|image|max:4096',
+            'image'             => 'nullable|string|max:500',
+            'image_file'        => 'nullable|image|max:4096',
+            'mobile_image'      => 'nullable|string|max:500',
+            'mobile_image_file' => 'nullable|image|max:4096',
             'position'   => 'required|in:hero,mid,side,footer',
             'sort_order' => 'nullable|integer',
             'is_active'  => 'sometimes|boolean',

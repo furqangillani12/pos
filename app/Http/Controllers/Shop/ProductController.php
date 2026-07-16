@@ -5,10 +5,45 @@ namespace App\Http\Controllers\Shop;
 use App\Http\Controllers\Controller;
 use App\Models\Package;
 use App\Models\Product;
+use App\Models\ProductRequest;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 
 class ProductController extends Controller
 {
+    /**
+     * Store a customer's "arrange / restock this product" request for an
+     * out-of-stock item (#17). Open to guests; prefilled for logged-in customers.
+     */
+    public function requestItem(Request $request, Product $product)
+    {
+        $data = $request->validate([
+            'name'  => 'nullable|string|max:191',
+            'phone' => 'required|string|max:40',
+            'email' => 'nullable|email|max:191',
+            'note'  => 'nullable|string|max:1000',
+        ]);
+
+        $customer = auth('customer')->user();
+
+        ProductRequest::create([
+            'product_id'   => $product->id,
+            'product_name' => $product->name,
+            'customer_id'  => $customer?->id,
+            'name'         => $data['name'] ?? $customer?->name,
+            'phone'        => $data['phone'],
+            'email'        => $data['email'] ?? $customer?->email,
+            'note'         => $data['note'] ?? null,
+            'status'       => 'new',
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['ok' => true, 'message' => 'Request received — we\'ll contact you when it\'s available.']);
+        }
+
+        return back()->with('shop_success', 'Request received — we\'ll contact you when it\'s available.');
+    }
+
     public function show(Product $product)
     {
         abort_unless($product->is_active && $product->show_on_website, 404);

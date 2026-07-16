@@ -587,6 +587,39 @@
     {{-- ═════════════════ Toast stack ═════════════════ --}}
     <div class="toast-stack" id="toastStack"></div>
 
+    {{-- ═════════ "Request this item" modal (out-of-stock, client #17) ═════════ --}}
+    <div x-data="requestItemModal()" x-show="open" x-cloak
+         @request-item.window="openFor($event.detail)"
+         class="fixed inset-0 z-[300] flex items-center justify-center p-4"
+         style="background:rgba(17,24,39,.55);">
+        <div @click.outside="open = false" x-transition
+             class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <div class="flex items-start justify-between mb-1">
+                <h3 class="text-lg font-bold text-gray-900">Request this item</h3>
+                <button type="button" @click="open = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <p class="text-sm text-gray-500 mb-4">
+                <span class="font-semibold text-gray-700" x-text="productName"></span> abhi out of stock hai. Apni tafseel dein — stock aane par hum aap se rabta karenge.
+            </p>
+            <form @submit.prevent="submit()" class="space-y-3">
+                <input x-model="form.name" type="text" placeholder="Your name"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
+                <input x-model="form.phone" type="text" required placeholder="Phone / WhatsApp *"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
+                <input x-model="form.email" type="email" placeholder="Email (optional)"
+                       class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm">
+                <textarea x-model="form.note" rows="2" placeholder="Note (optional)"
+                          class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm"></textarea>
+                <button type="submit" :disabled="loading"
+                        class="w-full text-white font-semibold rounded-lg py-2.5 transition hover:opacity-90 disabled:opacity-60"
+                        style="background:var(--brand-navy);">
+                    <span x-show="!loading"><i class="far fa-bell"></i> Send request</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin"></i> Sending…</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
     @stack('scripts')
 
     <script>
@@ -680,6 +713,41 @@
                 }
                 return true;
             } catch (e) { window.toast('Network error', 'error'); return false; }
+        };
+
+        // ── Request-this-item (out-of-stock, #17) ────────────────────────
+        window.requestItem = function (productId, productName) {
+            window.dispatchEvent(new CustomEvent('request-item', { detail: { id: productId, name: productName || 'this item' } }));
+        };
+        window.requestItemModal = function () {
+            return {
+                open: false, loading: false, productId: null, productName: '',
+                form: { name: '', phone: '', email: '', note: '' },
+                openFor(detail) {
+                    this.productId = detail.id;
+                    this.productName = detail.name;
+                    this.form = { name: '', phone: '', email: '', note: '' };
+                    this.open = true;
+                },
+                async submit() {
+                    if (!this.form.phone) { window.toast('Please enter your phone', 'error'); return; }
+                    this.loading = true;
+                    const url = @json(route('shop.product.request', ['product' => 'PRODUCT_ID'])).replace('PRODUCT_ID', this.productId);
+                    const fd = new FormData();
+                    fd.append('name', this.form.name); fd.append('phone', this.form.phone);
+                    fd.append('email', this.form.email); fd.append('note', this.form.note);
+                    try {
+                        const res = await fetch(url, {
+                            method: 'POST', body: fd,
+                            headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.ok) { window.toast(data.message || 'Request received', 'success'); this.open = false; }
+                        else { window.toast(data.message || 'Could not send request', 'error'); }
+                    } catch (e) { window.toast('Network error', 'error'); }
+                    this.loading = false;
+                },
+            };
         };
 
         // ── Wishlist toggle helper ───────────────────────────────────────

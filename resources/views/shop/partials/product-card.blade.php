@@ -7,6 +7,8 @@
     // plain "SALE" so they can read their margin at a glance (client feedback #19).
     $pctOff    = ($hasSale && $strike > 0) ? (int) round(($strike - $price) / $strike * 100) : 0;
     $cover     = shop_image($product->image);
+    // Out of stock only when the product tracks inventory and has none (client #17).
+    $outOfStock = ($product->track_inventory ?? false) && (($product->stock_quantity ?? 0) <= 0);
     $badge     = $hasSale ? 'sale' : ($product->condition_label ?? 'default');
     $inWishlist = auth('customer')->check()
         && $product->wishlists()->where('customer_id', auth('customer')->id())->exists();
@@ -24,6 +26,10 @@
             </span>
         @endif
 
+        @if ($outOfStock)
+            <span class="chip absolute top-3 right-3 z-10" style="background:#111827;color:#fff;">Out of stock</span>
+        @endif
+
         <div class="quick">
             @auth('customer')
                 <button type="button" onclick="event.preventDefault(); toggleWishlist({{ $product->id }}, this)"
@@ -35,9 +41,11 @@
                     <i class="far fa-heart"></i>
                 </button>
             @endauth
-            <button type="button" onclick="event.preventDefault(); addToCart({{ $product->id }})" title="Quick add">
-                <i class="fas fa-plus"></i>
-            </button>
+            @unless ($outOfStock)
+                <button type="button" onclick="event.preventDefault(); addToCart({{ $product->id }})" title="Quick add">
+                    <i class="fas fa-plus"></i>
+                </button>
+            @endunless
         </div>
     </a>
 
@@ -75,5 +83,20 @@
                 <span class="text-gray-400 ml-1">({{ $product->review_count }})</span>
             </div>
         @endif
+
+        {{-- Always-visible CTA (client #12) — or a restock request when sold out (#17) --}}
+        <div class="mt-3">
+            @if ($outOfStock)
+                <button type="button" onclick="requestItem({{ $product->id }}, @js($product->name))"
+                        class="w-full text-sm font-semibold rounded-lg py-2 border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                    <i class="far fa-bell"></i> Request this item
+                </button>
+            @else
+                <button type="button" onclick="addToCart({{ $product->id }})"
+                        class="w-full text-sm font-semibold rounded-lg py-2 text-white transition hover:opacity-90" style="background:var(--brand-navy);">
+                    <i class="fas fa-cart-plus"></i> Add to Cart
+                </button>
+            @endif
+        </div>
     </div>
 </article>

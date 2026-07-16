@@ -324,6 +324,11 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');
     Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
 
+    // ── Product (restock) requests — #17 ──
+    Route::get('/product-requests',                     [\App\Http\Controllers\Admin\ProductRequestController::class, 'index'])->name('product-requests.index');
+    Route::patch('/product-requests/{productRequest}',  [\App\Http\Controllers\Admin\ProductRequestController::class, 'updateStatus'])->name('product-requests.status');
+    Route::delete('/product-requests/{productRequest}', [\App\Http\Controllers\Admin\ProductRequestController::class, 'destroy'])->name('product-requests.destroy');
+
     // ── Product review moderation ──
     Route::get('/reviews',                    [\App\Http\Controllers\Admin\ReviewController::class, 'index'])->name('reviews.index');
     Route::patch('/reviews/{review}/approve', [\App\Http\Controllers\Admin\ReviewController::class, 'approve'])->name('reviews.approve');
