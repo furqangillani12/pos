@@ -82,7 +82,10 @@ if (!function_exists('shop_is_reseller')) {
 if (!function_exists('shop_strike_price')) {
     /**
      * The reference price to show struck-through next to what the visitor pays.
-     * - Reseller / wholesale: the RETAIL price (sale_price) so they see their margin.
+     * - Reseller / wholesale: the ORIGINAL retail (MRP `price`, not a temporary
+     *   discounted `sale_price`) so their margin reflects the real retail they can
+     *   charge — e.g. MRP 300, reseller cost 200 → margin 100, not 50 off a 250
+     *   flash sale (client feedback #6).
      * - Retail customer: the list/MRP price (price) when it's higher (a real sale).
      * Returns null when there's nothing meaningful to strike out.
      */
@@ -90,7 +93,9 @@ if (!function_exists('shop_strike_price')) {
     {
         $paid = shop_product_price($product);
         if (shop_is_reseller()) {
-            $retail = (float) ($product->sale_price ?: $product->price ?: 0);
+            // Original retail = the highest of MRP / sale price, so a customer-facing
+            // discount never shrinks the reseller's shown margin.
+            $retail = (float) max((float) ($product->price ?? 0), (float) ($product->sale_price ?? 0));
             return $retail > $paid ? $retail : null;
         }
         $list = (float) ($product->price ?? 0);
@@ -303,11 +308,29 @@ if (!function_exists('shop_tax_amount')) {
      * Tax on a taxable base, computed exactly like the POS receipt
      * (exclusive: added on top). Returns 0 when no rate is set.
      */
-    function shop_tax_amount(float $base): float
+    function shop_tax_amount(float $base, bool $isCod = false): float
     {
+        if ($base <= 0) return 0.0;
+
+        // Optional: only levy the tax / government charge on COD orders (client #8).
+        if ((int) setting('shop_tax_cod_only', 0) === 1 && ! $isCod) return 0.0;
+
+        if (shop_tax_type() === 'fixed') {
+            // Amount-based slabs: "from Rs X to Rs Y → charge Rs Z". First matching
+            // slab wins; max <= 0 means "and above". Falls back to the flat rate.
+            $slabs = json_decode((string) setting('shop_tax_slabs', '[]'), true) ?: [];
+            foreach ($slabs as $s) {
+                $min = (float) ($s['min'] ?? 0);
+                $max = (float) ($s['max'] ?? 0);
+                if ($base >= $min && ($max <= 0 || $base <= $max)) {
+                    return round((float) ($s['charge'] ?? 0), 2);
+                }
+            }
+            return round((float) shop_tax_rate(), 2);
+        }
+
         $rate = shop_tax_rate();
-        if ($rate <= 0 || $base <= 0) return 0.0;
-        return shop_tax_type() === 'fixed' ? $rate : round($base * $rate / 100, 2);
+        return $rate > 0 ? round($base * $rate / 100, 2) : 0.0;
     }
 }
 

@@ -85,6 +85,18 @@ class OnlineOrderController extends Controller
             'tracking_id' => 'nullable|string|max:191',
         ]);
 
+        // #7: a non-COD order cannot be dispatched/delivered until payment is
+        // recorded — either a receipt is attached or it's marked paid. COD exempt.
+        if (in_array($data['status'], ['dispatched', 'delivered'], true)) {
+            $isCod      = $order->online_payment_status === 'cod';
+            $isPaid     = in_array($order->online_payment_status, ['paid', 'bank_paid'], true)
+                          || $order->payment_status === 'paid';
+            $hasReceipt = (bool) $order->payment_proof_path;
+            if (! $isCod && ! $isPaid && ! $hasReceipt) {
+                return back()->with('error', 'Is non-COD order ko dispatch/deliver karne se pehle payment receipt attach karein ya "Mark as Paid" karein (#7).');
+            }
+        }
+
         $restockStatuses = config('order_flow.restock', ['cancelled']);
 
         DB::transaction(function () use ($order, $data, $restockStatuses) {
@@ -286,17 +298,25 @@ class OnlineOrderController extends Controller
         abort_unless($order->order_source === 'online', 404);
 
         $data = $request->validate([
-            'note'        => 'nullable|string|max:255',
-            'payment_ref' => 'nullable|string|max:191',
+            'note'          => 'nullable|string|max:255',
+            'payment_ref'   => 'nullable|string|max:191',
+            'payment_proof' => 'nullable|image|max:5120',
         ]);
 
-        DB::transaction(function () use ($order, $data) {
+        // Admin can attach a payment receipt here (#7).
+        $proofPath = $order->payment_proof_path;
+        if ($request->hasFile('payment_proof')) {
+            $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
+        }
+
+        DB::transaction(function () use ($order, $data, $proofPath) {
             $order->update([
                 'paid_amount'           => (float) $order->total,
                 'balance_amount'        => 0,
                 'payment_status'        => 'paid',
                 'online_payment_status' => $order->online_payment_status === 'cod' ? 'paid' : 'bank_paid',
                 'online_payment_ref'    => $data['payment_ref'] ?? $order->online_payment_ref,
+                'payment_proof_path'    => $proofPath,
             ]);
 
             // Reduce customer khata since they've paid (if logged-in customer)

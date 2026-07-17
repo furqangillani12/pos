@@ -222,14 +222,18 @@
                 @endif
 
                 @if ($order->balance_amount > 0 && $order->status !== 'cancelled')
-                    <form method="POST" action="{{ route('admin.online-orders.mark-paid', $order) }}" class="mt-4 pt-4 border-t border-gray-100"
+                    <form method="POST" action="{{ route('admin.online-orders.mark-paid', $order) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-gray-100"
                           onsubmit="return confirm('Mark this order as fully paid? Customer khata will be reduced.')">
                         @csrf @method('PATCH')
                         <input type="text" name="payment_ref" placeholder="Payment ref (optional)"
                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mb-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Attach payment receipt (image)</label>
+                        <input type="file" name="payment_proof" accept="image/*"
+                               class="w-full text-xs mb-2">
                         <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">
                             <i class="fas fa-check-circle"></i> Mark as Paid
                         </button>
+                        <p class="text-[11px] text-gray-400 mt-1">Non-COD orders ko dispatch/deliver karne se pehle receipt zaroori hai (#7).</p>
                     </form>
                 @endif
             </div>

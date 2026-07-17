@@ -49,8 +49,13 @@ class SettingsController extends Controller
             'social_tiktok'    => 'nullable|url|max:300',
             'social_x'         => 'nullable|url|max:300',
             'social_youtube'   => 'nullable|url|max:300',
-            'shop_tax_rate'    => 'nullable|numeric|min:0|max:100',
+            'shop_tax_rate'    => 'nullable|numeric|min:0',
             'shop_tax_type'    => 'nullable|in:percent,fixed',
+            'shop_tax_label'    => 'nullable|string|max:60',
+            'shop_tax_cod_only' => 'nullable|boolean',
+            'tax_slab_min'      => 'nullable|array',
+            'tax_slab_max'      => 'nullable|array',
+            'tax_slab_charge'   => 'nullable|array',
             'notice_title'     => 'nullable|string|max:120',
             'notice_short'     => 'nullable|string|max:255',
             'notice_full'      => 'nullable|string|max:2000',
@@ -87,6 +92,21 @@ class SettingsController extends Controller
                 $data[$key] = '';
             }
         }
+
+        // Amount-based tax slabs (#8): assemble the repeater rows into JSON.
+        $slabs = [];
+        foreach ((array) ($data['tax_slab_min'] ?? []) as $i => $min) {
+            $charge = $data['tax_slab_charge'][$i] ?? null;
+            if ($charge === null || $charge === '') continue;
+            $slabs[] = [
+                'min'    => (float) $min,
+                'max'    => (float) ($data['tax_slab_max'][$i] ?? 0),
+                'charge' => (float) $charge,
+            ];
+        }
+        $data['shop_tax_slabs']    = json_encode(array_values($slabs));
+        $data['shop_tax_cod_only'] = $request->boolean('shop_tax_cod_only') ? 1 : 0;
+        unset($data['tax_slab_min'], $data['tax_slab_max'], $data['tax_slab_charge']);
 
         Setting::putMany($data);
 

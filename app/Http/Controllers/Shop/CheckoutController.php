@@ -151,15 +151,16 @@ class CheckoutController extends Controller
             $pointsDiscount = shop_points_to_rupees($redeemPoints);
         }
 
-        // Tax computed the SAME way as the POS receipt: exclusive, on
-        // (subtotal − discount + delivery). Driven by the storefront tax setting.
-        $afterDiscount = max(0, $afterCoupon - $pointsDiscount);
-        $taxableBase   = $afterDiscount + $delivery;
-        $tax           = shop_tax_amount($taxableBase);
-        $grandTotal    = max(0, $afterDiscount + $tax + $delivery);
-
         $paymentModel = PaymentMethod::where('name', $data['payment_method'])->first();
         $isCod = (bool) ($paymentModel?->is_cod);
+
+        // Tax / government charges — exclusive, on (subtotal − discount + delivery).
+        // Driven by the storefront tax setting (percent, or amount slabs for fixed);
+        // may be limited to COD orders (client #8).
+        $afterDiscount = max(0, $afterCoupon - $pointsDiscount);
+        $taxableBase   = $afterDiscount + $delivery;
+        $tax           = shop_tax_amount($taxableBase, $isCod);
+        $grandTotal    = max(0, $afterDiscount + $tax + $delivery);
 
         // Optional payment screenshot.
         $proofPath = null;

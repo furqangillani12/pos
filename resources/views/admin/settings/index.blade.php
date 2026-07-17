@@ -73,21 +73,58 @@
                         <input type="url" name="social_youtube" value="{{ old('social_youtube', $site['social_youtube'] ?? '') }}" placeholder="https://youtube.com/@..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
                     </div>
 
-                    {{-- ── Online store tax (applied on website orders, like the POS receipt) ── --}}
-                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
-                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-percent text-emerald-500 mr-1"></i> Online store tax</div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tax rate</label>
-                        <input type="number" step="0.01" min="0" name="shop_tax_rate" value="{{ old('shop_tax_rate', $site['shop_tax_rate'] ?? '') }}" placeholder="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                        <p class="text-[11px] text-gray-400 mt-1">Leave 0 for no tax. Applied on (subtotal − discount + delivery), same as POS.</p>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tax type</label>
-                        <select name="shop_tax_type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="percent" {{ ($site['shop_tax_type'] ?? 'percent') === 'percent' ? 'selected' : '' }}>Percent (%)</option>
-                            <option value="fixed" {{ ($site['shop_tax_type'] ?? '') === 'fixed' ? 'selected' : '' }}>Fixed (Rs.)</option>
-                        </select>
+                    {{-- ── Online store tax / government charges (client #8) ── --}}
+                    @php
+                        $taxType  = old('shop_tax_type', $site['shop_tax_type'] ?? 'percent');
+                        $taxSlabs = json_decode($site['shop_tax_slabs'] ?? '[]', true) ?: [];
+                    @endphp
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1"
+                         x-data="{ type: '{{ $taxType }}', slabs: {{ \Illuminate\Support\Js::from($taxSlabs ?: [['min'=>0,'max'=>0,'charge'=>0]]) }} }">
+                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-percent text-emerald-500 mr-1"></i> Tax / Government charges</div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Tax type</label>
+                                <select name="shop_tax_type" x-model="type" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                    <option value="percent">Percent (%)</option>
+                                    <option value="fixed">Fixed amount (by order amount)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Label (shown to customer)</label>
+                                <input type="text" name="shop_tax_label" value="{{ old('shop_tax_label', $site['shop_tax_label'] ?? '') }}" placeholder="e.g. Govt Tax / Service Charges" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            </div>
+
+                            {{-- Percent mode --}}
+                            <div x-show="type === 'percent'" class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Tax rate (%)</label>
+                                <input type="number" step="0.01" min="0" name="shop_tax_rate" value="{{ old('shop_tax_rate', $site['shop_tax_rate'] ?? '') }}" placeholder="e.g. 5" class="w-full sm:w-48 px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                                <p class="text-[11px] text-gray-400 mt-1">Total (subtotal − discount + delivery) ka itne % tax add hoga.</p>
+                            </div>
+
+                            {{-- Fixed amount slabs --}}
+                            <div x-show="type === 'fixed'" x-cloak class="sm:col-span-2">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Amount slabs</label>
+                                <p class="text-[11px] text-gray-400 mb-2">Order amount "itni se itni" tak → utne charges. Max 0 rakhein to "aur us se upar".</p>
+                                <template x-for="(slab, i) in slabs" :key="i">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <input type="number" step="0.01" min="0" :name="'tax_slab_min['+i+']'" x-model="slab.min" placeholder="From Rs" class="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                        <span class="text-gray-400 text-xs">to</span>
+                                        <input type="number" step="0.01" min="0" :name="'tax_slab_max['+i+']'" x-model="slab.max" placeholder="To Rs (0 = ∞)" class="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                        <span class="text-gray-400 text-xs">→</span>
+                                        <input type="number" step="0.01" min="0" :name="'tax_slab_charge['+i+']'" x-model="slab.charge" placeholder="Charge Rs" class="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                        <button type="button" @click="slabs.splice(i,1)" class="text-red-500 hover:text-red-700 text-sm"><i class="fas fa-times"></i></button>
+                                    </div>
+                                </template>
+                                <button type="button" @click="slabs.push({min:0,max:0,charge:0})" class="text-xs font-semibold text-cyan-700 hover:underline"><i class="fas fa-plus"></i> Add slab</button>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+                                    <input type="checkbox" name="shop_tax_cod_only" value="1" {{ old('shop_tax_cod_only', $site['shop_tax_cod_only'] ?? 0) ? 'checked' : '' }} class="rounded text-cyan-600">
+                                    Sirf COD orders par tax/charges lagayein
+                                </label>
+                            </div>
+                        </div>
                     </div>
 
                     {{-- ── Khushkhabri / good-news note shown on cart & checkout ── --}}
