@@ -38,6 +38,20 @@
         </div>
 
         <div>
+            <label for="categories" class="block text-sm font-medium text-gray-700">Additional categories <span class="text-gray-400 font-normal">(optional, multi-select)</span></label>
+            @php $selectedExtra = old('categories', isset($product) ? $product->categories->pluck('id')->all() : []); @endphp
+            <select name="categories[]" id="categories" multiple size="5"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">
+                @foreach ($categories as $category)
+                    <option value="{{ $category->id }}" {{ in_array($category->id, (array) $selectedExtra) ? 'selected' : '' }}>
+                        {{ $category->name }}
+                    </option>
+                @endforeach
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Ctrl/Cmd dabaye rakh kar ek se zyada category chunein — product in sab me dikhega.</p>
+        </div>
+
+        <div>
             <label for="unit_id" class="block text-sm font-medium text-gray-700">Unit</label>
             <select name="unit_id" id="unit_id"
                 class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">

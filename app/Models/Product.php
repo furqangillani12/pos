@@ -69,6 +69,15 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    /**
+     * Additional categories a product appears in (#16), beyond its primary
+     * `category_id`. Storefront category pages match either.
+     */
+    public function categories(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Category::class, 'category_product');
+    }
+
     public function brand(): BelongsTo
     {
         return $this->belongsTo(Brand::class);

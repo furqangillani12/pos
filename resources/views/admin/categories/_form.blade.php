@@ -19,6 +19,26 @@
     </div>
 
     <div>
+        <label for="parent_id" class="block text-sm font-medium text-gray-700">Parent category <span class="text-gray-400 font-normal">(for sub-categories)</span></label>
+        <select name="parent_id" id="parent_id"
+                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            <option value="">— None (top-level category) —</option>
+            @foreach (($parentCategories ?? []) as $pc)
+                <option value="{{ $pc->id }}" {{ (string) old('parent_id', $category->parent_id ?? '') === (string) $pc->id ? 'selected' : '' }}>{{ $pc->name }}</option>
+            @endforeach
+        </select>
+        <p class="mt-1 text-xs text-gray-500">Kisi category ko sub-category banane ke liye uska parent chunein.</p>
+        @error('parent_id')<p class="mt-1 text-sm text-red-600">{{ $message }}</p>@enderror
+    </div>
+
+    <div>
+        <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" name="is_featured" value="1" {{ old('is_featured', $category->is_featured ?? false) ? 'checked' : '' }} class="rounded border-gray-300 text-blue-600">
+            Featured on homepage
+        </label>
+    </div>
+
+    <div>
         <label for="sort_order" class="block text-sm font-medium text-gray-700">Display order</label>
         <input type="number" name="sort_order" id="sort_order" min="0"
                class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"

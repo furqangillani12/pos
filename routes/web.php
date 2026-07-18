@@ -324,6 +324,15 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');
     Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
 
+    // ── Coupons / discount codes — #18 ──
+    Route::get('/coupons',                    [\App\Http\Controllers\Admin\CouponController::class, 'index'])->name('coupons.index');
+    Route::get('/coupons/create',             [\App\Http\Controllers\Admin\CouponController::class, 'create'])->name('coupons.create');
+    Route::post('/coupons',                   [\App\Http\Controllers\Admin\CouponController::class, 'store'])->name('coupons.store');
+    Route::get('/coupons/{coupon}/edit',      [\App\Http\Controllers\Admin\CouponController::class, 'edit'])->name('coupons.edit');
+    Route::put('/coupons/{coupon}',           [\App\Http\Controllers\Admin\CouponController::class, 'update'])->name('coupons.update');
+    Route::patch('/coupons/{coupon}/toggle',  [\App\Http\Controllers\Admin\CouponController::class, 'toggle'])->name('coupons.toggle');
+    Route::delete('/coupons/{coupon}',        [\App\Http\Controllers\Admin\CouponController::class, 'destroy'])->name('coupons.destroy');
+
     // ── Product (restock) requests — #17 ──
     Route::get('/product-requests',                     [\App\Http\Controllers\Admin\ProductRequestController::class, 'index'])->name('product-requests.index');
     Route::patch('/product-requests/{productRequest}',  [\App\Http\Controllers\Admin\ProductRequestController::class, 'updateStatus'])->name('product-requests.status');

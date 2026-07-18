@@ -38,7 +38,11 @@ class CatalogController extends Controller
             $catIds = collect([$category->id])
                 ->merge(Category::where('parent_id', $category->id)->pluck('id'))
                 ->all();
-            $query->whereIn('category_id', $catIds);
+            // Match the product's primary category OR any of its extra categories (#16).
+            $query->where(function ($w) use ($catIds) {
+                $w->whereIn('category_id', $catIds)
+                  ->orWhereHas('categories', fn ($c) => $c->whereIn('categories.id', $catIds));
+            });
         }
         if ($brand) {
             $query->where('brand_id', $brand->id);

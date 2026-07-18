@@ -803,6 +803,10 @@
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.banners.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-image mr-2 text-xs"></i> Banners
                     </a>
+                    <a href="{{ route('admin.coupons.index') }}"
+                       class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.coupons.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
+                        <i class="fas fa-tags mr-2 text-xs"></i> Coupons
+                    </a>
                     <a href="{{ route('admin.product-requests.index') }}"
                        class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.product-requests.*') ? 'bg-cyan-100 text-cyan-700 font-semibold' : 'hover:bg-cyan-50 hover:text-cyan-700' }}">
                         <i class="fas fa-bell mr-2 text-xs"></i> Product Requests

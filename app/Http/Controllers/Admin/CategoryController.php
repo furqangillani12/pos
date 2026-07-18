@@ -21,12 +21,17 @@ class CategoryController extends Controller
 
     public function create()
     {
-        return view('admin.categories.create');
+        $parentCategories = $this->scopeBranch(Category::query())->whereNull('parent_id')
+            ->orderBy('name')->get();
+        return view('admin.categories.create', compact('parentCategories'));
     }
 
     public function edit(Category $category)
     {
-        return view('admin.categories.edit', compact('category'));
+        // Parent options: roots other than this category (avoid self-parenting).
+        $parentCategories = $this->scopeBranch(Category::query())->whereNull('parent_id')
+            ->where('id', '!=', $category->id)->orderBy('name')->get();
+        return view('admin.categories.edit', compact('category', 'parentCategories'));
     }
 
     public function store(Request $request)
@@ -49,11 +54,14 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'sort_order'  => $sortRules,
             'photo'       => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'parent_id'   => 'nullable|exists:categories,id',
+            'is_featured' => 'nullable|boolean',
         ], [
             'sort_order.unique' => 'This display order number is already used by another category. Please pick a different number.',
         ]);
 
-        $validated['sort_order'] = (int) $request->input('sort_order', 0);
+        $validated['sort_order']  = (int) $request->input('sort_order', 0);
+        $validated['is_featured'] = $request->boolean('is_featured');
 
         if ($request->hasFile('photo')) {
             $validated['photo'] = $request->file('photo')->store('category-photos', 'public');
@@ -87,11 +95,15 @@ class CategoryController extends Controller
             'description' => 'nullable|string',
             'sort_order'  => $sortRules,
             'photo'       => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+            'parent_id'   => ['nullable', 'exists:categories,id', Rule::notIn([$category->id])],
+            'is_featured' => 'nullable|boolean',
         ], [
             'sort_order.unique' => 'This display order number is already used by another category. Please pick a different number.',
+            'parent_id.not_in'  => 'A category cannot be its own parent.',
         ]);
 
-        $validated['sort_order'] = (int) $request->input('sort_order', $category->sort_order ?? 0);
+        $validated['sort_order']  = (int) $request->input('sort_order', $category->sort_order ?? 0);
+        $validated['is_featured'] = $request->boolean('is_featured');
 
         if ($request->hasFile('photo')) {
             if ($category->photo && \Storage::disk('public')->exists($category->photo)) {

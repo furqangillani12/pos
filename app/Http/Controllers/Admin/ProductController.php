@@ -63,6 +63,8 @@ class ProductController extends Controller
             'image'            => 'nullable|image|max:5120',
             'gallery'          => 'nullable|array',
             'gallery.*'        => 'image|max:5120',
+            'categories'       => 'nullable|array',
+            'categories.*'     => 'exists:categories,id',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
@@ -101,6 +103,9 @@ class ProductController extends Controller
         }
 
         $product = Product::create($validated);
+
+        // Extra categories (#16).
+        $product->categories()->sync($request->input('categories', []));
 
         // Create branch stock entry
         if ($branchId && $branchId !== 'all') {
@@ -153,6 +158,8 @@ class ProductController extends Controller
             'image'            => 'nullable|image|max:5120',
             'gallery'          => 'nullable|array',
             'gallery.*'        => 'image|max:5120',
+            'categories'       => 'nullable|array',
+            'categories.*'     => 'exists:categories,id',
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
@@ -196,6 +203,9 @@ class ProductController extends Controller
         $validated['gallery'] = $gallery ?: null;
 
         $product->update($validated);
+
+        // Extra categories (#16).
+        $product->categories()->sync($request->input('categories', []));
 
         // Sync branch stock if editing from a specific branch
         $branchId = $this->branchId();
