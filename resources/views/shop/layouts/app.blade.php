@@ -218,31 +218,35 @@
 
     {{-- ═════════════════ Announcement bar (admin-editable in Settings) ═════════════════ --}}
     @php
-        $topbarText = setting('topbar_text', 'Free delivery across Pakistan on orders above Rs. 5,000');
-        $topbarLoc  = trim((string) setting('topbar_location')) !== '' ? setting('topbar_location') : setting('site_address');
-        $hasTopText = trim((string) $topbarText) !== '';
-        $hasTopLoc  = trim((string) $topbarLoc) !== '';
+        // Multiple announcement lines (one per line) rotate one after another (client).
+        // Falls back to the legacy single topbar_text (+ location) when unset.
+        $rawMsgs = trim((string) setting('topbar_messages', ''));
+        if ($rawMsgs !== '') {
+            $topMessages = collect(preg_split('/\r\n|\r|\n/', $rawMsgs))
+                ->map(fn ($m) => trim($m))->filter()->values()->all();
+        } else {
+            $t   = trim((string) setting('topbar_text', 'Free delivery across Pakistan on orders above Rs. 5,000'));
+            $loc = trim((string) (setting('topbar_location') ?: setting('site_address')));
+            $topMessages = array_values(array_filter([$t, $loc]));
+        }
     @endphp
-    @if ($hasTopText || $hasTopLoc)
-        <style>
-            .tm-bar { overflow: hidden; }
-            /* padding-left:100% parks the text just off the RIGHT edge; the animation
-               then slides it all the way across and off the LEFT edge (full width). */
-            .tm-track { display: inline-block; white-space: nowrap; padding-left: 100%; animation: tm-scroll 16s linear infinite; }
-            .tm-bar:hover .tm-track { animation-play-state: paused; }
-            .tm-item { display: inline-flex; align-items: center; gap: .5rem; padding: 7px 0; }
-            .tm-dot { opacity: .6; }
-            @keyframes tm-scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
-            @media (prefers-reduced-motion: reduce) { .tm-bar { text-align: center; } .tm-track { animation: none; padding-left: 0; } }
-        </style>
-        <div class="tm-bar text-white text-xs font-medium" style="background:var(--brand-navy);">
-            <div class="tm-track">
-                <span class="tm-item">
-                    <i class="fas fa-truck" style="color:var(--gold);"></i>
-                    @if ($hasTopText)<span>{{ $topbarText }}</span>@endif
-                    @if ($hasTopText && $hasTopLoc)<span class="tm-dot">·</span>@endif
-                    @if ($hasTopLoc)<span>{{ $topbarLoc }}</span>@endif
-                </span>
+    @if (!empty($topMessages))
+        <div class="text-white text-xs font-medium" style="background:var(--brand-navy);"
+             x-data="{ msgs: {{ \Illuminate\Support\Js::from($topMessages) }}, i: 0 }"
+             x-init="if (msgs.length > 1) setInterval(() => { i = (i + 1) % msgs.length }, 4000)">
+            <div class="relative py-2" style="min-height:32px;">
+                {{-- Rotating messages: each fades in/out in place; the truck icon stays constant --}}
+                <template x-for="(m, idx) in msgs" :key="idx">
+                    <div class="absolute inset-0 flex items-center justify-center gap-2 px-4 text-center transition-opacity duration-500"
+                         :class="i === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'">
+                        <i class="fas fa-truck flex-shrink-0" style="color:var(--gold);"></i>
+                        <span x-text="m" class="truncate"></span>
+                    </div>
+                </template>
+                {{-- Invisible spacer keeps the bar height correct on first paint / no-JS --}}
+                <div class="flex items-center justify-center gap-2 px-4 opacity-0" aria-hidden="true">
+                    <i class="fas fa-truck flex-shrink-0"></i><span class="truncate">{{ $topMessages[0] }}</span>
+                </div>
             </div>
         </div>
     @endif
