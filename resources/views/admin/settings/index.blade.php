@@ -407,6 +407,10 @@
                                     <input type="checkbox" name="has_tracking" value="1" class="rounded border-gray-300 text-orange-600">
                                     Tracking
                                 </label>
+                                <label class="flex items-center gap-1.5 text-sm text-gray-600 whitespace-nowrap">
+                                    <input type="checkbox" name="is_international" value="1" class="rounded border-gray-300 text-orange-600">
+                                    International
+                                </label>
                                 <button type="submit"
                                     class="px-4 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 whitespace-nowrap">
                                     + Add
@@ -449,6 +453,11 @@
                                                 <input type="checkbox" name="has_tracking" value="1" {{ $dm->has_tracking ? 'checked' : '' }}
                                                     class="rounded border-gray-300 text-orange-600">
                                                 Track
+                                            </label>
+                                            <label class="flex items-center gap-1 text-xs text-gray-600">
+                                                <input type="checkbox" name="is_international" value="1" {{ $dm->is_international ? 'checked' : '' }}
+                                                    class="rounded border-gray-300 text-orange-600">
+                                                Intl
                                             </label>
                                             <label class="flex items-center gap-1 text-xs text-gray-600">
                                                 <input type="hidden" name="show_on_website" value="0">

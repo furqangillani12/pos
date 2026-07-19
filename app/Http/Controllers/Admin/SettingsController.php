@@ -195,12 +195,14 @@ class SettingsController extends Controller
     public function storeDispatchMethod(Request $request)
     {
         $validated = $request->validate([
-            'name'         => 'required|string|max:50|unique:dispatch_methods,name',
-            'note'         => 'nullable|string|max:500',
-            'has_tracking' => 'boolean',
+            'name'            => 'required|string|max:50|unique:dispatch_methods,name',
+            'note'            => 'nullable|string|max:500',
+            'has_tracking'    => 'boolean',
+            'is_international' => 'boolean',
         ]);
 
-        $validated['has_tracking'] = $request->boolean('has_tracking');
+        $validated['has_tracking']    = $request->boolean('has_tracking');
+        $validated['is_international'] = $request->boolean('is_international');
         $maxOrder = DispatchMethod::max('sort_order') ?? 0;
         $validated['sort_order'] = $maxOrder + 1;
 
@@ -215,11 +217,13 @@ class SettingsController extends Controller
             'name'         => 'required|string|max:50|unique:dispatch_methods,name,' . $dispatchMethod->id,
             'note'         => 'nullable|string|max:500',
             'has_tracking' => 'boolean',
+            'is_international' => 'boolean',
             'show_on_website' => 'boolean',
             'logo'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
         ]);
 
         $validated['has_tracking']    = $request->boolean('has_tracking');
+        $validated['is_international'] = $request->boolean('is_international');
         $validated['show_on_website'] = $request->boolean('show_on_website');
 
         if ($request->hasFile('logo')) {

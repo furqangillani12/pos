@@ -12,6 +12,7 @@
         charges: @js($deliveryCharges),
         payments: @js($paymentMethods->map(fn($p)=>['name'=>$p->name,'label'=>$p->label,'is_cod'=>(bool)$p->is_cod,'account_title'=>$p->account_title,'account_number'=>$p->account_number,'bank_name'=>$p->bank_name,'instructions'=>$p->instructions])->values()),
         initDispatch: @js($dispatchMethods->first()?->name),
+        methods: @js($dispatchMethods->map(fn($m)=>['name'=>$m->name,'intl'=>(bool)$m->is_international])->values()),
         initPayment: @js($paymentMethods->first()?->name),
         sub: {{ $totals['subtotal'] }}, disc: {{ $totals['discount'] }},
         taxRate: {{ $totals['tax_rate'] }}, taxType: @js($totals['tax_type']),
@@ -191,7 +192,9 @@
                     @else
                         <div class="space-y-2">
                             @foreach ($dispatchMethods as $dm)
+                                {{-- Local methods for Pakistan, international methods for other countries (#4) --}}
                                 <label class="flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition"
+                                       x-show="{{ $dm->is_international ? '!isPk' : 'isPk' }}"
                                        :class="dispatch === @js($dm->name) ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
                                     <input type="radio" name="dispatch_method" value="{{ $dm->name }}" x-model="dispatch" class="text-blue-600 mt-0.5">
                                     <div class="flex-1">
@@ -205,6 +208,10 @@
                                     </div>
                                 </label>
                             @endforeach
+                            {{-- No method for the selected region --}}
+                            <p x-show="!hasMethodForRegion" x-cloak class="text-sm text-gray-500">
+                                Is region ke liye abhi koi delivery method available nahi. Please contact us.
+                            </p>
                         </div>
                     @endif
                 </div>
@@ -356,6 +363,11 @@
 <script>
     window.checkoutForm = function (cfg) {
         return {
+            init() {
+                // Keep the delivery method valid for the chosen country/region (#4).
+                this.$watch('f.country', () => this.syncDispatchToRegion());
+                this.syncDispatchToRegion();
+            },
             provinces: cfg.provinces || {},
             countries: cfg.countries || [],
             openDd: { country: false, province: false, district: false },
@@ -371,6 +383,7 @@
             usePoints: false,
             redeemPoints: 0,
             dispatch: cfg.initDispatch || '',
+            methods: cfg.methods || [],
             payment: cfg.initPayment || '',
             looking: false,
             f: {
@@ -381,6 +394,14 @@
                 country: cfg.old.country || 'Pakistan', postcode: cfg.old.postcode || '',
             },
             get isPk() { return this.f.country === 'Pakistan'; },
+            // Delivery methods valid for the selected region (#4): local for PK, intl otherwise.
+            get regionMethods() { return this.methods.filter(m => this.isPk ? !m.intl : m.intl); },
+            get hasMethodForRegion() { return this.regionMethods.length > 0; },
+            // Keep the selected dispatch valid when the country (region) changes.
+            syncDispatchToRegion() {
+                const ok = this.regionMethods.some(m => m.name === this.dispatch);
+                if (!ok) this.dispatch = this.regionMethods[0]?.name || '';
+            },
             get provinceNames() { return Object.keys(this.provinces); },
             get districts() { return this.provinces[this.f.province] || []; },
             get charge() { return Number(this.charges[this.dispatch] ?? 0); },

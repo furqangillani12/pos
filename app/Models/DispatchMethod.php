@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class DispatchMethod extends Model
 {
-    protected $fillable = ['name', 'note', 'has_tracking', 'sort_order', 'is_active', 'show_on_website', 'logo'];
+    protected $fillable = ['name', 'note', 'has_tracking', 'is_international', 'sort_order', 'is_active', 'show_on_website', 'logo'];
 
     protected $casts = [
+        'is_international' => 'boolean',
         'is_active' => 'boolean',
         'has_tracking' => 'boolean',
         'show_on_website' => 'boolean',
