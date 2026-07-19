@@ -27,6 +27,66 @@
             </div>
         </div>
 
+        {{-- Balance + order status summary (client #1a / #1d) --}}
+        @php
+            $cid = $customer->id;
+            $statusCounts = \App\Models\Order::where('customer_id', $cid)
+                ->selectRaw('status, count(*) as c')->groupBy('status')->pluck('c', 'status');
+            $cTotal     = (int) $statusCounts->sum();
+            $cDispatch  = (int) (($statusCounts['dispatched'] ?? 0) + ($statusCounts['shipped'] ?? 0));
+            $cDelivered = (int) ($statusCounts['delivered'] ?? 0);
+            $cCancelled = (int) ($statusCounts['cancelled'] ?? 0);
+            $cReturned  = (int) ($statusCounts['returned'] ?? 0);
+            $bal = (float) ($customer->current_balance ?? 0);
+        @endphp
+
+        {{-- Account balance: pending (red) vs credit (green) --}}
+        <div class="rounded-2xl border p-5 mb-4 reveal
+            {{ $bal > 0 ? 'border-red-200 bg-red-50' : ($bal < 0 ? 'border-emerald-200 bg-emerald-50' : 'border-gray-100 bg-white') }}">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                    @if ($bal > 0)
+                        <div class="text-xs uppercase tracking-widest font-bold text-red-600">Pending amount</div>
+                        <div class="text-3xl font-extrabold text-red-700 mt-1">{{ shop_price($bal) }}</div>
+                        <p class="text-xs text-red-600/80 mt-1">Aap par itni raqam baqi hai.</p>
+                    @elseif ($bal < 0)
+                        <div class="text-xs uppercase tracking-widest font-bold text-emerald-600">Credit / advance</div>
+                        <div class="text-3xl font-extrabold text-emerald-700 mt-1">{{ shop_price(abs($bal)) }}</div>
+                        <p class="text-xs text-emerald-600/80 mt-1">Aap ka itna balance humare paas jama hai.</p>
+                    @else
+                        <div class="text-xs uppercase tracking-widest font-bold text-gray-500">Account balance</div>
+                        <div class="text-3xl font-extrabold text-gray-800 mt-1">{{ shop_price(0) }}</div>
+                        <p class="text-xs text-gray-500 mt-1">Sab settled — koi baqaya nahi.</p>
+                    @endif
+                </div>
+                <div class="flex gap-2">
+                    @if ($bal > 0)
+                        <a href="{{ route('shop.account.pay') }}" class="btn btn-primary !py-2"><i class="fas fa-wallet"></i> Pay now</a>
+                    @elseif ($bal < 0)
+                        <a href="{{ route('shop.account.withdraw') }}" class="btn btn-primary !py-2" style="background:#059669;"><i class="fas fa-money-bill-wave"></i> Withdraw</a>
+                    @endif
+                    <a href="{{ route('shop.account.statement') }}" class="btn btn-ghost !py-2"><i class="fas fa-file-invoice"></i> Statement</a>
+                </div>
+            </div>
+        </div>
+
+        {{-- Order status counts --}}
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-4 reveal">
+            @foreach ([
+                ['Total', $cTotal, '#0b3a30', 'fa-receipt'],
+                ['Dispatched', $cDispatch, '#1d4ed8', 'fa-truck'],
+                ['Delivered', $cDelivered, '#047857', 'fa-circle-check'],
+                ['Cancelled', $cCancelled, '#991b1b', 'fa-ban'],
+                ['Returned', $cReturned, '#b45309', 'fa-rotate-left'],
+            ] as [$label, $count, $color, $icon])
+                <a href="{{ route('shop.account.orders') }}" class="bg-white border border-gray-100 rounded-2xl p-4 text-center hover:shadow-md transition">
+                    <i class="fas {{ $icon }} mb-1" style="color:{{ $color }};"></i>
+                    <div class="text-2xl font-extrabold" style="color:{{ $color }};">{{ $count }}</div>
+                    <div class="text-[11px] text-gray-500 font-semibold uppercase tracking-wide">{{ $label }}</div>
+                </a>
+            @endforeach
+        </div>
+
         {{-- Reward points banner --}}
         <a href="{{ route('shop.account.points') }}" class="block rounded-2xl p-5 mb-4 text-white reveal" style="background:linear-gradient(135deg,var(--brand-navy),var(--brand-cyan));">
             <div class="flex items-center justify-between">

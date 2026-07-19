@@ -196,6 +196,80 @@ class AccountController extends Controller
         return view('shop.account.points', compact('customer', 'transactions'));
     }
 
+    /** Pay-a-pending-balance form (#1b). */
+    public function payForm()
+    {
+        $customer = Auth::guard('customer')->user();
+        $recent = \App\Models\AccountRequest::where('customer_id', $customer->id)
+            ->where('type', 'payment')->latest()->limit(10)->get();
+        return view('shop.account.pay', compact('customer', 'recent'));
+    }
+
+    public function paySubmit(Request $request)
+    {
+        $customer = Auth::guard('customer')->user();
+
+        $data = $request->validate([
+            'amount'       => 'required|numeric|min:1',
+            'sender_name'  => 'nullable|string|max:191',
+            'sender_bank'  => 'nullable|string|max:191',
+            'reference'    => 'nullable|string|max:191',
+            'proof'        => 'required|image|mimes:png,jpg,jpeg,webp|max:5120',
+        ]);
+
+        $proofPath = $request->file('proof')->store('account-requests', 'public');
+
+        \App\Models\AccountRequest::create([
+            'customer_id' => $customer->id,
+            'type'        => 'payment',
+            'amount'      => $data['amount'],
+            'sender_name' => $data['sender_name'] ?? $customer->name,
+            'sender_bank' => $data['sender_bank'] ?? null,
+            'reference'   => $data['reference'] ?? null,
+            'proof_path'  => $proofPath,
+            'status'      => 'new',
+        ]);
+
+        return redirect()->route('shop.account')->with('shop_success', 'Payment submit ho gaya — admin approve karne ke baad aap ke khate me adjust ho jayega.');
+    }
+
+    /** Withdraw-a-credit form (#1c). */
+    public function withdrawForm()
+    {
+        $customer = Auth::guard('customer')->user();
+        $credit = max(0, -1 * (float) ($customer->current_balance ?? 0));
+        $recent = \App\Models\AccountRequest::where('customer_id', $customer->id)
+            ->where('type', 'withdrawal')->latest()->limit(10)->get();
+        return view('shop.account.withdraw', compact('customer', 'credit', 'recent'));
+    }
+
+    public function withdrawSubmit(Request $request)
+    {
+        $customer = Auth::guard('customer')->user();
+        $credit = max(0, -1 * (float) ($customer->current_balance ?? 0));
+
+        $data = $request->validate([
+            'amount'         => 'required|numeric|min:1|max:' . ($credit ?: 0),
+            'account_title'  => 'required|string|max:191',
+            'account_number' => 'required|string|max:100',
+            'bank_name'      => 'required|string|max:191',
+        ], [
+            'amount.max' => 'Aap sirf apne available credit (Rs ' . number_format($credit, 0) . ') tak withdraw kar sakte hain.',
+        ]);
+
+        \App\Models\AccountRequest::create([
+            'customer_id'    => $customer->id,
+            'type'           => 'withdrawal',
+            'amount'         => $data['amount'],
+            'account_title'  => $data['account_title'],
+            'account_number' => $data['account_number'],
+            'bank_name'      => $data['bank_name'],
+            'status'         => 'new',
+        ]);
+
+        return redirect()->route('shop.account')->with('shop_success', 'Withdrawal request submit ho gayi — admin approve karke aap ke account me bhej dega.');
+    }
+
     /** Customer attaches a payment screenshot to one of their own orders. */
     public function uploadProof(Request $request, Order $order)
     {

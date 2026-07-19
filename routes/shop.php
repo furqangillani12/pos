@@ -85,6 +85,12 @@ $registerShopRoutes = function () {
             Route::get('/account/statement',       [AccountController::class, 'statement'])->name('account.statement');
             Route::get('/account/points',          [AccountController::class, 'points'])->name('account.points');
 
+            // Pay a pending balance / withdraw a credit — needs admin approval (#1b / #1c)
+            Route::get('/account/pay',             [AccountController::class, 'payForm'])->name('account.pay');
+            Route::post('/account/pay',            [AccountController::class, 'paySubmit'])->name('account.pay.submit');
+            Route::get('/account/withdraw',        [AccountController::class, 'withdrawForm'])->name('account.withdraw');
+            Route::post('/account/withdraw',       [AccountController::class, 'withdrawSubmit'])->name('account.withdraw.submit');
+
             Route::get('/wishlist',                        [WishlistController::class, 'index'])->name('wishlist');
             Route::post('/wishlist/toggle/{product:id}',   [WishlistController::class, 'toggle'])->name('wishlist.toggle');
             Route::delete('/wishlist/{wishlist}',          [WishlistController::class, 'remove'])->name('wishlist.remove');

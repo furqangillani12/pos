@@ -63,6 +63,17 @@
             </div>
         @endif
 
+        {{-- Admin's reason/note for the current status (client #1f) --}}
+        @if ($order->status_note && ! in_array($order->status, ['delivered', 'cancelled'], true))
+            <div class="mb-6 rounded-2xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3 reveal">
+                <i class="fas fa-circle-info text-amber-500 mt-0.5"></i>
+                <div>
+                    <div class="font-semibold text-amber-900 text-sm">Update on your order</div>
+                    <p class="text-sm text-amber-800 mt-0.5">{{ $order->status_note }}</p>
+                </div>
+            </div>
+        @endif
+
         @include('shop.partials.tracking-history')
 
         @include('shop.partials.dispatch-media')

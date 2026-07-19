@@ -78,24 +78,30 @@
                     <div class="px-5 -mt-2 pb-3"><span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold" style="background:{{ $tm['bg'] }};color:{{ $tm['text'] }};"><i class="fas {{ $tm['icon'] }}"></i> {{ $tm['label'] }}</span></div>
                 @endif
 
-                <form method="POST" action="{{ route('admin.online-orders.status', $order) }}" class="border-t border-gray-100 p-5 flex flex-col sm:flex-row sm:items-end gap-3">
+                <form method="POST" action="{{ route('admin.online-orders.status', $order) }}" class="border-t border-gray-100 p-5 space-y-3">
                     @csrf @method('PATCH')
-                    <div class="sm:w-44 flex-shrink-0">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Update status</label>
-                        <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                            @foreach ($statuses as $s => $meta)
-                                <option value="{{ $s }}" @selected($current === $s)>{{ $meta['label'] }}</option>
-                            @endforeach
-                        </select>
+                    <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+                        <div class="sm:w-44 flex-shrink-0">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Update status</label>
+                            <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                                @foreach ($statuses as $s => $meta)
+                                    <option value="{{ $s }}" @selected($current === $s)>{{ $meta['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Tracking ID <span class="text-gray-400 font-normal">(optional)</span></label>
+                            <input type="text" name="tracking_id" value="{{ $order->tracking_id }}" placeholder="e.g. TCS-1234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                        </div>
+                        <div class="flex-shrink-0">
+                            <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 text-white text-sm font-semibold rounded-lg whitespace-nowrap" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
+                                <i class="fas fa-check"></i> Update
+                            </button>
+                        </div>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5 whitespace-nowrap">Tracking ID <span class="text-gray-400 font-normal">(optional)</span></label>
-                        <input type="text" name="tracking_id" value="{{ $order->tracking_id }}" placeholder="e.g. TCS-1234567" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                    </div>
-                    <div class="flex-shrink-0">
-                        <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2 text-white text-sm font-semibold rounded-lg whitespace-nowrap" style="background:linear-gradient(135deg,#0891b2,#0e7490);">
-                            <i class="fas fa-check"></i> Update
-                        </button>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Reason / note to customer <span class="text-gray-400 font-normal">(optional — shown to customer, e.g. "payment short" / "confirmation pending")</span></label>
+                        <input type="text" name="status_note" value="{{ $order->status_note }}" maxlength="500" placeholder="Customer ko dikhne wali chhoti wajah…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     </div>
                 </form>
             </div>

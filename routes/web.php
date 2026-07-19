@@ -325,6 +325,11 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::patch('/online-orders/{order}/pieces',     [\App\Http\Controllers\Admin\OnlineOrderController::class, 'savePieces'])->name('online-orders.pieces');
     Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
 
+    // ── Account requests: customer pay / withdraw approvals — #1b / #1c ──
+    Route::get('/account-requests',                          [\App\Http\Controllers\Admin\AccountRequestController::class, 'index'])->name('account-requests.index');
+    Route::post('/account-requests/{accountRequest}/approve', [\App\Http\Controllers\Admin\AccountRequestController::class, 'approve'])->name('account-requests.approve');
+    Route::post('/account-requests/{accountRequest}/reject',  [\App\Http\Controllers\Admin\AccountRequestController::class, 'reject'])->name('account-requests.reject');
+
     // ── Coupons / discount codes — #18 ──
     Route::get('/coupons',                    [\App\Http\Controllers\Admin\CouponController::class, 'index'])->name('coupons.index');
     Route::get('/coupons/create',             [\App\Http\Controllers\Admin\CouponController::class, 'create'])->name('coupons.create');

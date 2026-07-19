@@ -83,6 +83,7 @@ class OnlineOrderController extends Controller
         $data = $request->validate([
             'status'      => ['required', 'string', \Illuminate\Validation\Rule::in($allowed)],
             'tracking_id' => 'nullable|string|max:191',
+            'status_note' => 'nullable|string|max:500',
         ]);
 
         // #7: a non-COD order cannot be dispatched/delivered until payment is
@@ -117,14 +118,18 @@ class OnlineOrderController extends Controller
             $changed = $order->status !== $data['status'];
             $order->update([
                 'status'      => $data['status'],
+                'status_note' => $data['status_note'] ?? null,
                 'tracking_id' => $data['tracking_id'] ?? $order->tracking_id,
             ]);
 
-            // Tracking timeline event (#20).
+            // Tracking timeline event (#20) — prefer the admin reason note (#1f),
+            // else the tracking line on dispatch.
             if ($changed) {
-                $note = $data['status'] === 'dispatched' && ($data['tracking_id'] ?? $order->tracking_id)
-                    ? trim(($order->dispatch_method ? $order->dispatch_method . ' · ' : '') . 'Tracking ' . ($data['tracking_id'] ?? $order->tracking_id))
-                    : null;
+                $note = $data['status_note'] ?: (
+                    $data['status'] === 'dispatched' && ($data['tracking_id'] ?? $order->tracking_id)
+                        ? trim(($order->dispatch_method ? $order->dispatch_method . ' · ' : '') . 'Tracking ' . ($data['tracking_id'] ?? $order->tracking_id))
+                        : null
+                );
                 $order->recordStatus($data['status'], $note);
             }
 
