@@ -231,17 +231,29 @@
         }
     @endphp
     @if (!empty($topMessages))
-        {{-- Announcement carousel: messages slide up one after another. No icon (client). --}}
-        <div class="text-white text-xs font-medium overflow-hidden" style="background:var(--brand-navy);"
-             x-data="{ msgs: {{ \Illuminate\Support\Js::from($topMessages) }}, i: 0 }"
-             x-init="if (msgs.length > 1) { setInterval(() => { i = (i + 1) % msgs.length }, 3500) }">
-            <div class="transition-transform duration-500 ease-in-out"
-                 :style="'transform: translateY(-' + (i * 34) + 'px)'">
-                <template x-for="(m, idx) in msgs" :key="idx">
-                    <div class="flex items-center justify-center text-center px-4" style="height:34px;">
-                        <span class="truncate" x-text="m"></span>
-                    </div>
-                </template>
+        {{-- Announcement marquee: every sentence scrolls right → left, one after another.
+             No icon (client). Speed scales with the total text so it stays readable. --}}
+        @php
+            $tmJoinedLen = strlen(implode('        ', $topMessages));
+            $tmDuration  = max(18, (int) round($tmJoinedLen * 0.22)); // seconds
+        @endphp
+        <style>
+            .tm-bar { overflow: hidden; }
+            .tm-track { display: inline-block; white-space: nowrap; padding-left: 100%;
+                        animation: tm-scroll {{ $tmDuration }}s linear infinite; }
+            .tm-bar:hover .tm-track { animation-play-state: paused; }
+            .tm-item { display: inline-block; padding: 8px 0; margin: 0 3.5rem; }
+            @keyframes tm-scroll { from { transform: translateX(0); } to { transform: translateX(-100%); } }
+            @media (prefers-reduced-motion: reduce) {
+                .tm-track { animation: none; padding-left: 0; white-space: normal; text-align: center; }
+                .tm-item { margin: 0 1rem; }
+            }
+        </style>
+        <div class="tm-bar text-white text-xs font-medium" style="background:var(--brand-navy);">
+            <div class="tm-track">
+                @foreach ($topMessages as $m)
+                    <span class="tm-item">{{ $m }}</span>
+                @endforeach
             </div>
         </div>
     @endif
