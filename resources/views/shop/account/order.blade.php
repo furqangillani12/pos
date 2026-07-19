@@ -138,6 +138,11 @@
                     </div>
                     <hr class="my-3 border-gray-100">
                     <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-lg font-extrabold" style="color:var(--brand-navy);">{{ shop_price($order->total) }}</span></div>
+                    {{-- Paid vs pending for this order (client #1a) --}}
+                    <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Paid</span><span class="font-semibold text-emerald-600">{{ shop_price($order->paid_amount ?? 0) }}</span></div>
+                    @if (($order->balance_amount ?? 0) > 0)
+                        <div class="flex justify-between text-sm"><span class="text-gray-500">Pending</span><span class="font-semibold text-red-600">{{ shop_price($order->balance_amount) }}</span></div>
+                    @endif
 
                     {{-- Previous khata + what's left to clear (logged-in customers) --}}
                     @if (($order->previous_balance ?? 0) > 0)

@@ -273,7 +273,7 @@ class OnlineOrderController extends Controller
 
             // Same formula as checkout: tax on (subtotal − discounts + delivery).
             $afterDiscount = max(0, (float) $order->subtotal - (float) $order->coupon_discount - (float) $order->points_discount);
-            $tax           = shop_tax_amount($afterDiscount + $delivery);
+            $tax           = shop_tax_amount($afterDiscount + $delivery, $order->online_payment_status === 'cod');
             $newTotal      = round(max(0, $afterDiscount + $tax + $delivery), 2);
             $delta         = round($newTotal - $oldTotal, 2);
 

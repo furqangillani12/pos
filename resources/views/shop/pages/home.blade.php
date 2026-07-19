@@ -147,19 +147,18 @@
         @if ($featuredCategories->isNotEmpty())
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 reveal-stagger">
                 @foreach ($featuredCategories as $cat)
+                    {{-- Whole card is one link → tapping the picture opens the category (client) --}}
                     <a href="{{ route('shop.category', $cat->slug) }}"
-                       class="group block rounded-2xl overflow-hidden bg-white border border-gray-100 hover:shadow-xl transition">
-                        {{-- Clean image — no text/overlay on the picture itself (client #14) --}}
-                        <div class="bg-gray-100 overflow-hidden" style="aspect-ratio:1;">
+                       class="group block rounded-2xl overflow-hidden bg-white border border-gray-100 hover:shadow-md transition">
+                        {{-- Clean, bright picture — no text/overlay/dimming on the image;
+                             object-cover fills the square so PNGs never leave empty space. --}}
+                        <div class="bg-white overflow-hidden" style="aspect-ratio:1;">
                             <img src="{{ shop_image($cat->photo) }}" alt="{{ $cat->name }}" loading="lazy"
-                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-110">
+                                 class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
                         </div>
-                        {{-- Text sits BELOW the image --}}
-                        <div class="p-3 text-center">
+                        {{-- Only the category name, below the picture — no "Shop now" (client) --}}
+                        <div class="px-2 py-2.5 text-center">
                             <div class="font-bold text-sm text-gray-900 line-clamp-1">{{ $cat->name }}</div>
-                            <div class="text-[11px] text-gray-500 inline-flex items-center gap-1 mt-0.5 group-hover:gap-2 transition-all" style="color:var(--brand-navy);">
-                                Shop now <i class="fas fa-arrow-right text-[9px]"></i>
-                            </div>
                         </div>
                     </a>
                 @endforeach
