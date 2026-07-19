@@ -10,7 +10,7 @@ class Order extends Model
     protected $fillable = [
         'order_number', 'customer_id','customer_type', 'user_id', 'order_type',
         'subtotal', 'tax', 'discount', 'discount_label', 'delivery_charges', 'weight', 'total',
-        'payment_method', 'payment_status', 'status', 'status_note', 'notes', 'tax_rate', 'tax_type',
+        'payment_method', 'payment_status', 'status', 'status_note', 'notes', 'tax_rate', 'tax_type', 'reorder_of_order_id',
         'dispatch_method', 'tracking_id', 'receipt_token','credit_status',
         'credit_ledger_id',
         'credit_due_date',
@@ -58,6 +58,18 @@ class Order extends Model
     public function recordStatus(string $status, ?string $note = null): void
     {
         $this->statusHistory()->create(['status' => $status, 'note' => $note]);
+    }
+
+    /** The returned order this one was re-ordered from (#1e). */
+    public function reorderOf(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Order::class, 'reorder_of_order_id');
+    }
+
+    /** The re-order placed from this (returned) order (#1e). */
+    public function reorderedAs(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Order::class, 'reorder_of_order_id');
     }
 
     // Status constants

@@ -74,6 +74,27 @@
             </div>
         @endif
 
+        {{-- Reorder linkage + action for returned orders (client #1e) --}}
+        @if ($order->reorder_of_order_id && $order->reorderOf)
+            <div class="mb-4 rounded-xl border border-blue-200 bg-blue-50 px-4 py-2.5 text-sm text-blue-800 reveal">
+                <i class="fas fa-rotate-left"></i> Ye order returned order
+                <a href="{{ route('shop.account.order', $order->reorderOf) }}" class="font-semibold underline">#{{ $order->reorderOf->order_number }}</a> ka reorder hai.
+            </div>
+        @endif
+        @php $reordered = $order->reorderedAs; @endphp
+        @if ($reordered)
+            <div class="mb-4 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm text-emerald-800 reveal">
+                <i class="fas fa-rotate-right"></i> Is order ka reorder ho chuka:
+                <a href="{{ route('shop.account.order', $reordered) }}" class="font-semibold underline">#{{ $reordered->order_number }}</a>
+            </div>
+        @elseif ($order->status === 'returned')
+            <form method="POST" action="{{ route('shop.account.order.reorder', $order) }}" class="mb-6 reveal"
+                  onsubmit="return confirm('Isi order ke items ka naya order banayein? Delivery charges dobara lagenge.');">
+                @csrf
+                <button class="btn btn-primary btn-block !py-2"><i class="fas fa-rotate-right"></i> Reorder these items</button>
+            </form>
+        @endif
+
         @include('shop.partials.tracking-history')
 
         @include('shop.partials.dispatch-media')

@@ -196,6 +196,95 @@ class AccountController extends Controller
         return view('shop.account.points', compact('customer', 'transactions'));
     }
 
+    /**
+     * Re-order a returned order (#1e): create a NEW order with a new number from
+     * the same items + address, charge delivery again, and link the two orders.
+     */
+    public function reorder(Request $request, Order $order)
+    {
+        $customer = Auth::guard('customer')->user();
+        abort_unless((int) $order->customer_id === (int) ($customer->id ?? 0), 404);
+        abort_unless($order->status === 'returned', 400, 'Only returned orders can be re-ordered.');
+
+        if ($order->reorderedAs()->exists()) {
+            return back()->with('shop_error', 'Is order ka reorder pehle ho chuka hai.');
+        }
+
+        $order->load('items.product');
+        if ($order->items->isEmpty()) {
+            return back()->with('shop_error', 'Is order me koi item nahi.');
+        }
+
+        $new = \Illuminate\Support\Facades\DB::transaction(function () use ($order, $customer) {
+            $subtotal = 0.0;
+            $delivery = (float) ($order->delivery_charges ?? 0);
+
+            $new = Order::create([
+                'order_number'       => Order::generateOrderNumber($order->branch_id),
+                'order_source'       => 'online',
+                'order_type'         => 'online',
+                'reorder_of_order_id'=> $order->id,
+                'customer_id'        => $order->customer_id,
+                'customer_email'     => $order->customer_email,
+                'customer_type'      => $order->customer_type,
+                'branch_id'          => $order->branch_id,
+                'delivery_charges'   => $delivery,
+                'weight'             => $order->weight,
+                'paid_amount'        => 0,
+                'previous_balance'   => (float) ($customer->current_balance ?? 0),
+                'payment_method'     => $order->payment_method,
+                'payment_status'     => 'unpaid',
+                'online_payment_status' => 'cod' === $order->online_payment_status ? 'cod' : 'bank_pending',
+                'status'             => 'pending',
+                'dispatch_method'    => $order->dispatch_method,
+                'shipping_first_name'=> $order->shipping_first_name,
+                'shipping_last_name' => $order->shipping_last_name,
+                'shipping_phone'     => $order->shipping_phone,
+                'shipping_address1'  => $order->shipping_address1,
+                'shipping_address2'  => $order->shipping_address2,
+                'shipping_city'      => $order->shipping_city,
+                'shipping_tehsil'    => $order->shipping_tehsil,
+                'shipping_district'  => $order->shipping_district,
+                'shipping_province'  => $order->shipping_province,
+                'shipping_country'   => $order->shipping_country ?: 'Pakistan',
+                'shipping_post_code' => $order->shipping_post_code,
+                'subtotal'           => 0,
+                'total'              => 0,
+                'balance_amount'     => 0,
+                'receipt_token'      => bin2hex(random_bytes(16)),
+            ]);
+
+            foreach ($order->items as $item) {
+                $lineTotal = round((float) $item->quantity * (float) $item->unit_price, 2);
+                $subtotal += $lineTotal;
+                \App\Models\OrderItem::create([
+                    'order_id'    => $new->id,
+                    'product_id'  => $item->product_id,
+                    'quantity'    => $item->quantity,
+                    'unit_price'  => $item->unit_price,
+                    'total_price' => $lineTotal,
+                ]);
+                if ($item->product && $item->product->track_inventory && $new->branch_id) {
+                    $item->product->decrementBranchStock($new->branch_id, (float) $item->quantity);
+                }
+            }
+
+            $total = round($subtotal + $delivery, 2);
+            $new->update(['subtotal' => $subtotal, 'total' => $total, 'balance_amount' => $total]);
+
+            if ($customer) {
+                $customer->update(['current_balance' => round((float) ($customer->current_balance ?? 0) + $total, 2)]);
+            }
+
+            $new->recordStatus('pending', 'Re-order of returned order ' . $order->order_number);
+            $order->recordStatus($order->status, 'Re-ordered as ' . $new->order_number);
+
+            return $new;
+        });
+
+        return redirect()->route('shop.account.order', $new)->with('shop_success', 'Naya order ' . $new->order_number . ' ban gaya (returned order ' . $order->order_number . ' se).');
+    }
+
     /** Pay-a-pending-balance form (#1b). */
     public function payForm()
     {
