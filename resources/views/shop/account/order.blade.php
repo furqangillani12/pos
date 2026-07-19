@@ -51,13 +51,25 @@
             </form>
         @endif
 
+        {{-- Delivered → invite a review (client #20, customizable message in settings) --}}
+        @if ($order->status === 'delivered')
+            <div class="mb-6 reveal rounded-2xl border border-amber-200 bg-amber-50 p-5 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div class="text-2xl">🌟</div>
+                <div class="flex-1">
+                    <div class="font-bold text-amber-900">{{ setting('review_request_title', 'How was your order?') }}</div>
+                    <p class="text-sm text-amber-800 mt-0.5">{{ setting('review_request_message', 'Aapka order deliver ho gaya — humein batayein kaisa laga! Niche items par "Write a review" dabayein.') }}</p>
+                </div>
+                <a href="#order-items" class="btn btn-primary !py-2 whitespace-nowrap"><i class="fas fa-star"></i> Write a review</a>
+            </div>
+        @endif
+
         @include('shop.partials.tracking-history')
 
         @include('shop.partials.dispatch-media')
 
         {{-- Items + summary --}}
         <div class="grid lg:grid-cols-[1fr_320px] gap-6 reveal">
-            <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div id="order-items" class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                 <div class="px-5 py-4 border-b border-gray-100 bg-gray-50"><h2 class="font-bold text-gray-800">Items</h2></div>
                 <div class="divide-y divide-gray-100">
                     @foreach ($order->items as $item)
@@ -66,6 +78,12 @@
                             <div class="flex-1 min-w-0">
                                 <div class="font-semibold text-gray-800 truncate">{{ $item->product?->name ?? 'Product' }}</div>
                                 <div class="text-xs text-gray-500 mt-0.5">Qty {{ (int) $item->quantity }} × {{ shop_price($item->unit_price) }}</div>
+                                @if ($order->status === 'delivered' && $item->product)
+                                    <a href="{{ route('shop.product', $item->product->slug ?? $item->product->id) }}#reviews"
+                                       class="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold" style="color:var(--brand-navy);">
+                                        <i class="fas fa-star text-[10px]"></i> Write a review
+                                    </a>
+                                @endif
                             </div>
                             <div class="text-sm font-bold whitespace-nowrap" style="color:var(--brand-navy);">{{ shop_price($item->total_price) }}</div>
                         </div>

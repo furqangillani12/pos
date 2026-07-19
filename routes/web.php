@@ -322,6 +322,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::post('/online-orders/{order}/notify',      [\App\Http\Controllers\Admin\OnlineOrderController::class, 'notify'])->name('online-orders.notify');
     Route::get('/online-orders/{order}/slip',         [\App\Http\Controllers\Admin\OnlineOrderController::class, 'slip'])->name('online-orders.slip');
     Route::get('/online-orders/{order}/checklist',    [\App\Http\Controllers\Admin\OnlineOrderController::class, 'checklist'])->name('online-orders.checklist');
+    Route::patch('/online-orders/{order}/pieces',     [\App\Http\Controllers\Admin\OnlineOrderController::class, 'savePieces'])->name('online-orders.pieces');
     Route::post('/online-orders/{order}/dispatch-media', [\App\Http\Controllers\Admin\OnlineOrderController::class, 'uploadDispatchMedia'])->name('online-orders.dispatch-media');
 
     // ── Coupons / discount codes — #18 ──

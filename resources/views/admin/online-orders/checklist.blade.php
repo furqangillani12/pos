@@ -47,7 +47,7 @@
             <tbody>
                 @foreach ($order->items as $item)
                     <tr>
-                        <td><span class="chk"></span></td>
+                        <td><input type="checkbox" class="pick" checked style="width:20px;height:20px;"></td>
                         <td><img src="{{ shop_image($item->product?->image) }}" alt=""></td>
                         <td>
                             <div style="font-weight:700;">{{ $item->product?->name ?? 'Product' }}</div>
@@ -55,16 +55,70 @@
                         </td>
                         <td><span class="code">{{ $item->product?->barcode ?: '—' }}</span></td>
                         <td style="text-align:right;">Rs. {{ number_format($item->unit_price, 0) }}</td>
-                        <td style="text-align:center;font-weight:800;font-size:15px;">{{ (int) $item->quantity }}</td>
+                        <td style="text-align:center;">
+                            <input type="number" class="qty" min="0" value="{{ (int) $item->quantity }}"
+                                   style="width:60px;text-align:center;font-weight:800;font-size:15px;padding:4px;border:1px solid #d1d5db;border-radius:6px;">
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
 
         <div class="totals">
-            <div>Total items: <strong>{{ (int) $order->items->sum('quantity') }}</strong></div>
+            <div>Selected pieces: <strong id="selCount">{{ (int) $order->items->sum('quantity') }}</strong></div>
             <div>Order total: <strong>Rs. {{ number_format($order->total, 0) }}</strong></div>
         </div>
+
+        {{-- Save the selected piece count to the dispatch slip (#11) --}}
+        <div style="margin-top:16px;padding-top:14px;border-top:1px dashed #d1d5db;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <span class="muted">Tick the items and adjust quantities, then set the piece count that prints on the dispatch slip:</span>
+            <button id="saveBtn" onclick="savePieces()"
+                    style="background:#0891b2;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;">
+                Save <span id="saveCount"></span> pieces to slip
+            </button>
+            <span id="savedMsg" style="color:#059669;font-size:12px;font-weight:700;display:none;">✓ Saved</span>
+            @if ($order->dispatch_pieces !== null)
+                <span class="muted">Current slip pieces: <strong>{{ (int) $order->dispatch_pieces }}</strong></span>
+            @endif
+        </div>
     </div>
+
+    <script>
+        function selectedTotal() {
+            let t = 0;
+            document.querySelectorAll('tbody tr').forEach(function (tr) {
+                const chk = tr.querySelector('.pick'), qty = tr.querySelector('.qty');
+                if (chk && chk.checked && qty) t += (parseInt(qty.value) || 0);
+            });
+            return t;
+        }
+        function refresh() {
+            const t = selectedTotal();
+            document.getElementById('selCount').textContent = t;
+            document.getElementById('saveCount').textContent = t;
+            document.getElementById('savedMsg').style.display = 'none';
+        }
+        document.addEventListener('input', refresh);
+        document.addEventListener('change', refresh);
+        document.addEventListener('DOMContentLoaded', refresh);
+
+        async function savePieces() {
+            const t = selectedTotal();
+            const fd = new FormData();
+            fd.append('_method', 'PATCH');
+            fd.append('_token', '{{ csrf_token() }}');
+            fd.append('dispatch_pieces', t);
+            try {
+                const res = await fetch('{{ route('admin.online-orders.pieces', $order) }}', {
+                    method: 'POST', body: fd, headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                if (res.ok) {
+                    const m = document.getElementById('savedMsg');
+                    m.textContent = '✓ Saved ' + t + ' pieces';
+                    m.style.display = 'inline';
+                }
+            } catch (e) {}
+        }
+    </script>
 </body>
 </html>

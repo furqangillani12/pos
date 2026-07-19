@@ -191,7 +191,7 @@
         </div>
 
         {{-- Reviews --}}
-        <div class="mt-16 grid lg:grid-cols-[1fr_320px] gap-10 reveal">
+        <div id="reviews" class="mt-16 grid lg:grid-cols-[1fr_320px] gap-10 reveal" style="scroll-margin-top:90px;">
             <div>
                 <h2 class="display text-2xl font-bold mb-6">Customer reviews</h2>
                 @forelse ($reviews as $r)

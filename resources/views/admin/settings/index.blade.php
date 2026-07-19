@@ -127,6 +127,19 @@
                         </div>
                     </div>
 
+                    {{-- ── Delivered → review request message (client #20) ── --}}
+                    <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
+                        <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-star text-amber-500 mr-1"></i> "Leave a review" prompt (after delivery)</div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Prompt title</label>
+                        <input type="text" name="review_request_title" value="{{ old('review_request_title', $site['review_request_title'] ?? '') }}" placeholder="How was your order?" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Prompt message</label>
+                        <input type="text" name="review_request_message" value="{{ old('review_request_message', $site['review_request_message'] ?? '') }}" placeholder="Aapka order deliver ho gaya — review dein!" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+
                     {{-- ── Khushkhabri / good-news note shown on cart & checkout ── --}}
                     <div class="sm:col-span-2 border-t border-gray-100 pt-4 mt-1">
                         <div class="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2"><i class="fas fa-gift text-amber-500 mr-1"></i> Cart / checkout note (Khushkhabri)</div>

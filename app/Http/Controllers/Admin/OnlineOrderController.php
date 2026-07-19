@@ -216,6 +216,16 @@ class OnlineOrderController extends Controller
         return view('admin.online-orders.checklist', compact('order'));
     }
 
+    /** Save the picking-checklist piece count so the dispatch slip shows it (#11). */
+    public function savePieces(Request $request, Order $order)
+    {
+        abort_unless($order->order_source === 'online', 404);
+        $data = $request->validate(['dispatch_pieces' => 'nullable|integer|min:0']);
+        $order->update(['dispatch_pieces' => $data['dispatch_pieces']]);
+
+        return back()->with('success', 'Dispatch pieces set to ' . (int) $data['dispatch_pieces'] . ' for the slip.');
+    }
+
     /** Attach a dispatch photo / short video to the order. */
     public function uploadDispatchMedia(Request $request, Order $order)
     {

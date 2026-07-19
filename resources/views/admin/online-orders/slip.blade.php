@@ -181,7 +181,10 @@
     // Order-tracking QR — scannable, opens the order's public tracking page.
     $payUrl    = $order->receipt_token ? route('shop.track.view', $order->receipt_token) : url('/');
     $weightTxt = (rtrim(rtrim(number_format((float) $order->weight, 3), '0'), '.') ?: '0') . ' kg';
-    $pieces    = (int) $order->items->sum('quantity');
+    // Pieces: operator's checklist count (#11) if set, else the auto sum.
+    $pieces    = $order->dispatch_pieces !== null
+        ? (int) $order->dispatch_pieces
+        : (int) $order->items->sum('quantity');
 
     $postmanEn = setting('dispatch_postman_note', 'Dear postman: if delivering this parcel is difficult, please call ' . ($company['phone'] ?: '') . ' — but kindly ensure delivery. Thank you.');
     $postmanUr = setting('dispatch_postman_note_ur', 'محترم ڈاک صاحب! اگر پارسل وصول کنندہ تک پہنچانے میں کوئی مشکل ہو تو ' . ($company['phone'] ?: '') . ' اس نمبر پر رابطہ کریں مگر پارسل کی ڈیلیوری یقینی بنائیں۔ شکریہ');

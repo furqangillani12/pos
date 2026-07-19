@@ -69,6 +69,8 @@ class SettingsController extends Controller
             'dispatch_logo_en'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
             'dispatch_logo_ur'         => 'nullable|image|mimes:png,jpg,jpeg,webp,svg|max:1024',
             'dispatch_slip_lang'       => 'nullable|in:en,ur',
+            'review_request_title'     => 'nullable|string|max:120',
+            'review_request_message'   => 'nullable|string|max:500',
             'points_rupees_per_point'  => 'nullable|numeric|min:0',
             'points_per_review'        => 'nullable|integer|min:0',
             'points_value_rupees'      => 'nullable|numeric|min:0',
