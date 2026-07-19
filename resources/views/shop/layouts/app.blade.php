@@ -231,22 +231,17 @@
         }
     @endphp
     @if (!empty($topMessages))
-        <div class="text-white text-xs font-medium" style="background:var(--brand-navy);"
+        {{-- Announcement carousel: messages slide up one after another. No icon (client). --}}
+        <div class="text-white text-xs font-medium overflow-hidden" style="background:var(--brand-navy);"
              x-data="{ msgs: {{ \Illuminate\Support\Js::from($topMessages) }}, i: 0 }"
-             x-init="if (msgs.length > 1) setInterval(() => { i = (i + 1) % msgs.length }, 4000)">
-            <div class="relative py-2" style="min-height:32px;">
-                {{-- Rotating messages: each fades in/out in place; the truck icon stays constant --}}
+             x-init="if (msgs.length > 1) { setInterval(() => { i = (i + 1) % msgs.length }, 3500) }">
+            <div class="transition-transform duration-500 ease-in-out"
+                 :style="'transform: translateY(-' + (i * 34) + 'px)'">
                 <template x-for="(m, idx) in msgs" :key="idx">
-                    <div class="absolute inset-0 flex items-center justify-center gap-2 px-4 text-center transition-opacity duration-500"
-                         :class="i === idx ? 'opacity-100' : 'opacity-0 pointer-events-none'">
-                        <i class="fas fa-truck flex-shrink-0" style="color:var(--gold);"></i>
-                        <span x-text="m" class="truncate"></span>
+                    <div class="flex items-center justify-center text-center px-4" style="height:34px;">
+                        <span class="truncate" x-text="m"></span>
                     </div>
                 </template>
-                {{-- Invisible spacer keeps the bar height correct on first paint / no-JS --}}
-                <div class="flex items-center justify-center gap-2 px-4 opacity-0" aria-hidden="true">
-                    <i class="fas fa-truck flex-shrink-0"></i><span class="truncate">{{ $topMessages[0] }}</span>
-                </div>
             </div>
         </div>
     @endif
