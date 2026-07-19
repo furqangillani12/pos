@@ -269,8 +269,10 @@ class AccountController extends Controller
                 }
             }
 
-            $total = round($subtotal + $delivery, 2);
-            $new->update(['subtotal' => $subtotal, 'total' => $total, 'balance_amount' => $total]);
+            // Apply tax the same way a fresh order does (#1e correctness).
+            $tax   = shop_tax_amount($subtotal + $delivery, $order->online_payment_status === 'cod');
+            $total = round($subtotal + $delivery + $tax, 2);
+            $new->update(['subtotal' => $subtotal, 'tax' => $tax, 'total' => $total, 'balance_amount' => $total]);
 
             if ($customer) {
                 $customer->update(['current_balance' => round((float) ($customer->current_balance ?? 0) + $total, 2)]);
