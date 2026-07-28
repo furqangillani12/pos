@@ -274,7 +274,9 @@ Route::post('/admin/customers/{customer}/check-credit', function (Request $reque
 })->middleware('auth');
 
 // ── Settings (Payment & Dispatch Methods) ──
-Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(function () {
+// Gated by an assignable permission so not every staff member can change the
+// storefront / website settings (client update 24/7 #7).
+Route::middleware(['auth', 'branch', 'permission:manage website settings'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/settings', [SettingsController::class, 'index'])->name('settings.index');
 
     Route::post('/settings/site', [SettingsController::class, 'updateSiteSettings'])->name('settings.site.update');

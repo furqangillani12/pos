@@ -44,12 +44,15 @@
                     </template>
                 </div>
                 @if ($gallery->count() > 1)
-                    <div class="grid grid-cols-5 gap-2">
+                    {{-- One line of thumbnails that scrolls left↔right — never wraps to a
+                         second row no matter how many images (client #14). --}}
+                    <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x"
+                         style="scrollbar-width:thin;">
                         @foreach ($gallery as $i => $g)
                             <button @click="active = {{ $i }}" type="button"
-                                    class="rounded-xl overflow-hidden border-2 transition" style="aspect-ratio:4/5;"
+                                    class="flex-none w-16 sm:w-20 rounded-xl overflow-hidden border-2 transition snap-start" style="aspect-ratio:4/5;"
                                     :class="active === {{ $i }} ? 'border-blue-500' : 'border-transparent'">
-                                <img src="{{ shop_image($g) }}" class="w-full h-full object-cover">
+                                <img src="{{ shop_image($g) }}" loading="lazy" class="w-full h-full object-cover">
                             </button>
                         @endforeach
                     </div>

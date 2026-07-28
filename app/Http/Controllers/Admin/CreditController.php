@@ -46,11 +46,14 @@ class CreditController extends Controller
         
         $customers = $query->paginate(15);
         
-        // Statistics
-        $totalCreditSales = CreditTransaction::where('transaction_type', 'debit')->sum('amount');
-        $totalCreditPayments = CreditTransaction::where('transaction_type', 'credit')->sum('amount');
+        // Statistics — scoped so a branch only sees its own customers' figures (#6).
+        $branchTxn = fn () => CreditTransaction::query()
+            ->when(! $this->isAllBranches(), fn ($q) => $q->whereHas('customer', fn ($c) => $this->scopeBranch($c)));
+
+        $totalCreditSales = $branchTxn()->where('transaction_type', 'debit')->sum('amount');
+        $totalCreditPayments = $branchTxn()->where('transaction_type', 'credit')->sum('amount');
         $totalOutstanding = $this->scopeBranch(Customer::query())->where('credit_enabled', true)->sum('current_balance');
-        $overdueCount = CreditTransaction::overdue()->count();
+        $overdueCount = $branchTxn()->overdue()->count();
         
         return view('admin.credit.index', compact(
             'customers', 

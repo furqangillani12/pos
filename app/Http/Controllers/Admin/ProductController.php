@@ -22,7 +22,6 @@ class ProductController extends Controller
     {
         $products = $this->scopeBranch(Product::query())
             ->with(['category', 'unit'])
-            ->orderBy('created_at', 'desc')
             ->get();
 
         // Attach branch stock for display
@@ -30,6 +29,18 @@ class ProductController extends Controller
         foreach ($products as $product) {
             $product->branch_stock = $product->getStockForBranch($branchId);
         }
+
+        // Sort by product code (barcode) using natural order so ASM330 → ASM331 →
+        // ASM332 line up correctly even when inserted out of sequence (client #4).
+        // Blank codes sink to the bottom.
+        $products = $products->sort(function ($a, $b) {
+            $ca = trim((string) ($a->barcode ?? ''));
+            $cb = trim((string) ($b->barcode ?? ''));
+            if ($ca === '' && $cb === '') return 0;
+            if ($ca === '') return 1;
+            if ($cb === '') return -1;
+            return strnatcasecmp($ca, $cb);
+        })->values();
 
         return view('admin.products.index', compact('products'));
     }
@@ -264,6 +275,6 @@ class ProductController extends Controller
 
     public function export()
     {
-        return Excel::download(new ProductsExport, 'products_'.now()->format('Ymd_His').'.xlsx');
+        return Excel::download(new ProductsExport($this->branchId()), 'products_'.now()->format('Ymd_His').'.xlsx');
     }
 }

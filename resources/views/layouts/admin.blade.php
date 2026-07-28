@@ -893,7 +893,9 @@
                 </div>
 
                 {{-- ── Settings & Admin ── --}}
-                @hasanyrole('admin|super_admin')
+                {{-- Visible to admins, or to anyone granted "manage website settings"
+                     via the roles UI (client update 24/7 #7). --}}
+                @if (auth()->user()?->hasAnyRole(['admin', 'super_admin']) || auth()->user()?->can('manage website settings'))
                     <button @click="settingsOpen = !settingsOpen"
                         class="w-full flex items-center justify-between px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
                         <span><i class="fas fa-cog mr-2 text-xs"></i> Settings</span>
@@ -903,10 +905,12 @@
                         </svg>
                     </button>
                     <div x-show="settingsOpen" x-transition class="pl-4 space-y-1 text-sm">
-                        <a href="{{ route('admin.settings.index') }}"
-                            class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
-                            <i class="fas fa-sliders-h mr-2 text-xs"></i> POS Settings
-                        </a>
+                        @can('manage website settings')
+                            <a href="{{ route('admin.settings.index') }}"
+                                class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
+                                <i class="fas fa-sliders-h mr-2 text-xs"></i> POS Settings
+                            </a>
+                        @endcan
                         @can('manage branches')
                             <a href="{{ route('admin.branches.index') }}"
                                 class="block px-4 py-2 rounded-md transition hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-300">
@@ -932,7 +936,7 @@
                             </a>
                         @endhasrole
                     </div>
-                @endhasanyrole
+                @endif
 
                 {{-- ── Logout ── --}}
                 <div class="pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">

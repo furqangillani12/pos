@@ -24,6 +24,7 @@ class LedgerEntry extends Model
         'party_id',
         'party_name',
         'user_id',
+        'branch_id',
         'notes',
     ];
 

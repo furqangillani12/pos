@@ -13,6 +13,21 @@ use Illuminate\Support\Facades\Auth;
 class LedgerService
 {
     /**
+     * Resolve the branch a ledger entry belongs to (client #6). Prefer the
+     * source record's own branch; otherwise fall back to the acting branch in
+     * session — but never store the 'all' sentinel as a real branch id.
+     */
+    private static function branchId($model = null)
+    {
+        $branch = $model->branch_id ?? null;
+        if ($branch) {
+            return $branch;
+        }
+        $session = session('branch_id');
+        return is_numeric($session) ? (int) $session : null;
+    }
+
+    /**
      * Record a completed sale (cash / card / mobile_money)
      */
     public static function recordSale(Order $order): void
@@ -33,6 +48,7 @@ class LedgerService
             'party_id'         => $order->customer_id,
             'party_name'       => optional($order->customer)->name ?? 'Walk-in Customer',
             'user_id'          => $order->user_id,
+            'branch_id'        => self::branchId($order),
         ]);
     }
 
@@ -57,6 +73,7 @@ class LedgerService
             'party_id'         => $order->customer_id,
             'party_name'       => optional($order->customer)->name,
             'user_id'          => $order->user_id,
+            'branch_id'        => self::branchId($order),
         ]);
     }
 
@@ -81,6 +98,7 @@ class LedgerService
             'party_id'         => $order->customer_id,
             'party_name'       => optional($order->customer)->name,
             'user_id'          => $userId,
+            'branch_id'        => self::branchId($order),
         ]);
     }
 
@@ -105,6 +123,7 @@ class LedgerService
             'party_id'         => $purchase->supplier_id,
             'party_name'       => optional($purchase->supplier)->name,
             'user_id'          => Auth::id(),
+            'branch_id'        => self::branchId($purchase),
         ]);
     }
 
@@ -129,6 +148,7 @@ class LedgerService
             'party_id'         => null,
             'party_name'       => null,
             'user_id'          => $expense->user_id,
+            'branch_id'        => self::branchId($expense),
         ]);
     }
 
@@ -155,6 +175,7 @@ class LedgerService
             'party_id'         => optional($order)->customer_id,
             'party_name'       => optional(optional($order)->customer)->name ?? 'Walk-in Customer',
             'user_id'          => Auth::id(),
+            'branch_id'        => self::branchId($order),
         ]);
     }
 
@@ -179,6 +200,7 @@ class LedgerService
             'party_id'         => $payroll->employee_id,
             'party_name'       => optional($payroll->employee)->name,
             'user_id'          => Auth::id(),
+            'branch_id'        => self::branchId($payroll),
         ]);
     }
 }

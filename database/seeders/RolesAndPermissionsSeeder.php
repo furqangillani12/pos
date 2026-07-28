@@ -27,6 +27,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage roles',
             'manage permissions',
             'assign roles',
+            'manage website settings',
         ];
 
         // Create permissions

@@ -149,12 +149,15 @@
                 @foreach ($featuredCategories as $cat)
                     {{-- Whole card is one link → tapping the picture opens the category (client) --}}
                     <a href="{{ route('shop.category', $cat->slug) }}"
-                       class="group block rounded-2xl overflow-hidden bg-white border border-gray-100 hover:shadow-md transition">
+                       class="group block rounded-2xl overflow-hidden bg-white border border-gray-100 transition hover:-translate-y-0.5 shadow-[0_6px_16px_-6px_rgba(15,23,42,0.18)] hover:shadow-[0_14px_26px_-8px_rgba(15,23,42,0.30)]">
                         {{-- Clean, bright picture — no text/overlay/dimming on the image;
-                             object-cover fills the square so PNGs never leave empty space. --}}
-                        <div class="bg-white overflow-hidden" style="aspect-ratio:1;">
+                             object-cover fills the square so PNGs never leave empty space.
+                             A soft gradient at the base grounds the picture (client: shadow below). --}}
+                        <div class="relative bg-white overflow-hidden" style="aspect-ratio:1;">
                             <img src="{{ shop_image($cat->photo) }}" alt="{{ $cat->name }}" loading="lazy"
                                  class="w-full h-full object-cover transition duration-700 group-hover:scale-105">
+                            <span class="pointer-events-none absolute inset-x-0 bottom-0 h-10"
+                                  style="background:linear-gradient(to top, rgba(15,23,42,.14), transparent);"></span>
                         </div>
                         {{-- Only the category name, below the picture — no "Shop now" (client) --}}
                         <div class="px-2 py-2.5 text-center">

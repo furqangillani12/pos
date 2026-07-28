@@ -116,13 +116,15 @@ class Product extends Model
 
     public function scopeOnWebsite($q)
     {
-        // Cascade visibility (#2): a product is hidden from the storefront if its
-        // owning branch OR its category has been switched off for the website —
-        // even when the product itself is on. whereDoesntHave keeps products with
-        // no category/branch visible (only an explicitly OFF relation hides them).
+        // The product's own `show_on_website` flag is authoritative (client update
+        // 24/7 #9): a product that is switched ON must appear on the storefront even
+        // when its category is hidden — so the shop can hide a whole category yet
+        // still surface a hand-picked few of its items. Category visibility only
+        // controls whether the *category itself* is browsable (scopeOnWebsite on
+        // Category), not whether its ON products show. The branch cascade stays:
+        // a branch turned off for the web hides all of its products.
         return $q->where('products.is_active', true)
             ->where('products.show_on_website', true)
-            ->whereDoesntHave('category', fn ($c) => $c->where('show_on_website', false))
             ->whereDoesntHave('branch', fn ($b) => $b->where('show_on_website', false));
     }
 
