@@ -586,7 +586,14 @@
                     $paidAmount = $order->paid_amount ?? $order->total;
                     $balanceOnBill = max(0, $order->total - $paidAmount);
                     $prevBalance = $order->computePreviousBalance();
-                    $currentBalance = $prevBalance + $order->total - $paidAmount;
+                    // "Current Balance Due" must reflect the customer's LIVE khata
+                    // balance so a cash in/out done after this sale shows up when the
+                    // bill is reprinted (client #2). The live customers.current_balance
+                    // is the running total that cash in/out actually updates. Fall back
+                    // to the arithmetic for walk-ins / orders with no customer record.
+                    $currentBalance = ($order->customer_id && $order->customer)
+                        ? (float) $order->customer->current_balance
+                        : ($prevBalance + $order->total - $paidAmount);
                     $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
                 @endphp
 

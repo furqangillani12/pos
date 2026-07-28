@@ -140,10 +140,13 @@
     $logoEn   = setting('dispatch_logo_en');
     $logoUr   = setting('dispatch_logo_ur');
     $slipLogo = $lang === 'ur' ? ($logoUr ?: $logoEn) : ($logoEn ?: $logoUr);
-    $hasSlipLogo = (bool) $slipLogo;
-    $brandLogo = $slipLogo
-        ? asset('storage/'.$slipLogo)
-        : ($branch?->logo ? asset('storage/'.$branch->logo) : asset('assets/images/brand/almufeed-traders.png'));
+    // Per-branch logo (client #8): the order's OWN branch logo wins, so one branch
+    // uploading its logo can never change another branch's slip. The global
+    // dispatch-logo settings act only as a default for branches without a logo.
+    $brandLogo = $branch?->logo
+        ? asset('storage/'.$branch->logo)
+        : ($slipLogo ? asset('storage/'.$slipLogo) : asset('assets/images/brand/almufeed-traders.png'));
+    $hasSlipLogo = (bool) ($branch?->logo ?: $slipLogo);
     $company = [
         'name'    => $branch?->name ?: setting('site_name', 'AL MUFEED TRADERS'),
         'name_ur' => setting('site_name_ur', 'المفید اسلامی ثقافتی مرکز'),
@@ -180,7 +183,15 @@
 
     // Order-tracking QR — scannable, opens the order's public tracking page.
     $payUrl    = $order->receipt_token ? route('shop.track.view', $order->receipt_token) : url('/');
-    $weightTxt = (rtrim(rtrim(number_format((float) $order->weight, 3), '0'), '.') ?: '0') . ' kg';
+    // Weight display (client #11): honour the unit the operator chose (g/kg); when
+    // left on auto, a parcel under 1 kg is shown in grams so light parcels read well.
+    $wkg        = (float) $order->weight;
+    $weightUnit = in_array($order->weight_unit ?? null, ['g', 'kg'], true) ? $order->weight_unit : null;
+    if ($weightUnit === 'g' || ($weightUnit === null && $wkg > 0 && $wkg < 1)) {
+        $weightTxt = round($wkg * 1000) . ' g';
+    } else {
+        $weightTxt = (rtrim(rtrim(number_format($wkg, 3), '0'), '.') ?: '0') . ' kg';
+    }
     // Pieces: operator's checklist count (#11) if set, else the auto sum.
     $pieces    = $order->dispatch_pieces !== null
         ? (int) $order->dispatch_pieces

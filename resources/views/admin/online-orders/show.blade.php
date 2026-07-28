@@ -163,9 +163,25 @@
                             <span class="text-[11px] text-gray-500">Delivery (Rs.)</span>
                             <input type="text" inputmode="decimal" name="delivery_charges" value="{{ rtrim(rtrim(number_format((float) ($order->delivery_charges ?? 0), 2, '.', ''), '0'), '.') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
                         </label>
+                        @php
+                            // Show the weight in whichever unit will be printed (#11).
+                            $wKgVal = (float) ($order->weight ?? 0);
+                            $wUnit  = in_array($order->weight_unit ?? null, ['kg', 'g'], true)
+                                ? $order->weight_unit
+                                : ($wKgVal > 0 && $wKgVal < 1 ? 'g' : 'kg');
+                            $wShown = $wUnit === 'g'
+                                ? (string) round($wKgVal * 1000)
+                                : rtrim(rtrim(number_format($wKgVal, 3, '.', ''), '0'), '.');
+                        @endphp
                         <label class="block">
-                            <span class="text-[11px] text-gray-500">Weight (kg)</span>
-                            <input type="text" inputmode="decimal" name="weight" value="{{ rtrim(rtrim(number_format((float) ($order->weight ?? 0), 3, '.', ''), '0'), '.') }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                            <span class="text-[11px] text-gray-500">Weight</span>
+                            <div class="flex gap-1">
+                                <input type="text" inputmode="decimal" name="weight" value="{{ $wShown }}" class="w-full px-2 py-1.5 border border-gray-300 rounded-lg text-sm">
+                                <select name="weight_unit" class="px-1.5 py-1.5 border border-gray-300 rounded-lg text-sm bg-white">
+                                    <option value="kg" @selected($wUnit === 'kg')>kg</option>
+                                    <option value="g" @selected($wUnit === 'g')>g</option>
+                                </select>
+                            </div>
                         </label>
                     </div>
                     @php

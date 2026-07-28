@@ -259,7 +259,8 @@ class OnlineOrderController extends Controller
         abort_unless($order->order_source === 'online', 404);
 
         $data = $request->validate([
-            'weight'              => 'nullable|numeric|min:0|max:9999',
+            'weight'              => 'nullable|numeric|min:0|max:9999999',
+            'weight_unit'         => 'nullable|in:kg,g',
             'delivery_charges'    => 'nullable|numeric|min:0|max:9999999',
             // Editable COD amount for the dispatch slip (blank = auto: paid ? 0 : balance).
             'dispatch_cod_amount' => 'nullable|numeric|min:0|max:9999999',
@@ -281,8 +282,15 @@ class OnlineOrderController extends Controller
             $codRaw = $request->input('dispatch_cod_amount');
             $codOverride = ($codRaw === null || $codRaw === '') ? null : round((float) $codRaw, 2);
 
+            // Weight is entered in the chosen unit (#11) but always STORED in kg so
+            // delivery-charge slabs keep working. Grams → kg on the way in.
+            $weightUnit  = in_array($data['weight_unit'] ?? null, ['kg', 'g'], true) ? $data['weight_unit'] : 'kg';
+            $weightInput = (float) ($data['weight'] ?? 0);
+            $weightKg    = $weightUnit === 'g' ? round($weightInput / 1000, 3) : $weightInput;
+
             $order->update([
-                'weight'              => $data['weight'] ?? 0,
+                'weight'              => $weightKg,
+                'weight_unit'         => $weightUnit,
                 'delivery_charges'    => $delivery,
                 'tax'                 => $tax,
                 'total'               => $newTotal,
