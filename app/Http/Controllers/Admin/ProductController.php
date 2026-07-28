@@ -69,6 +69,8 @@ class ProductController extends Controller
             'cost_price'       => 'required|numeric|min:0',
             'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
             'weight_g'         => 'nullable|integer|min:0',
+            'packing_charge'   => 'nullable|numeric|min:0',
+            'packing_label'    => 'nullable|string|max:120',
             'stock_quantity'   => 'required|numeric|min:0',
             'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:5120',
@@ -83,6 +85,8 @@ class ProductController extends Controller
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
+        // Packing charge column is NOT NULL — empty input arrives as null.
+        $validated['packing_charge'] = $validated['packing_charge'] ?? 0;
 
         if (!empty($validated['weight_kg'])) {
             $weight = $validated['weight_kg'];
@@ -164,6 +168,8 @@ class ProductController extends Controller
             'cost_price'       => 'required|numeric|min:0',
             'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
             'weight_g'         => 'nullable|integer|min:0',
+            'packing_charge'   => 'nullable|numeric|min:0',
+            'packing_label'    => 'nullable|string|max:120',
             'stock_quantity'   => 'required|numeric|min:0',
             'reorder_level'    => 'required|numeric|min:0',
             'image'            => 'nullable|image|max:5120',
@@ -178,6 +184,8 @@ class ProductController extends Controller
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
+        // Packing charge column is NOT NULL — empty input arrives as null.
+        $validated['packing_charge'] = $validated['packing_charge'] ?? 0;
 
         if (!empty($validated['weight_kg'])) {
         $weight = $validated['weight_kg'];

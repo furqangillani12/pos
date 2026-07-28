@@ -89,6 +89,9 @@
                             <div class="flex justify-between text-emerald-600"><span>Coupon</span><span>-{{ shop_price($order->coupon_discount) }}</span></div>
                         @endif
                         <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold">{{ shop_price($order->delivery_charges ?? 0) }}</span></div>
+                        @if (($order->packing_total ?? 0) > 0)
+                            <div class="flex justify-between"><span class="text-gray-500">Packing</span><span class="font-semibold">{{ shop_price($order->packing_total) }}</span></div>
+                        @endif
                     </div>
                     <hr class="my-3 border-gray-100">
                     <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-lg font-extrabold" style="color:var(--brand-navy);">{{ shop_price($order->total) }}</span></div>

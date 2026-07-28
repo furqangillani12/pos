@@ -254,25 +254,30 @@ class AccountController extends Controller
                 'receipt_token'      => bin2hex(random_bytes(16)),
             ]);
 
+            $packingTotal = 0.0;
             foreach ($order->items as $item) {
                 $lineTotal = round((float) $item->quantity * (float) $item->unit_price, 2);
                 $subtotal += $lineTotal;
+                $packingTotal += (float) ($item->packing_charge ?? 0) * (float) $item->quantity;
                 \App\Models\OrderItem::create([
                     'order_id'    => $new->id,
                     'product_id'  => $item->product_id,
                     'quantity'    => $item->quantity,
                     'unit_price'  => $item->unit_price,
                     'total_price' => $lineTotal,
+                    'packing_charge' => (float) ($item->packing_charge ?? 0),
+                    'packing_label'  => $item->packing_label,
                 ]);
                 if ($item->product && $item->product->track_inventory && $new->branch_id) {
                     $item->product->decrementBranchStock($new->branch_id, (float) $item->quantity);
                 }
             }
+            $packingTotal = round($packingTotal, 2);
 
             // Apply tax the same way a fresh order does (#1e correctness).
             $tax   = shop_tax_amount($subtotal + $delivery, $order->online_payment_status === 'cod');
-            $total = round($subtotal + $delivery + $tax, 2);
-            $new->update(['subtotal' => $subtotal, 'tax' => $tax, 'total' => $total, 'balance_amount' => $total]);
+            $total = round($subtotal + $delivery + $tax + $packingTotal, 2);
+            $new->update(['subtotal' => $subtotal, 'tax' => $tax, 'packing_total' => $packingTotal, 'total' => $total, 'balance_amount' => $total]);
 
             if ($customer) {
                 $customer->update(['current_balance' => round((float) ($customer->current_balance ?? 0) + $total, 2)]);

@@ -35,6 +35,8 @@ class CheckoutController extends Controller
         $paymentMethods  = PaymentMethod::onWebsite()->get();
 
         $weight = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
+        // Packing charges preview (client #1) — same figure that will be billed.
+        $packingTotal = round($items->sum(fn ($i) => (float) ($i->product?->packing_charge ?? 0) * (float) $i->qty), 2);
 
         // Live delivery charge per dispatch method for the current cart weight,
         // so the form can show "Rs. X" the moment a method is selected.
@@ -55,7 +57,7 @@ class CheckoutController extends Controller
         return view('shop.pages.checkout', compact(
             'items', 'totals', 'coupon', 'customer', 'isGuest',
             'dispatchMethods', 'paymentMethods', 'deliveryCharges', 'weight', 'provinces',
-            'pointsBalance', 'pointValue', 'maxRedeemable'
+            'pointsBalance', 'pointValue', 'maxRedeemable', 'packingTotal'
         ));
     }
 
@@ -137,6 +139,8 @@ class CheckoutController extends Controller
         $coupon   = $this->cart->activeCoupon();
         $weight   = $items->sum(fn ($i) => (float) ($i->product?->weight ?? 0) * (float) $i->qty);
         $delivery = $this->resolveDelivery($data['dispatch_method'], $weight);
+        // Packing charges (client #1): per-unit charge on fragile items, added to the bill.
+        $packingTotal = round($items->sum(fn ($i) => (float) ($i->product?->packing_charge ?? 0) * (float) $i->qty), 2);
 
         // Points redemption (#B) — logged-in customers only, capped so the points
         // discount can never exceed the after-coupon subtotal. Applied like a
@@ -168,7 +172,8 @@ class CheckoutController extends Controller
         $afterDiscount = max(0, $afterCoupon - $pointsDiscount);
         $taxableBase   = $afterDiscount + $delivery;
         $tax           = shop_tax_amount($taxableBase, $isCod);
-        $grandTotal    = max(0, $afterDiscount + $tax + $delivery);
+        // Packing is a pass-through charge added after tax (not taxed).
+        $grandTotal    = max(0, $afterDiscount + $tax + $delivery + $packingTotal);
 
         // Optional payment screenshot.
         $proofPath = null;
@@ -180,7 +185,7 @@ class CheckoutController extends Controller
 
         $hasProof = $proofPath || !empty($data['payment_sender_name']) || $data['payment_sender_amount'] !== null;
 
-        $order = DB::transaction(function () use ($items, $customer, $isGuest, $data, $totals, $coupon, $delivery, $grandTotal, $weight, $tax, $isCod, $proofPath, $hasProof, $redeemPoints, $pointsDiscount) {
+        $order = DB::transaction(function () use ($items, $customer, $isGuest, $data, $totals, $coupon, $delivery, $packingTotal, $grandTotal, $weight, $tax, $isCod, $proofPath, $hasProof, $redeemPoints, $pointsDiscount) {
 
             $branchId = $items->first()->branch_id ?? \App\Models\Branch::query()->value('id');
 
@@ -203,6 +208,7 @@ class CheckoutController extends Controller
                 'tax_rate'         => $totals['tax_rate'],
                 'tax_type'         => $totals['tax_type'],
                 'delivery_charges' => $delivery,
+                'packing_total'    => $packingTotal,
                 'weight'           => $weight,
                 'total'            => $grandTotal,
                 'paid_amount'      => 0,
@@ -244,6 +250,8 @@ class CheckoutController extends Controller
                     'quantity'    => $row->qty,
                     'unit_price'  => $row->unit_price,
                     'total_price' => round((float) $row->qty * (float) $row->unit_price, 2),
+                    'packing_charge' => (float) ($product->packing_charge ?? 0),
+                    'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
                 if ($product->track_inventory && $branchId) {
                     $product->decrementBranchStock($branchId, (float) $row->qty);

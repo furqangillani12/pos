@@ -184,7 +184,9 @@ class PosController extends Controller
             $afterDiscount   = $subtotal - $discount;
             $taxableAmount   = $afterDiscount + $deliveryCharges;
             $tax             = $taxType === 'percent' ? $taxableAmount * ($taxRate / 100) : $taxRate;
-            $total           = $afterDiscount + $tax + $deliveryCharges;
+            // Packing charges (client #1): per-unit charge on fragile items, added after tax.
+            $packingTotal    = round(collect($orderItems)->sum(fn ($it) => (float) ($it['product']->packing_charge ?? 0) * (float) $it['quantity']), 2);
+            $total           = $afterDiscount + $tax + $deliveryCharges + $packingTotal;
 
             // ── Partial payment logic
             $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
@@ -219,6 +221,7 @@ class PosController extends Controller
                 'discount'         => $discount,
                 'discount_label'   => $validated['discount_label'] ?? null,
                 'delivery_charges' => $deliveryCharges,
+                'packing_total'    => $packingTotal,
                 'weight'           => $totalWeight,
                 'subtotal'         => $subtotal,
                 'total'            => $total,
@@ -246,6 +249,8 @@ class PosController extends Controller
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
+                    'packing_charge' => (float) ($product->packing_charge ?? 0),
+                    'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
@@ -524,7 +529,9 @@ class PosController extends Controller
             $afterDiscount   = $subtotal - $discount;
             $taxableAmount   = $afterDiscount + $deliveryCharges;
             $tax             = $taxableAmount * ($taxRate / 100);
-            $total           = $afterDiscount + $tax + $deliveryCharges;
+            // Packing charges (client #1) — recomputed from the current line-up on edit.
+            $packingTotal    = round(collect($orderItems)->sum(fn ($it) => (float) ($it['product']->packing_charge ?? 0) * (float) $it['quantity']), 2);
+            $total           = $afterDiscount + $tax + $deliveryCharges + $packingTotal;
 
             $paidAmount = isset($validated['paid_amount']) && $validated['paid_amount'] !== null
                 ? (float) $validated['paid_amount']
@@ -545,6 +552,7 @@ class PosController extends Controller
                 'discount'         => $discount,
                 'discount_label'   => $validated['discount_label'] ?? null,
                 'delivery_charges' => $deliveryCharges,
+                'packing_total'    => $packingTotal,
                 'weight'           => $totalWeight,
                 'subtotal'         => $subtotal,
                 'total'            => $total,
@@ -575,6 +583,8 @@ class PosController extends Controller
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
+                    'packing_charge' => (float) ($product->packing_charge ?? 0),
+                    'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {

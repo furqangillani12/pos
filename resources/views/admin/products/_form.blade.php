@@ -361,6 +361,31 @@
             </div>
         </div>
 
+        <!-- Packing charges (fragile items) — client #1 -->
+        <div class="mt-2 rounded-md border border-indigo-200 bg-indigo-50/50 p-4">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fas fa-box-open text-indigo-500"></i>
+                <span class="text-sm font-semibold text-gray-800">Packing charge (optional — for fragile / special items)</span>
+            </div>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                    <label for="packing_charge" class="block text-sm font-medium text-gray-700">Packing charge (Rs. per unit)</label>
+                    <input type="number" step="0.01" min="0" name="packing_charge" id="packing_charge"
+                        value="{{ old('packing_charge', isset($product) && $product->packing_charge > 0 ? number_format($product->packing_charge, 2, '.', '') : '') }}"
+                        placeholder="e.g., 50"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">
+                    <p class="mt-1 text-xs text-gray-500">Added to the bill for each unit sold. Leave blank for none.</p>
+                </div>
+                <div>
+                    <label for="packing_label" class="block text-sm font-medium text-gray-700">Charge title (shown on bill)</label>
+                    <input type="text" name="packing_label" id="packing_label" maxlength="120"
+                        value="{{ old('packing_label', $product->packing_label ?? '') }}"
+                        placeholder="e.g., Fragile packing / Bubble wrap"
+                        class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 sm:text-sm">
+                </div>
+            </div>
+        </div>
+
         <!-- Image -->
         <div class="grid grid-cols-1 gap-6">
             <div>

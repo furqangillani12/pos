@@ -15,6 +15,7 @@
         methods: @js($dispatchMethods->map(fn($m)=>['name'=>$m->name,'intl'=>(bool)$m->is_international])->values()),
         initPayment: @js($paymentMethods->first()?->name),
         sub: {{ $totals['subtotal'] }}, disc: {{ $totals['discount'] }},
+        packing: {{ $packingTotal ?? 0 }},
         taxRate: {{ $totals['tax_rate'] }}, taxType: @js($totals['tax_type']),
         pointsBalance: {{ $pointsBalance ?? 0 }}, pointValue: {{ $pointValue ?? 0 }}, maxRedeemable: {{ $maxRedeemable ?? 0 }},
         old: {
@@ -345,6 +346,7 @@
                         @endif
                         <div class="flex justify-between text-amber-600" x-show="pointsDiscount > 0" x-cloak><span><i class="fas fa-star text-[11px]"></i> Points (<span x-text="appliedPoints"></span>)</span><span x-text="'-' + money(pointsDiscount)"></span></div>
                         <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold" x-text="charge > 0 ? money(charge) : 'Free'"></span></div>
+                        <div class="flex justify-between" x-show="packing > 0" x-cloak><span class="text-gray-500">Packing</span><span class="font-semibold" x-text="money(packing)"></span></div>
                         <div class="flex justify-between" x-show="taxAmt > 0"><span class="text-gray-500">Tax<template x-if="taxType==='percent'"><span> (<span x-text="taxRate"></span>%)</span></template></span><span class="font-semibold" x-text="money(taxAmt)"></span></div>
                     </div>
                     <input type="hidden" name="redeem_points" :value="appliedPoints">
@@ -387,6 +389,7 @@
             payments: cfg.payments || [],
             sub: Number(cfg.sub) || 0,
             disc: Number(cfg.disc) || 0,
+            packing: Number(cfg.packing) || 0,
             taxRate: Number(cfg.taxRate) || 0,
             taxType: cfg.taxType || 'percent',
             pointsBalance: Number(cfg.pointsBalance) || 0,
@@ -433,7 +436,7 @@
                 const base = this.afterDiscount + this.charge;
                 return Math.round(base * this.taxRate / 100 * 100) / 100;
             },
-            get grand() { return Math.max(0, this.afterDiscount + this.taxAmt + this.charge); },
+            get grand() { return Math.max(0, this.afterDiscount + this.taxAmt + this.charge + this.packing); },
             money(n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); },
             // Filter a dropdown list by what's typed. Empty query (or an exact
             // match) shows the whole list so the box opens as a full dropdown.

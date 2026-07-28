@@ -22,6 +22,9 @@
                     <div class="flex justify-between text-emerald-600"><span>Coupon</span><span>-{{ shop_price($order->coupon_discount) }}</span></div>
                 @endif
                 <div class="flex justify-between"><span>Delivery</span><span>{{ shop_price($order->delivery_charges ?? 0) }}</span></div>
+                @if (($order->packing_total ?? 0) > 0)
+                    <div class="flex justify-between"><span>Packing</span><span>{{ shop_price($order->packing_total) }}</span></div>
+                @endif
                 <div class="flex justify-between"><span>Payment</span><span class="capitalize">{{ str_replace('_', ' ', $order->payment_method) }}</span></div>
                 <div class="flex justify-between"><span>Dispatch</span><span>{{ $order->dispatch_method }}</span></div>
             </div>

@@ -852,6 +852,14 @@
                 </div>
             @endif
 
+            @if (($order->packing_total ?? 0) > 0)
+                @php $packLabel = $order->items->where('packing_charge', '>', 0)->pluck('packing_label')->filter()->unique()->implode(', ') ?: 'Packing charges'; @endphp
+                <div class="summary-row">
+                    <span class="label">{{ $packLabel }}</span>
+                    <span class="value">Rs. {{ number_format($order->packing_total, 2) }}</span>
+                </div>
+            @endif
+
             @if ($order->weight > 0)
                 <div class="summary-row">
                     <span class="label">Total Weight</span>

@@ -24,6 +24,8 @@ class Product extends Model
         'wholesale_price',
         'cost_price',
         'weight',
+        'packing_charge',
+        'packing_label',
         'stock_quantity',
         'reorder_level',
         'image',

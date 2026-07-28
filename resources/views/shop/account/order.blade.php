@@ -135,6 +135,9 @@
                             <div class="flex justify-between text-amber-600"><span><i class="fas fa-star text-[11px]"></i> Points ({{ (int) $order->points_redeemed }})</span><span>-{{ shop_price($order->points_discount) }}</span></div>
                         @endif
                         <div class="flex justify-between"><span class="text-gray-500">Delivery</span><span class="font-semibold">{{ shop_price($order->delivery_charges ?? 0) }}</span></div>
+                        @if (($order->packing_total ?? 0) > 0)
+                            <div class="flex justify-between"><span class="text-gray-500">Packing</span><span class="font-semibold">{{ shop_price($order->packing_total) }}</span></div>
+                        @endif
                     </div>
                     <hr class="my-3 border-gray-100">
                     <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-lg font-extrabold" style="color:var(--brand-navy);">{{ shop_price($order->total) }}</span></div>
