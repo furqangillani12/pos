@@ -120,11 +120,13 @@
         @media print {
             body { background: #fff; }
             .toolbar { display: none; }
-            /* Keep the sheet at its fixed 210mm width so the layout NEVER reflows.
-               Portrait or landscape, the browser just scales the whole slip to fit
-               the page (Fit to page) — same alignment, nothing overflows. */
-            .sheet { margin: 0 auto; border: 2px solid #111827; width: 210mm; }
-            @page { margin: 6mm; }
+            /* Fit the slip on A5 (landscape) AND A4 without clipping the right edge.
+               A5-landscape and A4-portrait are both 210mm wide, so a full-210mm sheet
+               plus any page margin overflows A5 and the right side gets cut. Keep a
+               tiny page margin and cap the sheet just under the printable width so it
+               always fits — same layout, nothing reflows or clips. */
+            @page { size: landscape; margin: 3mm; }
+            .sheet { margin: 0 auto; border: 2px solid #111827; width: 200mm; max-width: 100%; }
         }
     </style>
 </head>
