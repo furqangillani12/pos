@@ -156,7 +156,15 @@ class CheckoutController extends Controller
         }
 
         $paymentModel = PaymentMethod::where('name', $data['payment_method'])->first();
-        $isCod = (bool) ($paymentModel?->is_cod);
+        // Detect COD robustly (client: COD orders must always go through). Trust the
+        // is_cod flag, but also treat a method whose name/label clearly says COD /
+        // "cash on delivery" as COD, so a mis-configured flag can never block a COD sale.
+        $pmName  = strtolower(trim((string) ($paymentModel?->name ?? '')));
+        $pmLabel = strtolower(trim((string) ($paymentModel?->label ?? '')));
+        $isCod = (bool) ($paymentModel?->is_cod)
+            || in_array($pmName, ['cod', 'cash on delivery', 'cash_on_delivery', 'cash-on-delivery'], true)
+            || str_contains($pmLabel, 'cod')
+            || str_contains($pmLabel, 'cash on delivery');
 
         // Payment receipt is mandatory for every non-COD method (client P0) — COD
         // is the only method that may be placed without a receipt.

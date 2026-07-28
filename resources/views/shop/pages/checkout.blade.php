@@ -259,17 +259,24 @@
                              details + proof right beneath it (client P0). --}}
                         <div class="space-y-3">
                             @foreach ($paymentMethods as $pm)
+                                @php
+                                    // Robust COD check (matches the server) — flag OR a COD-looking name/label.
+                                    $pmIsCod = (bool) $pm->is_cod
+                                        || in_array(strtolower(trim((string) $pm->name)), ['cod', 'cash on delivery', 'cash_on_delivery', 'cash-on-delivery'], true)
+                                        || str_contains(strtolower((string) $pm->label), 'cod')
+                                        || str_contains(strtolower((string) $pm->label), 'cash on delivery');
+                                @endphp
                                 <div class="rounded-xl border-2 transition"
                                      :class="payment === @js($pm->name) ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
                                     <label class="flex items-start gap-3 p-4 cursor-pointer">
                                         <input type="radio" name="payment_method" value="{{ $pm->name }}" x-model="payment" class="mt-1 text-blue-600">
                                         <div>
                                             <div class="font-semibold text-gray-800">{{ $pm->label ?: $pm->name }}</div>
-                                            <div class="text-[11px] text-gray-500 mt-0.5">{{ $pm->is_cod ? 'Pay when you receive your order' : 'Bank / wallet transfer' }}</div>
+                                            <div class="text-[11px] text-gray-500 mt-0.5">{{ $pmIsCod ? 'Pay when you receive your order' : 'Bank / wallet transfer' }}</div>
                                         </div>
                                     </label>
 
-                                    @unless ($pm->is_cod)
+                                    @if (! $pmIsCod)
                                         <div x-show="payment === @js($pm->name)" x-cloak class="px-4 pb-4">
                                             <div class="rounded-xl border border-blue-100 bg-white/70 p-4">
                                                 <div class="text-sm font-semibold text-gray-800 mb-2"><i class="fas fa-building-columns text-blue-500 mr-1"></i> Send payment to:</div>
@@ -294,7 +301,21 @@
                                                 </div>
                                             </div>
                                         </div>
-                                    @endunless
+                                    @else
+                                        {{-- COD: proof is OPTIONAL (client) — attach only if an advance was paid.
+                                             Never required, so a COD order always goes through. --}}
+                                        <div x-show="payment === @js($pm->name)" x-cloak class="px-4 pb-4">
+                                            <div class="rounded-xl border border-gray-100 bg-white/70 p-4">
+                                                <div class="text-sm font-semibold text-gray-800 mb-2">Paid an advance? Attach receipt <span class="text-gray-400 font-normal">(optional)</span></div>
+                                                <div class="grid sm:grid-cols-2 gap-3">
+                                                    <input type="text" name="payment_sender_name" value="{{ old('payment_sender_name') }}" :disabled="payment !== @js($pm->name)" placeholder="Sent from (name)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                    <input type="number" step="0.01" name="payment_sender_amount" value="{{ old('payment_sender_amount') }}" :disabled="payment !== @js($pm->name)" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                    <input type="file" name="payment_proof" accept="image/*" :disabled="payment !== @js($pm->name)" class="w-full sm:col-span-2 text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                                </div>
+                                                <p class="text-[11px] text-gray-500 mt-1">Cash on Delivery — pay when you receive. Receipt is optional.</p>
+                                            </div>
+                                        </div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

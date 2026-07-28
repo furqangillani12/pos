@@ -11,19 +11,8 @@
                 <div class="text-xs uppercase tracking-widest mb-2" style="color:var(--gold);">My account</div>
                 <h1 class="display text-3xl sm:text-4xl font-bold">As-salamu alaykum, {{ $customer->name }}</h1>
                 <p class="text-blue-100/80 mt-2 text-sm">Manage your orders, profile, and addresses from here.</p>
-                <div class="mt-5 flex flex-wrap gap-3">
-                    <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);">
-                        <i class="fas fa-receipt mr-1"></i> {{ \App\Models\Order::where('customer_id', $customer->id)->count() }} orders
-                    </div>
-                    <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(255,255,255,.12);backdrop-filter:blur(8px);">
-                        <i class="fas fa-heart mr-1"></i> {{ \App\Models\Wishlist::where('customer_id', $customer->id)->count() }} in wishlist
-                    </div>
-                    @if (($customer->current_balance ?? 0) > 0)
-                        <div class="px-4 py-2 rounded-xl text-xs font-semibold" style="background:rgba(41,171,226,.2);color:var(--gold);">
-                            <i class="fas fa-book-open mr-1"></i> Khata: {{ shop_price($customer->current_balance) }}
-                        </div>
-                    @endif
-                </div>
+                {{-- Order / wishlist / khata pills removed — the same numbers already
+                     show in the cards below (client feedback), so no duplication. --}}
             </div>
         </div>
 
@@ -59,14 +48,13 @@
                         <p class="text-xs text-gray-500 mt-1">Sab settled — koi baqaya nahi.</p>
                     @endif
                 </div>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-2">
                     @if ($bal > 0)
                         <a href="{{ route('shop.account.pay') }}" class="btn btn-primary !py-2"><i class="fas fa-wallet"></i> Pay now</a>
                     @elseif ($bal < 0)
                         <a href="{{ route('shop.account.withdraw') }}" class="btn btn-primary !py-2" style="background:#059669;"><i class="fas fa-money-bill-wave"></i> Withdraw</a>
                     @endif
                     <a href="{{ route('shop.account.statement') }}" class="btn btn-ghost !py-2"><i class="fas fa-file-invoice"></i> Statement</a>
-                    <a href="{{ route('shop.account.history') }}" class="btn btn-ghost !py-2"><i class="fas fa-clock-rotate-left"></i> Payments</a>
                 </div>
             </div>
         </div>
@@ -102,8 +90,8 @@
         {{-- Quick links --}}
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 reveal-stagger">
             @foreach ([
-                ['route'=>'shop.account.orders',   'icon'=>'fa-receipt',      'title'=>'My orders',  'desc'=>'View order history'],
-                ['route'=>'shop.account.statement','icon'=>'fa-file-invoice', 'title'=>'Statement',  'desc'=>'Khata & history'],
+                ['route'=>'shop.account.orders',   'icon'=>'fa-receipt',           'title'=>'My orders', 'desc'=>'View order history'],
+                ['route'=>'shop.account.history',  'icon'=>'fa-clock-rotate-left', 'title'=>'Payments',  'desc'=>'Pay/withdraw + receipts'],
                 ['route'=>'shop.account.points',  'icon'=>'fa-star',         'title'=>'Points',     'desc'=>'Reward points'],
                 ['route'=>'shop.wishlist',        'icon'=>'fa-heart',        'title'=>'Wishlist',   'desc'=>'Saved items'],
                 ['route'=>'shop.account.profile', 'icon'=>'fa-user',         'title'=>'Profile',    'desc'=>'Edit your details'],
