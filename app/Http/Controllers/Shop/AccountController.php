@@ -361,6 +361,19 @@ class AccountController extends Controller
         return redirect()->route('shop.account')->with('shop_success', 'Withdrawal request submit ho gayi — admin approve karke aap ke account me bhej dega.');
     }
 
+    /**
+     * Unified khata history (client #10 / #12): every payment & withdrawal request
+     * the customer made, with both the customer's and the admin's screenshots and
+     * the approval status — so they can see their khata activity end to end.
+     */
+    public function history()
+    {
+        $customer = Auth::guard('customer')->user();
+        $requests = \App\Models\AccountRequest::where('customer_id', $customer->id)
+            ->latest()->paginate(20);
+        return view('shop.account.history', compact('customer', 'requests'));
+    }
+
     /** Customer attaches a payment screenshot to one of their own orders. */
     public function uploadProof(Request $request, Order $order)
     {

@@ -66,6 +66,7 @@
                         <a href="{{ route('shop.account.withdraw') }}" class="btn btn-primary !py-2" style="background:#059669;"><i class="fas fa-money-bill-wave"></i> Withdraw</a>
                     @endif
                     <a href="{{ route('shop.account.statement') }}" class="btn btn-ghost !py-2"><i class="fas fa-file-invoice"></i> Statement</a>
+                    <a href="{{ route('shop.account.history') }}" class="btn btn-ghost !py-2"><i class="fas fa-clock-rotate-left"></i> Payments</a>
                 </div>
             </div>
         </div>

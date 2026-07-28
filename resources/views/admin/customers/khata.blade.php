@@ -697,6 +697,51 @@
                     </div>
                 </div>
 
+                {{-- Online pay/withdraw requests + screenshots (client #10) --}}
+                @if ($accountRequests->isNotEmpty())
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 mt-4 no-print">
+                        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <h3 class="font-bold text-gray-800 text-sm"><i class="fas fa-mobile-screen text-gray-400 mr-1"></i> Portal payments &amp; withdrawals</h3>
+                            <a href="{{ route('admin.account-requests.index') }}" class="text-xs text-blue-600 hover:underline">Open queue</a>
+                        </div>
+                        <div class="divide-y divide-gray-100">
+                            @foreach ($accountRequests as $r)
+                                @php
+                                    $isPayment = $r->type === 'payment';
+                                    $sc = $r->status === 'approved' ? ['#d1fae5','#047857'] : ($r->status === 'rejected' ? ['#fee2e2','#991b1b'] : ['#fef3c7','#92400e']);
+                                @endphp
+                                <div class="px-4 py-3 flex flex-wrap items-center gap-3">
+                                    <span class="w-8 h-8 rounded-full flex items-center justify-center text-white flex-none" style="background:{{ $isPayment ? '#0b3a30' : '#0e7490' }};">
+                                        <i class="fas {{ $isPayment ? 'fa-arrow-up' : 'fa-arrow-down' }} text-[10px]"></i>
+                                    </span>
+                                    <div class="min-w-[140px]">
+                                        <div class="font-semibold text-gray-800 text-sm">{{ $isPayment ? 'Payment' : 'Withdrawal' }} · Rs. {{ number_format((float) $r->amount, 0) }}</div>
+                                        <div class="text-[11px] text-gray-400">{{ $r->created_at->format('d M Y, g:i A') }}</div>
+                                    </div>
+                                    <span class="chip capitalize text-[11px]" style="background:{{ $sc[0] }};color:{{ $sc[1] }};">{{ $r->status }}</span>
+                                    <div class="text-[11px] text-gray-500 flex-1">
+                                        @if ($r->sender_name)<span class="mr-2">By: {{ $r->sender_name }}</span>@endif
+                                        @if ($r->bank_name)<span class="mr-2">Bank: {{ $r->bank_name }}</span>@endif
+                                        @if ($r->account_number)<span class="font-mono">{{ $r->account_number }}</span>@endif
+                                    </div>
+                                    <div class="flex gap-2">
+                                        @if ($r->proof_path)
+                                            <a href="{{ asset('storage/' . $r->proof_path) }}" target="_blank" title="Customer receipt">
+                                                <img src="{{ asset('storage/' . $r->proof_path) }}" class="w-12 h-12 object-cover rounded border border-gray-200">
+                                            </a>
+                                        @endif
+                                        @if ($r->admin_proof_path)
+                                            <a href="{{ asset('storage/' . $r->admin_proof_path) }}" target="_blank" title="Our payout proof">
+                                                <img src="{{ asset('storage/' . $r->admin_proof_path) }}" class="w-12 h-12 object-cover rounded border border-emerald-200">
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
             </div>
         </div>
     </div>

@@ -678,10 +678,16 @@ class CustomerController extends Controller
             ->whereNull('linked_customer_id')
             ->orderBy('name')->get(['id', 'name', 'phone', 'company_name']);
 
+        // Customer's online pay/withdraw requests with both screenshots (client #10),
+        // so the khata screen shows their portal payments — not just POS entries.
+        $accountRequests = \App\Models\AccountRequest::where('customer_id', $customer->id)
+            ->latest()->limit(30)->get();
+
         return view('admin.customers.khata', compact(
             'customer', 'orders', 'transactions',
             'fromDate', 'toDate', 'summary', 'openingBalance', 'paymentMethods',
-            'linkedSupplier', 'linkedSupplierBalance', 'linkedNetBalance', 'availableSuppliers'
+            'linkedSupplier', 'linkedSupplierBalance', 'linkedNetBalance', 'availableSuppliers',
+            'accountRequests'
         ));
     }
 

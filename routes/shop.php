@@ -84,6 +84,7 @@ $registerShopRoutes = function () {
             Route::post('/account/orders/{order}/delivered', [AccountController::class, 'markDelivered'])->name('account.order.delivered');
             Route::post('/account/orders/{order}/reorder', [AccountController::class, 'reorder'])->name('account.order.reorder');
             Route::get('/account/statement',       [AccountController::class, 'statement'])->name('account.statement');
+            Route::get('/account/history',         [AccountController::class, 'history'])->name('account.history');
             Route::get('/account/points',          [AccountController::class, 'points'])->name('account.points');
 
             // Pay a pending balance / withdraw a credit — needs admin approval (#1b / #1c)
