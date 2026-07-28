@@ -14,12 +14,26 @@ class LedgerController extends Controller
     use BranchScoped;
 
     /**
+     * Ledger query scoped to the current branch (#6) but INCLUDING legacy rows that
+     * predate branch attribution (branch_id null — old expenses/refunds), so a
+     * single-branch shop never loses its historical entries. 'all' = no filter.
+     */
+    private function branchLedger()
+    {
+        $branchId = $this->branchId();
+        return LedgerEntry::query()
+            ->when($branchId && $branchId !== 'all', fn ($q) => $q->where(
+                fn ($w) => $w->where('branch_id', $branchId)->orWhereNull('branch_id')
+            ));
+    }
+
+    /**
      * General Ledger — main listing view with filters
      */
     public function index(Request $request)
     {
         // Per-branch isolation (#6): each branch only sees its own entries.
-        $query = $this->scopeBranch(LedgerEntry::query())->with('user');
+        $query = $this->branchLedger()->with('user');
 
         // ── Date Range ─────────────────────────────────────────────────────
         $fromDate = $request->input('from_date', now()->startOfMonth()->toDateString());
@@ -58,7 +72,7 @@ class LedgerController extends Controller
         $entries = $query->paginate(25)->appends($request->query());
 
         // ── Period Summary ─────────────────────────────────────────────────
-        $summaryQuery = $this->scopeBranch(LedgerEntry::query())->whereBetween('entry_date', [$fromDate, $toDate]);
+        $summaryQuery = $this->branchLedger()->whereBetween('entry_date', [$fromDate, $toDate]);
 
         // clone filters onto summary
         if ($request->filled('account_type'))      $summaryQuery->where('account_type', $request->account_type);
@@ -113,7 +127,7 @@ class LedgerController extends Controller
         $fromDate = $request->input('from_date', now()->startOfMonth()->toDateString());
         $toDate   = $request->input('to_date',   now()->toDateString());
 
-        $accounts = $this->scopeBranch(LedgerEntry::query())->whereBetween('entry_date', [$fromDate, $toDate])
+        $accounts = $this->branchLedger()->whereBetween('entry_date', [$fromDate, $toDate])
             ->select(
                 'account_type',
                 DB::raw('SUM(debit)  as total_debit'),
@@ -148,7 +162,7 @@ class LedgerController extends Controller
         $fromDate = $request->input('from_date', now()->startOfMonth()->toDateString());
         $toDate   = $request->input('to_date',   now()->toDateString());
 
-        $entries = $this->scopeBranch(LedgerEntry::query())->whereBetween('entry_date', [$fromDate, $toDate])
+        $entries = $this->branchLedger()->whereBetween('entry_date', [$fromDate, $toDate])
             ->when($request->filled('account_type'),     fn($q) => $q->where('account_type', $request->account_type))
             ->when($request->filled('transaction_type'), fn($q) => $q->where('transaction_type', $request->transaction_type))
             ->orderBy('entry_date')

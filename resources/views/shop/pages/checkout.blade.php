@@ -282,11 +282,13 @@
 
                                                 <div class="mt-4 pt-3 border-t border-blue-100">
                                                     <div class="text-sm font-semibold text-gray-800 mb-2">Attach your payment receipt <span class="text-red-500">*</span> (required)</div>
+                                                    {{-- Only the SELECTED method's inputs submit — the rest are disabled so
+                                                         duplicate names don't overwrite each other on submit. --}}
                                                     <div class="grid sm:grid-cols-2 gap-3">
-                                                        <input type="text" name="payment_sender_name" value="{{ old('payment_sender_name') }}" placeholder="Account title you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                                        <input type="text" name="payment_sender_bank" value="{{ old('payment_sender_bank') }}" placeholder="Bank you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                                        <input type="number" step="0.01" name="payment_sender_amount" value="{{ old('payment_sender_amount') }}" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                                        <input type="file" name="payment_proof" accept="image/*" class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                                        <input type="text" name="payment_sender_name" value="{{ old('payment_sender_name') }}" :disabled="payment !== @js($pm->name)" placeholder="Account title you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="text" name="payment_sender_bank" value="{{ old('payment_sender_bank') }}" :disabled="payment !== @js($pm->name)" placeholder="Bank you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="number" step="0.01" name="payment_sender_amount" value="{{ old('payment_sender_amount') }}" :disabled="payment !== @js($pm->name)" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="file" name="payment_proof" accept="image/*" :disabled="payment !== @js($pm->name)" class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
                                                     </div>
                                                     <p class="text-[11px] text-gray-500 mt-1">Screenshot of the transfer. Required for online payment — Cash on Delivery does not need it.</p>
                                                 </div>
