@@ -86,17 +86,11 @@ class OnlineOrderController extends Controller
             'status_note' => 'nullable|string|max:500',
         ]);
 
-        // #7: a non-COD order cannot be dispatched/delivered until payment is
-        // recorded — either a receipt is attached or it's marked paid. COD exempt.
-        if (in_array($data['status'], ['dispatched', 'delivered'], true)) {
-            $isCod      = $order->online_payment_status === 'cod';
-            $isPaid     = in_array($order->online_payment_status, ['paid', 'bank_paid'], true)
-                          || $order->payment_status === 'paid';
-            $hasReceipt = (bool) $order->payment_proof_path;
-            if (! $isCod && ! $isPaid && ! $hasReceipt) {
-                return back()->with('error', 'Is non-COD order ko dispatch/deliver karne se pehle payment receipt attach karein ya "Mark as Paid" karein (#7).');
-            }
-        }
+        // NOTE: the earlier "must Mark as Paid / attach receipt before dispatch"
+        // block was REMOVED at the client's request — staff must be able to
+        // dispatch/print unpaid orders (COD and pay-later are normal). The payment
+        // receipt is already enforced up-front at checkout for non-COD (P0), so no
+        // admin-side gate is needed here.
 
         $restockStatuses = config('order_flow.restock', ['cancelled']);
 

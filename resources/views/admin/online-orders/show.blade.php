@@ -255,7 +255,7 @@
                         <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">
                             <i class="fas fa-check-circle"></i> Mark as Paid
                         </button>
-                        <p class="text-[11px] text-gray-400 mt-1">Non-COD orders ko dispatch/deliver karne se pehle receipt zaroori hai (#7).</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Optional — sirf tab lagayein jab payment mil jaye. Dispatch/print ke liye zaroori nahi.</p>
                     </form>
                 @endif
             </div>
