@@ -154,6 +154,14 @@ class CheckoutController extends Controller
         $paymentModel = PaymentMethod::where('name', $data['payment_method'])->first();
         $isCod = (bool) ($paymentModel?->is_cod);
 
+        // Payment receipt is mandatory for every non-COD method (client P0) — COD
+        // is the only method that may be placed without a receipt.
+        if (! $isCod && ! $request->hasFile('payment_proof')) {
+            return back()->withInput()->withErrors([
+                'payment_proof' => 'Please attach your payment receipt (screenshot) for online payment. Cash on Delivery does not need it.',
+            ]);
+        }
+
         // Tax / government charges — exclusive, on (subtotal − discount + delivery).
         // Driven by the storefront tax setting (percent, or amount slabs for fixed);
         // may be limited to COD orders (client #8).

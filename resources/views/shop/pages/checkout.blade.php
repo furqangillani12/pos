@@ -246,42 +246,54 @@
                 {{-- Payment method --}}
                 <div class="bg-white rounded-2xl border border-gray-100 p-6">
                     <h2 class="font-bold text-gray-900 mb-4 flex items-center gap-2"><i class="fas fa-credit-card" style="color:var(--brand-cyan);"></i> Payment method</h2>
+                    @error('payment_proof')
+                        <div class="mb-4 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm px-3 py-2">
+                            <i class="fas fa-triangle-exclamation mr-1"></i> {{ $message }}
+                        </div>
+                    @enderror
                     @if ($paymentMethods->isEmpty())
                         <p class="text-sm text-gray-500">No payment methods configured. Please contact us.</p>
                     @else
-                        <div class="grid sm:grid-cols-2 gap-3">
+                        {{-- One method per row; the chosen method opens its OWN account
+                             details + proof right beneath it (client P0). --}}
+                        <div class="space-y-3">
                             @foreach ($paymentMethods as $pm)
-                                <label class="flex items-start gap-3 p-4 rounded-xl border-2 cursor-pointer transition"
-                                       :class="payment === @js($pm->name) ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
-                                    <input type="radio" name="payment_method" value="{{ $pm->name }}" x-model="payment" class="mt-1 text-blue-600">
-                                    <div>
-                                        <div class="font-semibold text-gray-800">{{ $pm->label ?: $pm->name }}</div>
-                                        <div class="text-[11px] text-gray-500 mt-0.5">{{ $pm->is_cod ? 'Pay when you receive your order' : 'Bank / wallet transfer' }}</div>
-                                    </div>
-                                </label>
-                            @endforeach
-                        </div>
+                                <div class="rounded-xl border-2 transition"
+                                     :class="payment === @js($pm->name) ? 'border-blue-500 bg-blue-50/40' : 'border-gray-100 hover:border-gray-200'">
+                                    <label class="flex items-start gap-3 p-4 cursor-pointer">
+                                        <input type="radio" name="payment_method" value="{{ $pm->name }}" x-model="payment" class="mt-1 text-blue-600">
+                                        <div>
+                                            <div class="font-semibold text-gray-800">{{ $pm->label ?: $pm->name }}</div>
+                                            <div class="text-[11px] text-gray-500 mt-0.5">{{ $pm->is_cod ? 'Pay when you receive your order' : 'Bank / wallet transfer' }}</div>
+                                        </div>
+                                    </label>
 
-                        {{-- Bank account details + proof for the selected non-COD method --}}
-                        <div x-show="selectedPayment && !selectedPayment.is_cod" x-cloak class="mt-4 rounded-xl border border-blue-100 bg-blue-50/40 p-4">
-                            <div class="text-sm font-semibold text-gray-800 mb-2"><i class="fas fa-building-columns text-blue-500 mr-1"></i> Send payment to:</div>
-                            <div class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
-                                <template x-if="selectedPayment.account_title"><div><span class="text-gray-500">Title:</span> <span class="font-semibold" x-text="selectedPayment.account_title"></span></div></template>
-                                <template x-if="selectedPayment.account_number"><div><span class="text-gray-500">Account:</span> <span class="font-semibold font-mono" x-text="selectedPayment.account_number"></span> <button type="button" @click="copyText(selectedPayment.account_number,'Account number copied')" class="text-blue-500 ml-1"><i class="far fa-copy"></i></button></div></template>
-                                <template x-if="selectedPayment.bank_name"><div><span class="text-gray-500">Bank:</span> <span class="font-semibold" x-text="selectedPayment.bank_name"></span></div></template>
-                            </div>
-                            <template x-if="selectedPayment.instructions"><p class="text-xs text-gray-600 mt-2 whitespace-pre-line" x-text="selectedPayment.instructions"></p></template>
+                                    @unless ($pm->is_cod)
+                                        <div x-show="payment === @js($pm->name)" x-cloak class="px-4 pb-4">
+                                            <div class="rounded-xl border border-blue-100 bg-white/70 p-4">
+                                                <div class="text-sm font-semibold text-gray-800 mb-2"><i class="fas fa-building-columns text-blue-500 mr-1"></i> Send payment to:</div>
+                                                <div class="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-sm">
+                                                    @if ($pm->account_title)<div><span class="text-gray-500">Title:</span> <span class="font-semibold">{{ $pm->account_title }}</span></div>@endif
+                                                    @if ($pm->account_number)<div><span class="text-gray-500">Account:</span> <span class="font-semibold font-mono">{{ $pm->account_number }}</span> <button type="button" @click="copyText(@js($pm->account_number),'Account number copied')" class="text-blue-500 ml-1"><i class="far fa-copy"></i></button></div>@endif
+                                                    @if ($pm->bank_name)<div><span class="text-gray-500">Bank:</span> <span class="font-semibold">{{ $pm->bank_name }}</span></div>@endif
+                                                </div>
+                                                @if ($pm->instructions)<p class="text-xs text-gray-600 mt-2 whitespace-pre-line">{{ $pm->instructions }}</p>@endif
 
-                            <div class="mt-4 pt-3 border-t border-blue-100">
-                                <div class="text-sm font-semibold text-gray-800 mb-2">Already paid? Attach your proof (optional)</div>
-                                <div class="grid sm:grid-cols-2 gap-3">
-                                    <input type="text" name="payment_sender_name" placeholder="Account title you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                    <input type="text" name="payment_sender_bank" placeholder="Bank you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                    <input type="number" step="0.01" name="payment_sender_amount" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                    <input type="file" name="payment_proof" accept="image/*" class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                                <div class="mt-4 pt-3 border-t border-blue-100">
+                                                    <div class="text-sm font-semibold text-gray-800 mb-2">Attach your payment receipt <span class="text-red-500">*</span> (required)</div>
+                                                    <div class="grid sm:grid-cols-2 gap-3">
+                                                        <input type="text" name="payment_sender_name" value="{{ old('payment_sender_name') }}" placeholder="Account title you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="text" name="payment_sender_bank" value="{{ old('payment_sender_bank') }}" placeholder="Bank you sent from" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="number" step="0.01" name="payment_sender_amount" value="{{ old('payment_sender_amount') }}" placeholder="Amount sent (Rs.)" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                                        <input type="file" name="payment_proof" accept="image/*" class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-3 file:rounded-md file:border-0 file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200">
+                                                    </div>
+                                                    <p class="text-[11px] text-gray-500 mt-1">Screenshot of the transfer. Required for online payment — Cash on Delivery does not need it.</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endunless
                                 </div>
-                                <p class="text-[11px] text-gray-500 mt-1">Screenshot of the transfer. We'll verify & mark your order paid. You can also send it later.</p>
-                            </div>
+                            @endforeach
                         </div>
                     @endif
                 </div>

@@ -92,10 +92,19 @@
                     <i class="far fa-bell"></i> Request this item
                 </button>
             @else
-                <button type="button" onclick="addToCart({{ $product->id }})"
-                        class="w-full text-sm font-semibold rounded-lg py-2 text-white transition hover:opacity-90" style="background:var(--brand-navy);">
-                    <i class="fas fa-cart-plus"></i> Add to Cart
-                </button>
+                {{-- Pick the quantity right here, then add it all at once (client #3). --}}
+                <div class="flex items-center gap-2" x-data="{ q: 1 }">
+                    <div class="flex items-center bg-gray-100 rounded-lg flex-none">
+                        <button type="button" @click="q = Math.max(1, q - 1)" class="px-2.5 py-2 text-gray-600 hover:text-gray-900" aria-label="Decrease"><i class="fas fa-minus text-[10px]"></i></button>
+                        <input type="number" min="1" max="9999" x-model.number="q"
+                               class="w-8 text-center bg-transparent text-sm font-bold outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none">
+                        <button type="button" @click="q = Math.min(9999, q + 1)" class="px-2.5 py-2 text-gray-600 hover:text-gray-900" aria-label="Increase"><i class="fas fa-plus text-[10px]"></i></button>
+                    </div>
+                    <button type="button" @click="addToCart({{ $product->id }}, Math.max(1, parseInt(q) || 1))"
+                            class="flex-1 text-sm font-semibold rounded-lg py-2 text-white transition hover:opacity-90" style="background:var(--brand-navy);">
+                        <i class="fas fa-cart-plus"></i> Add
+                    </button>
+                </div>
             @endif
         </div>
     </div>
