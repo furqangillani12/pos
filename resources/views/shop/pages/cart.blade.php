@@ -10,7 +10,7 @@
                 <h1 class="display text-3xl sm:text-4xl font-bold">Your cart</h1>
                 <p class="text-gray-500 text-sm mt-2"><span id="cart-count">{{ $items->count() }}</span> item(s)</p>
             </div>
-            <a href="{{ route('shop.catalog') }}" class="text-sm text-blue-700 hover:underline hidden sm:inline-flex items-center gap-2">
+            <a href="{{ route('shop.catalog') }}" class="text-sm text-blue-700 hover:underline inline-flex items-center gap-2">
                 <i class="fas fa-arrow-left text-xs"></i> Continue shopping
             </a>
         </div>

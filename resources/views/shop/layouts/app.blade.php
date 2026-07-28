@@ -580,7 +580,13 @@
                 <span class="font-bold text-lg" style="color:var(--brand-navy);" x-text="'Rs. ' + cartSubtotal.toLocaleString()"></span>
             </div>
             <a href="{{ route('shop.cart') }}" class="btn btn-ghost btn-block mb-2">View cart</a>
-            <a href="{{ route('shop.checkout') }}" class="btn btn-primary btn-block">Checkout <i class="fas fa-arrow-right text-xs"></i></a>
+            <a href="{{ route('shop.checkout') }}" class="btn btn-primary btn-block mb-2">Checkout <i class="fas fa-arrow-right text-xs"></i></a>
+            {{-- Close the drawer and keep browsing — so users don't hit the browser
+                 Back button (which would leave the site). --}}
+            <button type="button" @click="miniCartOpen = false"
+                    class="w-full text-center text-sm font-semibold py-2 text-gray-600 hover:text-gray-900 transition">
+                <i class="fas fa-arrow-left text-xs mr-1"></i> Continue shopping
+            </button>
         </div>
     </div>
 
