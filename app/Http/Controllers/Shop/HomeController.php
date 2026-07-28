@@ -16,13 +16,13 @@ class HomeController extends Controller
         $midBanners  = Banner::active()->position('mid')->orderBy('sort_order')->limit(10)->get();
 
         $featuredCategories = Category::onWebsite()->where('is_featured', true)
-            ->orderBy('sort_order')->orderBy('name')->limit(12)->get();
+            ->inDisplayOrder()->limit(12)->get();
 
         // Fall back to any website categories when none are flagged "featured",
         // so the "Shop by category" section is always populated.
         if ($featuredCategories->isEmpty()) {
             $featuredCategories = Category::onWebsite()
-                ->orderBy('sort_order')->orderBy('name')->limit(12)->get();
+                ->inDisplayOrder()->limit(12)->get();
         }
 
         // New arrivals first — ordered by updated_at so a freshly ADDED product

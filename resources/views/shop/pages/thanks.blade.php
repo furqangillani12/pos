@@ -7,7 +7,13 @@
              style="background:linear-gradient(135deg,#10b981,#059669);color:#fff;">
             <i class="fas fa-check text-3xl"></i>
         </div>
-        <h1 class="display text-4xl sm:text-5xl font-bold mb-3">Thank you!</h1>
+        @php
+            // Greet by name: registered customer's name, else the name typed at
+            // checkout (guest). Use the first word so it reads "Thank you Ahmad".
+            $greetName = trim($order->customer?->name ?: trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? '')));
+            $greetFirst = $greetName !== '' ? \Illuminate\Support\Str::of($greetName)->trim()->explode(' ')->first() : '';
+        @endphp
+        <h1 class="display text-4xl sm:text-5xl font-bold mb-3">Thank you{{ $greetFirst !== '' ? ' ' . $greetFirst : '' }}!</h1>
         <p class="text-gray-600 text-lg">Your order <span class="font-bold" style="color:var(--brand-navy);">#{{ $order->order_number }}</span> has been placed.</p>
         <p class="text-sm text-gray-500 mt-2">We've sent a confirmation to <strong>{{ $order->customer_email ?? '—' }}</strong>.</p>
 

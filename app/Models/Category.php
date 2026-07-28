@@ -72,6 +72,19 @@ class Category extends Model
         return $q->where('is_active', true)->where('show_on_website', true);
     }
 
+    /**
+     * Display order (client fix): a numbered category (1,2,3…) must lead. Because
+     * sort_order defaults to 0, plain orderBy('sort_order') would put every
+     * un-numbered category ahead of the one set to "1". So push 0/NULL to the
+     * bottom, then order by the number, then by name.
+     */
+    public function scopeInDisplayOrder($q)
+    {
+        return $q->orderByRaw('CASE WHEN sort_order IS NULL OR sort_order = 0 THEN 1 ELSE 0 END')
+                 ->orderBy('sort_order')
+                 ->orderBy('name');
+    }
+
     public function getRouteKeyName()
     {
         return 'slug';

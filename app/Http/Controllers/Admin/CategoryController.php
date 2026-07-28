@@ -15,7 +15,7 @@ class CategoryController extends Controller
     public function index()
     {
         $categories = $this->scopeBranch(Category::query())->withCount('products')
-            ->orderBy('sort_order')->orderBy('name')->get();
+            ->inDisplayOrder()->get();
         return view('admin.categories.index', compact('categories'));
     }
 

@@ -281,7 +281,7 @@
                     return \App\Models\Category::onWebsite()
                         ->withCount(['products' => fn ($q) => $q->where('is_active', true)->where('show_on_website', true)])
                         ->orderByDesc('is_featured')
-                        ->orderBy('sort_order')->orderBy('name')
+                        ->inDisplayOrder()
                         ->get()
                         ->unique(fn ($c) => $c->slug ?: \Illuminate\Support\Str::slug($c->name))
                         ->values();
