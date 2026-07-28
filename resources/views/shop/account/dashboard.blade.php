@@ -9,7 +9,7 @@
             <div class="hero-pattern absolute inset-0"></div>
             <div class="relative">
                 <div class="text-xs uppercase tracking-widest mb-2" style="color:var(--gold);">My account</div>
-                <h1 class="display text-3xl sm:text-4xl font-bold">As-salamu alaykum, {{ $customer->name }}</h1>
+                <h1 class="display text-3xl sm:text-4xl font-bold">{{ $customer->name }}</h1>
                 <p class="text-blue-100/80 mt-2 text-sm">Manage your orders, profile, and addresses from here.</p>
                 {{-- Order / wishlist / khata pills removed — the same numbers already
                      show in the cards below (client feedback), so no duplication. --}}
