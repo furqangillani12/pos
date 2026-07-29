@@ -85,8 +85,12 @@ class ProductController extends Controller
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
-        // Packing charge column is NOT NULL — empty input arrives as null.
-        $validated['packing_charge'] = $validated['packing_charge'] ?? 0;
+        // Packing charge is a NOT NULL decimal. A blank field arrives as '' (this app
+        // has no ConvertEmptyStringsToNull middleware), and '' would crash the insert
+        // with "Incorrect decimal value" — so coerce blank/null to 0 explicitly.
+        $pc = $validated['packing_charge'] ?? null;
+        $validated['packing_charge'] = ($pc === null || $pc === '') ? 0 : (float) $pc;
+        $validated['packing_label']  = trim((string) ($validated['packing_label'] ?? '')) ?: null;
 
         if (!empty($validated['weight_kg'])) {
             $weight = $validated['weight_kg'];
@@ -184,8 +188,12 @@ class ProductController extends Controller
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
-        // Packing charge column is NOT NULL — empty input arrives as null.
-        $validated['packing_charge'] = $validated['packing_charge'] ?? 0;
+        // Packing charge is a NOT NULL decimal. A blank field arrives as '' (this app
+        // has no ConvertEmptyStringsToNull middleware), and '' would crash the insert
+        // with "Incorrect decimal value" — so coerce blank/null to 0 explicitly.
+        $pc = $validated['packing_charge'] ?? null;
+        $validated['packing_charge'] = ($pc === null || $pc === '') ? 0 : (float) $pc;
+        $validated['packing_label']  = trim((string) ($validated['packing_label'] ?? '')) ?: null;
 
         if (!empty($validated['weight_kg'])) {
         $weight = $validated['weight_kg'];
