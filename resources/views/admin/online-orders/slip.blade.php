@@ -120,14 +120,16 @@
         @media print {
             body { background: #fff; }
             .toolbar { display: none; }
-            /* Cap the sheet just under the A5-landscape printable width so the right
-               edge never clips, but DON'T force `size: landscape` — that removes the
-               Portrait/Landscape (Layout) option from the browser's print dialog.
-               A small page margin + 200mm width fits A5 (choose Landscape) and A4. */
-            @page { margin: 3mm; }
+            /* Orientation is chosen in the slip toolbar (default Landscape) and applied
+               via #slipPageRule, so A5 fits by default without relying on the browser's
+               Layout option. Landscape → 200mm sheet fits A5/A4; Portrait narrows the
+               sheet so it fits A5-portrait too. */
             .sheet { margin: 0 auto; border: 2px solid #111827; width: 200mm; max-width: 100%; }
+            :root[data-orient="portrait"] .sheet { width: 138mm; }
         }
     </style>
+    {{-- Orientation rule the toolbar rewrites (default Landscape so A5 always fits). --}}
+    <style id="slipPageRule">@page { size: landscape; margin: 3mm; }</style>
 </head>
 @php
     $showEn = $lang !== 'ur';
@@ -234,6 +236,10 @@
         <a href="{{ $q(['scale'=>100]) }}" class="{{ $scale===100?'on':'' }}">100%</a>
         <a href="{{ $q(['scale'=>85]) }}" class="{{ $scale===85?'on':'' }}">85%</a>
         <a href="{{ $q(['scale'=>70]) }}" class="{{ $scale===70?'on':'' }}">70%</a>
+        <span style="width:1px;height:18px;background:#e5e7eb;"></span>
+        <strong style="font-size:12px;">Layout:</strong>
+        <a href="#" id="orientLand" class="on" onclick="setOrient('landscape');return false;">Landscape</a>
+        <a href="#" id="orientPort" onclick="setOrient('portrait');return false;">Portrait</a>
         @if (! $hasTracking)
             <span style="font-size:11px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;padding:4px 8px;border-radius:6px;">⚠ Add a tracking number to print the barcode</span>
         @endif
@@ -385,6 +391,16 @@
             // Weight QR — encodes the parcel weight, with the weight printed below.
             try { new QRCode(document.getElementById('qr-weight'), { text: @json($weightTxt), width: 56, height: 56, correctLevel: QRCode.CorrectLevel.M }); } catch (e) {}
         });
+
+        // Print orientation toggle (default Landscape so A5 fits without clipping).
+        // Rewrites the @page rule + narrows the sheet for Portrait so it fits A5-portrait.
+        function setOrient(o) {
+            document.getElementById('slipPageRule').textContent = '@page { size: ' + o + '; margin: 3mm; }';
+            document.documentElement.setAttribute('data-orient', o);
+            var land = document.getElementById('orientLand'), port = document.getElementById('orientPort');
+            if (land) land.classList.toggle('on', o === 'landscape');
+            if (port) port.classList.toggle('on', o === 'portrait');
+        }
 
         // Download the slip as a PNG image (alongside Print).
         function downloadSlip() {
