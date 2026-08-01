@@ -54,7 +54,10 @@
                     @elseif ($bal < 0)
                         <a href="{{ route('shop.account.withdraw') }}" class="btn btn-primary !py-2" style="background:#059669;"><i class="fas fa-money-bill-wave"></i> Withdraw</a>
                     @endif
-                    <a href="{{ route('shop.account.statement') }}" class="btn btn-ghost !py-2"><i class="fas fa-file-invoice"></i> Statement</a>
+                    {{-- Statement only for customers who have a khata (pending or credit) — client. --}}
+                    @if ($bal != 0)
+                        <a href="{{ route('shop.account.statement') }}" class="btn btn-ghost !py-2"><i class="fas fa-file-invoice"></i> Statement</a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -88,14 +91,22 @@
         </a>
 
         {{-- Quick links --}}
+        @php
+            // "Payments" (khata history) only for customers who have a khata — client.
+            $quickLinks = [
+                ['route'=>'shop.account.orders', 'icon'=>'fa-receipt', 'title'=>'My orders', 'desc'=>'View order history'],
+            ];
+            if ($bal != 0) {
+                $quickLinks[] = ['route'=>'shop.account.history', 'icon'=>'fa-clock-rotate-left', 'title'=>'Payments', 'desc'=>'Pay/withdraw + receipts'];
+            }
+            $quickLinks = array_merge($quickLinks, [
+                ['route'=>'shop.account.points',  'icon'=>'fa-star',  'title'=>'Points',   'desc'=>'Reward points'],
+                ['route'=>'shop.wishlist',        'icon'=>'fa-heart', 'title'=>'Wishlist', 'desc'=>'Saved items'],
+                ['route'=>'shop.account.profile', 'icon'=>'fa-user',  'title'=>'Profile',  'desc'=>'Edit your details'],
+            ]);
+        @endphp
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 reveal-stagger">
-            @foreach ([
-                ['route'=>'shop.account.orders',   'icon'=>'fa-receipt',           'title'=>'My orders', 'desc'=>'View order history'],
-                ['route'=>'shop.account.history',  'icon'=>'fa-clock-rotate-left', 'title'=>'Payments',  'desc'=>'Pay/withdraw + receipts'],
-                ['route'=>'shop.account.points',  'icon'=>'fa-star',         'title'=>'Points',     'desc'=>'Reward points'],
-                ['route'=>'shop.wishlist',        'icon'=>'fa-heart',        'title'=>'Wishlist',   'desc'=>'Saved items'],
-                ['route'=>'shop.account.profile', 'icon'=>'fa-user',         'title'=>'Profile',    'desc'=>'Edit your details'],
-            ] as $card)
+            @foreach ($quickLinks as $card)
                 <a href="{{ route($card['route']) }}" class="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-xl hover:-translate-y-1 transition group">
                     <span class="w-12 h-12 rounded-xl flex items-center justify-center mb-3" style="background:linear-gradient(135deg,#e8f1fb,#d6ecfa);color:var(--brand-navy);">
                         <i class="fas {{ $card['icon'] }} text-lg"></i>
