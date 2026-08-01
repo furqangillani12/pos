@@ -8,12 +8,19 @@
             <i class="fas fa-check text-3xl"></i>
         </div>
         @php
-            // Greet by name: registered customer's name, else the name typed at
-            // checkout (guest). Use the first word so it reads "Thank you Ahmad".
+            // Greet by the FULL name: registered customer's name, else the name typed
+            // at checkout (guest). "Thank you," on line 1, the name on line 2 so long
+            // names never get cut — and the name font shrinks as it gets longer.
             $greetName = trim($order->customer?->name ?: trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? '')));
-            $greetFirst = $greetName !== '' ? \Illuminate\Support\Str::of($greetName)->trim()->explode(' ')->first() : '';
+            $nlen = mb_strlen($greetName);
+            $nameSize = $nlen <= 14 ? 'text-4xl sm:text-5xl' : ($nlen <= 24 ? 'text-3xl sm:text-4xl' : 'text-2xl sm:text-3xl');
         @endphp
-        <h1 class="display text-4xl sm:text-5xl font-bold mb-3">Thank you{{ $greetFirst !== '' ? ' ' . $greetFirst : '' }}!</h1>
+        <h1 class="display font-bold mb-3 leading-tight">
+            <span class="block text-4xl sm:text-5xl">Thank you{{ $greetName !== '' ? ',' : '!' }}</span>
+            @if ($greetName !== '')
+                <span class="block {{ $nameSize }} mt-1 break-words">{{ $greetName }}</span>
+            @endif
+        </h1>
         <p class="text-gray-600 text-lg">Your order <span class="font-bold" style="color:var(--brand-navy);">#{{ $order->order_number }}</span> has been placed.</p>
         <p class="text-sm text-gray-500 mt-2">We've sent a confirmation to <strong>{{ $order->customer_email ?? '—' }}</strong>.</p>
 
