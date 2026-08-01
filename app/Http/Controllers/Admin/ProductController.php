@@ -30,16 +30,17 @@ class ProductController extends Controller
             $product->branch_stock = $product->getStockForBranch($branchId);
         }
 
-        // Sort by product code (barcode) using natural order so ASM330 → ASM331 →
-        // ASM332 line up correctly even when inserted out of sequence (client #4).
-        // Blank codes sink to the bottom.
+        // Sort by product code (barcode) in natural order, but DESCENDING (client):
+        // the newest/last product shows at the TOP and the first product (e.g. ASM313)
+        // sinks to the bottom — while the rest keep their code-based arrangement.
+        // Blank codes stay at the very bottom.
         $products = $products->sort(function ($a, $b) {
             $ca = trim((string) ($a->barcode ?? ''));
             $cb = trim((string) ($b->barcode ?? ''));
             if ($ca === '' && $cb === '') return 0;
             if ($ca === '') return 1;
             if ($cb === '') return -1;
-            return strnatcasecmp($ca, $cb);
+            return strnatcasecmp($cb, $ca);
         })->values();
 
         return view('admin.products.index', compact('products'));
