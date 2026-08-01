@@ -299,7 +299,11 @@
         $paidAmount = $order->paid_amount ?? $order->total;
         $balanceOnBill = max(0, $order->total - $paidAmount);
         $prevBalance = $order->computePreviousBalance();
-        $currentBalance = $prevBalance + $order->total - $paidAmount;
+        // Live khata balance so a cash in/out done after the sale reflects on a
+        // reprint (client #2) — same as the A4 & public receipts.
+        $currentBalance = ($order->customer_id && $order->customer)
+            ? (float) $order->customer->current_balance
+            : ($prevBalance + $order->total - $paidAmount);
         $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
     @endphp
 
