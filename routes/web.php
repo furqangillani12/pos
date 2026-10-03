@@ -215,9 +215,8 @@ Route::middleware(['auth', 'branch', 'permission:manage payroll'])->prefix('admi
 Route::middleware(['auth', 'branch'])->group(function () {
     Route::get('/admin/reports/customer-orders/{customer}', [ReportController::class, 'getCustomerOrders']);
     Route::get('/admin/orders/{order}', [ReportController::class, 'show'])->name('admin.orders.show');
+    Route::get('/orders/{order}/receipt-pdf', [PosController::class, 'downloadReceiptPdf'])->name('admin.pos.receipt.pdf');
 });
-
-Route::get('/orders/{order}/receipt-pdf', [PosController::class, 'downloadReceiptPdf'])->name('admin.pos.receipt.pdf');
 
 // ── Customers ──
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'branch'])->group(function () {
