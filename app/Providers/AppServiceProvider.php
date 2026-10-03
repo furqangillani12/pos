@@ -38,5 +38,10 @@ class AppServiceProvider extends ServiceProvider
         Expense::observe(ExpenseObserver::class);
         Refund::observe(RefundObserver::class);
         Payroll::observe(PayrollObserver::class);
+
+        // Khata: keep bill balances allocated from khata payments (oldest bill first).
+        Order::observe(\App\Observers\KhataSyncObserver::class);
+        \App\Models\Payment::observe(\App\Observers\KhataSyncObserver::class);
+        Refund::observe(\App\Observers\KhataSyncObserver::class);
     }
 }

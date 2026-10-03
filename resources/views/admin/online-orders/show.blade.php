@@ -243,17 +243,59 @@
                     </div>
                 @endif
 
-                @if ($order->balance_amount > 0 && $order->status !== 'cancelled')
+                {{-- Payments received so far --}}
+                @if ($orderPayments->isNotEmpty())
+                    <div class="mt-4 pt-4 border-t border-gray-100">
+                        <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2"><i class="fas fa-list-check text-emerald-500"></i> Payments received</div>
+                        <div class="space-y-1">
+                            @foreach ($orderPayments as $op)
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-gray-500">{{ $op->payment_date?->format('d M Y') }} · {{ str_replace('_', ' ', $op->payment_method) }}@if ($op->reference_number) · <span class="font-mono">{{ $op->reference_number }}</span>@endif @if ($op->notes)<br><span class="text-gray-400">{{ $op->notes }}</span>@endif</span>
+                                    <span class="font-semibold text-emerald-700">Rs. {{ number_format($op->amount, 0) }}</span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if ($order->balance_amount > 0 && !in_array($order->status, ['cancelled', 'returned'], true))
+                    @php $due = (float) $order->balance_amount; $dlv = min($due, (float) ($order->delivery_charges ?? 0)); @endphp
                     <form method="POST" action="{{ route('admin.online-orders.mark-paid', $order) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-gray-100"
-                          onsubmit="return confirm('Mark this order as fully paid? Customer khata will be reduced.')">
+                          x-data="{ amt: {{ $due }}, due: {{ $due }} }"
+                          @submit="if (!confirm(amt >= due ? 'Rs. ' + Math.round(amt).toLocaleString() + ' receive — order fully paid ho jayega. Customer khata se itna kam hoga.' : 'Rs. ' + Math.round(amt).toLocaleString() + ' receive (partial). Rs. ' + Math.round(due - amt).toLocaleString() + ' baqi rahega. Customer khata se itna kam hoga.')) $event.preventDefault()">
                         @csrf @method('PATCH')
-                        <input type="text" name="payment_ref" placeholder="Payment ref (optional)"
+                        <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2"><i class="fas fa-hand-holding-dollar text-emerald-500"></i> Receive payment</div>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Kitni payment aayi? (Rs.)</label>
+                        <input type="number" name="amount" step="0.01" min="1" max="{{ $due }}" x-model.number="amt" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold mb-1 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <div class="flex flex-wrap gap-1 mb-2">
+                            <button type="button" @click="amt = due" class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Poora (Rs. {{ number_format($due, 0) }})</button>
+                            <button type="button" @click="amt = Math.round(due / 2)" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Aadha (Rs. {{ number_format(round($due / 2), 0) }})</button>
+                            @if ($dlv > 0)
+                                <button type="button" @click="amt = {{ $dlv }}" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Sirf delivery (Rs. {{ number_format($dlv, 0) }})</button>
+                            @endif
+                        </div>
+                        <p class="text-[11px] mb-2" x-show="amt > 0 && amt < due" x-cloak>
+                            Baqi rahega: <span class="font-bold text-rose-600" x-text="'Rs. ' + Math.round(due - amt).toLocaleString()"></span>
+                        </p>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Payment method</label>
+                        <select name="payment_method" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mb-2">
+                            @foreach ($paymentMethods as $pm)
+                                <option value="{{ $pm->name }}" @selected($pm->name === $order->payment_method)>{{ $pm->label ?: $pm->name }}</option>
+                            @endforeach
+                            @if (!$paymentMethods->contains('name', $order->payment_method) && $order->payment_method)
+                                <option value="{{ $order->payment_method }}" selected>{{ $order->payment_method }}</option>
+                            @endif
+                        </select>
+                        <input type="text" name="payment_ref" placeholder="Payment ref / TID (optional)"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mb-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <input type="text" name="note" placeholder="Note (optional) — e.g. delivery charges advance"
                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mb-2 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                         <label class="block text-[11px] font-semibold text-gray-500 mb-1">Attach payment receipt (image)</label>
                         <input type="file" name="payment_proof" accept="image/*"
                                class="w-full text-xs mb-2">
                         <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">
-                            <i class="fas fa-check-circle"></i> Mark as Paid
+                            <i class="fas fa-check-circle"></i> <span x-text="amt >= due ? 'Mark as Paid' : 'Receive partial payment'">Mark as Paid</span>
                         </button>
                         <p class="text-[11px] text-gray-400 mt-1">Optional — sirf tab lagayein jab payment mil jaye. Dispatch/print ke liye zaroori nahi.</p>
                     </form>

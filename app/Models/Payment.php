@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Payment extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'payment_number',
         'order_id',
@@ -20,7 +23,8 @@ class Payment extends Model
         'reference',      // Keep both for compatibility
         'notes',
         'status',
-        'created_by'
+        'created_by',
+        'deleted_by',
     ];
 
     protected $casts = [

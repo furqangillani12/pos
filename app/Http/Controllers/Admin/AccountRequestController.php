@@ -49,6 +49,12 @@ class AccountRequestController extends Controller
                 }
             }
 
+            // Leave a khata entry so the statement shows this movement (and the
+            // payment is allocated to the customer's oldest unpaid bills).
+            if ($customer) {
+                \App\Services\KhataService::recordAccountRequest($accountRequest);
+            }
+
             $accountRequest->update([
                 'status'           => 'approved',
                 'admin_note'       => $data['admin_note'] ?? null,

@@ -21,6 +21,12 @@
         </div>
     </div>
 
+    @if (empty($ledgerIncluded))
+        <div class="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-xs text-amber-800">
+            Kharche (expense accounts / Cash Out → expense) kisi branch ke naam par nahi hote, is liye yeh sirf "All Branches" me minus hote hain.
+        </div>
+    @endif
+
     {{-- Grand total banner --}}
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div style="background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;" class="rounded-xl p-5 shadow">

@@ -18,12 +18,12 @@ class OnlineOrderController extends Controller
 
     public function index(Request $request)
     {
-        // Online orders are placed on ONE shared storefront; their branch_id is
-        // just which branch owns the product. The online-order manager needs to
-        // see them all in one place regardless of the selected POS branch, so
-        // these are intentionally NOT branch-scoped (unlike POS sales).
-        $query = Order::query()
+        // Each online order belongs to the branch that owns its products (the
+        // storefront splits multi-branch carts into one order per branch), so a
+        // branch only sees its own orders; "All branches" shows everything.
+        $query = $this->scopeBranch(Order::query())
             ->where('order_source', 'online')
+            ->with('branch')
             ->with('customer')
             ->withCount('items');
 
@@ -52,8 +52,8 @@ class OnlineOrderController extends Controller
 
         $orders = $query->latest()->paginate(20)->withQueryString();
 
-        // Stats (also cross-branch — see note above).
-        $statBase = Order::query()->where('order_source', 'online');
+        // Stats for the same branch scope as the list.
+        $statBase = $this->scopeBranch(Order::query())->where('order_source', 'online');
         $stats = [
             'all'       => (clone $statBase)->count(),
             'pending'   => (clone $statBase)->where('status', 'pending')->count(),
@@ -70,13 +70,19 @@ class OnlineOrderController extends Controller
 
     public function show(Order $order)
     {
-        abort_unless($order->order_source === 'online', 404);
+        $this->guardBranch($order);
         $order->load('items.product', 'customer', 'branch');
-        return view('admin.online-orders.show', compact('order'));
+
+        // Payments received against this order (each "Mark as Paid", full or partial).
+        $orderPayments  = \App\Models\Payment::where('order_id', $order->id)->where('payment_type', 'order')->latest('id')->get();
+        $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->orderBy('sort_order')->get();
+
+        return view('admin.online-orders.show', compact('order', 'orderPayments', 'paymentMethods'));
     }
 
     public function updateStatus(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
 
         $allowed = array_keys(config('order_flow.statuses', []));
@@ -95,17 +101,25 @@ class OnlineOrderController extends Controller
         $restockStatuses = config('order_flow.restock', ['cancelled']);
 
         DB::transaction(function () use ($order, $data, $restockStatuses) {
-            // Returned / cancelled: put stock back and reverse khata (once).
-            if (in_array($data['status'], $restockStatuses, true) && !in_array($order->status, $restockStatuses, true)) {
+            $wasOff = in_array($order->status, $restockStatuses, true);
+            $isOff  = in_array($data['status'], $restockStatuses, true);
+
+            // Returned / cancelled: put stock back and take the bill off the khata (once).
+            // Moving back to an active status re-applies both. The khata effect is
+            // the bill's total less what was paid on it at the counter — the same
+            // amount the statement drops for a returned/cancelled order.
+            if ($isOff !== $wasOff) {
+                $sign = $isOff ? 1 : -1;
                 foreach ($order->items as $item) {
                     if ($item->product && $item->product->track_inventory && $order->branch_id) {
-                        $item->product->incrementBranchStock($order->branch_id, (float) $item->quantity);
+                        $isOff
+                            ? $item->product->incrementBranchStock($order->branch_id, (float) $item->quantity)
+                            : $item->product->decrementBranchStock($order->branch_id, (float) $item->quantity);
                     }
                 }
-                // Reverse khata for logged-in customers
-                if ($order->customer && $order->balance_amount > 0) {
+                if ($order->customer) {
                     $order->customer->update([
-                        'current_balance' => round((float) ($order->customer->current_balance ?? 0) - (float) $order->balance_amount, 2),
+                        'current_balance' => round((float) ($order->customer->current_balance ?? 0) - $sign * $order->khataNet(), 2),
                     ]);
                 }
             }
@@ -151,6 +165,7 @@ class OnlineOrderController extends Controller
      */
     public function updateAddress(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
 
         $data = $request->validate([
@@ -175,6 +190,7 @@ class OnlineOrderController extends Controller
     /** Printable bilingual dispatch slip (#15/#16/#17). */
     public function slip(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
         $order->load('items.product', 'customer', 'branch');
 
@@ -210,6 +226,7 @@ class OnlineOrderController extends Controller
     /** Printable picking checklist (#18): image, name, barcode, price, qty. */
     public function checklist(Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
         $order->load('items.product');
         return view('admin.online-orders.checklist', compact('order'));
@@ -218,6 +235,7 @@ class OnlineOrderController extends Controller
     /** Save the picking-checklist piece count so the dispatch slip shows it (#11). */
     public function savePieces(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
         $data = $request->validate(['dispatch_pieces' => 'nullable|integer|min:0']);
         $order->update(['dispatch_pieces' => $data['dispatch_pieces']]);
@@ -228,6 +246,7 @@ class OnlineOrderController extends Controller
     /** Attach a dispatch photo / short video to the order. */
     public function uploadDispatchMedia(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
         $request->validate([
             'dispatch_media' => 'required|file|mimes:png,jpg,jpeg,webp,mp4,webm,mov|max:20480',
@@ -250,6 +269,7 @@ class OnlineOrderController extends Controller
      */
     public function adjust(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
 
         $data = $request->validate([
@@ -269,7 +289,7 @@ class OnlineOrderController extends Controller
             // Same formula as checkout: tax on (subtotal − discounts + delivery).
             $afterDiscount = max(0, (float) $order->subtotal - (float) $order->coupon_discount - (float) $order->points_discount);
             $tax           = shop_tax_amount($afterDiscount + $delivery, $order->online_payment_status === 'cod');
-            $newTotal      = round(max(0, $afterDiscount + $tax + $delivery), 2);
+            $newTotal      = round(max(0, $afterDiscount + $tax + $delivery + (float) ($order->packing_total ?? 0)), 2);
             $delta         = round($newTotal - $oldTotal, 2);
 
             // Blank COD field clears the override (back to auto); a number stores it.
@@ -305,20 +325,42 @@ class OnlineOrderController extends Controller
     /** Manually (re)send the current-status email to the customer. */
     public function notify(Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
         \App\Mail\OrderStatusMail::dispatchFor($order, $order->status);
         return back()->with('success', 'Status email sent to the customer.');
     }
 
+    /**
+     * Record a payment received for an online order — full or partial (e.g. half
+     * now, or only the delivery charges in advance). Reduces the order balance and
+     * the customer's khata by exactly the amount received, and keeps a Payment row
+     * per receipt so the order shows its payment history.
+     */
     public function markPaid(Request $request, Order $order)
     {
+        $this->guardBranch($order);
         abort_unless($order->order_source === 'online', 404);
 
+        $due = round((float) $order->balance_amount, 2);
+        if ($due <= 0) {
+            return back()->with('error', 'This order has nothing left to pay.');
+        }
+
         $data = $request->validate([
-            'note'          => 'nullable|string|max:255',
-            'payment_ref'   => 'nullable|string|max:191',
-            'payment_proof' => 'nullable|image|max:5120',
+            'amount'         => 'required|numeric|min:1',
+            'payment_method' => 'nullable|string|max:100',
+            'note'           => 'nullable|string|max:255',
+            'payment_ref'    => 'nullable|string|max:191',
+            'payment_proof'  => 'nullable|image|max:5120',
         ]);
+
+        $amount = round((float) $data['amount'], 2);
+        if ($amount > $due) {
+            return back()->with('error', 'Amount Rs. ' . number_format($amount, 0) . ' is more than the balance due (Rs. ' . number_format($due, 0) . ').');
+        }
+        $full   = abs($amount - $due) < 0.01;
+        $method = ($data['payment_method'] ?? '') !== '' ? $data['payment_method'] : $order->payment_method;
 
         // Admin can attach a payment receipt here (#7).
         $proofPath = $order->payment_proof_path;
@@ -326,24 +368,62 @@ class OnlineOrderController extends Controller
             $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
         }
 
-        DB::transaction(function () use ($order, $data, $proofPath) {
+        DB::transaction(function () use ($order, $data, $proofPath, $amount, $due, $full, $method) {
+            \App\Models\Payment::create([
+                'payment_number'   => \App\Models\Payment::generatePaymentNumber(),
+                'payment_type'     => 'order',
+                'order_id'         => $order->id,
+                'customer_id'      => $order->customer_id,
+                'amount'           => $amount,
+                'payment_date'     => now()->toDateString(),
+                'payment_method'   => $method,
+                'reference_number' => $data['payment_ref'] ?? null,
+                'notes'            => $data['note'] ?? null,
+                'status'           => 'completed',
+                'created_by'       => auth()->id(),
+            ]);
+
             $order->update([
-                'paid_amount'           => (float) $order->total,
-                'balance_amount'        => 0,
-                'payment_status'        => 'paid',
-                'online_payment_status' => $order->online_payment_status === 'cod' ? 'paid' : 'bank_paid',
+                'paid_amount'           => round((float) $order->paid_amount + $amount, 2),
+                'balance_amount'        => round($due - $amount, 2),
+                'payment_status'        => $full ? 'paid' : 'partial',
+                'online_payment_status' => $full
+                    ? ($this->isCodOrder($order) ? 'paid' : 'bank_paid')
+                    : 'partial',
                 'online_payment_ref'    => $data['payment_ref'] ?? $order->online_payment_ref,
                 'payment_proof_path'    => $proofPath,
             ]);
 
-            // Reduce customer khata since they've paid (if logged-in customer)
+            // Reduce customer khata by what was received (if logged-in customer)
             if ($order->customer) {
                 $order->customer->update([
-                    'current_balance' => round((float) ($order->customer->current_balance ?? 0) - (float) $order->total, 2),
+                    'current_balance' => round((float) ($order->customer->current_balance ?? 0) - $amount, 2),
                 ]);
             }
         });
 
-        return back()->with('success', 'Payment marked as received.');
+        return back()->with('success', $full
+            ? 'Payment of Rs. ' . number_format($amount, 0) . ' received — order fully paid.'
+            : 'Payment of Rs. ' . number_format($amount, 0) . ' received — Rs. ' . number_format($due - $amount, 0) . ' still due.');
+    }
+
+    /** COD order? (status may already read 'partial' after an earlier part-payment.) */
+    private function isCodOrder(Order $order): bool
+    {
+        if ($order->online_payment_status === 'cod') return true;
+        $m = strtolower(trim((string) $order->payment_method));
+        return $m === 'cod' || str_contains($m, 'cash on delivery');
+    }
+
+    /**
+     * An online order is only reachable from its own branch (or "All branches"),
+     * so staff can't open another branch's order by editing the URL.
+     */
+    private function guardBranch(Order $order): void
+    {
+        abort_unless($order->order_source === 'online', 404);
+        if (! $this->isAllBranches()) {
+            abort_unless((int) $order->branch_id === (int) $this->branchId(), 404);
+        }
     }
 }

@@ -17,6 +17,7 @@ class Order extends Model
         'credit_paid_amount',
         'credit_remaining_amount',
         'paid_amount',
+        'khata_paid',
         'previous_balance',
         'balance_amount',
         'branch_id',
@@ -77,6 +78,32 @@ class Order extends Model
     const STATUS_COMPLETED = 'completed';
     const STATUS_REFUNDED  = 'refunded';
     const STATUS_CANCELLED = 'cancelled';
+
+    /**
+     * Statuses whose bill no longer counts on the customer's khata. Cancelled and
+     * returned orders are fully reversed (stock back, khata reversed); a refunded
+     * POS order stays on the khata and its Refund rows credit it instead.
+     */
+    const KHATA_EXCLUDED_STATUSES = ['cancelled', 'returned'];
+
+    /**
+     * What was paid against this bill at the counter / on the bill itself
+     * (excludes khata payments allocated to it). Legacy pre-khata orders were
+     * stored with paid_amount = 0 AND balance_amount = 0, meaning "fully paid".
+     */
+    public function counterPaid(): float
+    {
+        if ((float) $this->paid_amount == 0.0 && (float) $this->balance_amount == 0.0 && (float) ($this->khata_paid ?? 0) == 0.0) {
+            return (float) $this->total;
+        }
+        return (float) $this->paid_amount;
+    }
+
+    /** This bill's effect on the customer's khata: total minus counter payment. */
+    public function khataNet(): float
+    {
+        return round((float) $this->total - $this->counterPaid(), 2);
+    }
 
     // Payment methods
     const PAYMENT_CASH   = 'cash';
@@ -194,41 +221,9 @@ class Order extends Model
      */
     public function computePreviousBalance(): float
     {
-        if (!$this->customer_id) {
-            return 0;
-        }
-
-        // Sum of unpaid amounts for all prior orders.
-        // Legacy orders (before khata system) have paid_amount=0 AND balance_amount=0
-        // which means they were fully paid — treat their net contribution as 0.
-        $priorOrdersNet = (float) static::where('customer_id', $this->customer_id)
-            ->where('id', '<', $this->id)
-            ->where('status', '!=', self::STATUS_CANCELLED)
-            ->selectRaw('COALESCE(SUM(
-                CASE
-                    WHEN (paid_amount = 0 OR paid_amount IS NULL)
-                         AND (balance_amount = 0 OR balance_amount IS NULL)
-                    THEN 0
-                    ELSE total - COALESCE(paid_amount, 0)
-                END
-            ), 0) as net')
-            ->value('net');
-
-        // Khata-side adjustments before this order:
-        //   khata        — customer paid us → reduces what they owe
-        //   khata_offset — offset against linked supplier → reduces what they owe (no cash)
-        //   khata_payout — we paid customer (refund/advance) → increases what they owe
-        $priorReducing = (float) Payment::where('customer_id', $this->customer_id)
-            ->whereIn('payment_type', ['khata', 'khata_offset'])
-            ->where('created_at', '<', $this->created_at)
-            ->sum('amount');
-
-        $priorIncreasing = (float) Payment::where('customer_id', $this->customer_id)
-            ->where('payment_type', 'khata_payout')
-            ->where('created_at', '<', $this->created_at)
-            ->sum('amount');
-
-        return round($priorOrdersNet - $priorReducing + $priorIncreasing, 2);
+        // Same khata rows as the customer statement (bills, payments, payouts,
+        // offsets, refunds), so receipts and statements always agree.
+        return \App\Services\KhataService::balanceBefore($this);
     }
 
     /**

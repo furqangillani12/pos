@@ -65,6 +65,7 @@
                     <option value="cod"          @selected(request('online_payment_status') === 'cod')>COD</option>
                     <option value="bank_pending" @selected(request('online_payment_status') === 'bank_pending')>Bank pending</option>
                     <option value="bank_paid"    @selected(request('online_payment_status') === 'bank_paid')>Bank paid</option>
+                    <option value="partial"      @selected(request('online_payment_status') === 'partial')>Partially paid</option>
                 </select>
             </div>
             <div class="sm:col-span-2">
@@ -100,6 +101,9 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3">
                                 <a href="{{ route('admin.online-orders.show', $o) }}" class="font-mono text-xs font-semibold text-cyan-700 hover:underline">{{ $o->order_number }}</a>
+                                @if (session('branch_id') === 'all' || session('branch_id') === null)
+                                    <div class="text-[10px] text-gray-400">{{ $o->branch?->name }}</div>
+                                @endif
                                 <div class="text-[11px] text-gray-500 mt-0.5">{{ $o->created_at->format('d M Y · h:i A') }}</div>
                             </td>
                             <td class="px-4 py-3">

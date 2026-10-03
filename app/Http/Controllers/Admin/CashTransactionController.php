@@ -360,7 +360,9 @@ class CashTransactionController extends Controller
             'mobile_money' => ['label' => 'Mobile Money (موبائل)', 'icon' => '📱', 'in' => 0, 'out' => 0],
             'card'         => ['label' => 'Card (کارڈ)',           'icon' => '💳', 'in' => 0, 'out' => 0],
             'cheque'       => ['label' => 'Cheque (چیک)',          'icon' => '📄', 'in' => 0, 'out' => 0],
-            'credit'       => ['label' => 'Credit / Khata (ادھار)', 'icon' => '📋', 'in' => 0, 'out' => 0],
+            'cod'          => ['label' => 'COD (کوریئر)',          'icon' => '🚚', 'in' => 0, 'out' => 0],
+            'credit'       => ['label' => 'Credit / Pending (ادھار)', 'icon' => '📋', 'in' => 0, 'out' => 0],
+            'other'        => ['label' => 'Other (دیگر)',          'icon' => '❔', 'in' => 0, 'out' => 0],
         ];
 
         // ── Cash IN ────────────────────────────────────────────────────────
@@ -370,8 +372,7 @@ class CashTransactionController extends Controller
             ->whereRaw('paid_amount > 0');
         if (!$isAll) $ordersQ->where('branch_id', $branchId);
         foreach ($ordersQ->get(['payment_method', 'paid_amount']) as $o) {
-            $method = strtolower($o->payment_method ?? 'cash');
-            $key = $this->normaliseMethod($method);
+            $key = $this->normaliseMethod($o->payment_method ?? 'cash');
             if (isset($accounts[$key])) $accounts[$key]['in'] += (float) $o->paid_amount;
         }
 
@@ -431,6 +432,38 @@ class CashTransactionController extends Controller
             if (isset($accounts[$to]))   $accounts[$to]['in']   += (float) $t->amount;
         }
 
+        // 8. Walk-in refunds (no customer khata to credit) — cash handed back.
+        $refundQ = \App\Models\Refund::query()
+            ->join('orders', 'orders.id', '=', 'refunds.order_id')
+            ->where('refunds.status', 'completed')
+            ->whereNull('orders.customer_id');
+        if (!$isAll) $refundQ->where('orders.branch_id', $branchId);
+        foreach ($refundQ->get(['orders.payment_method', 'refunds.amount']) as $r) {
+            $key = $this->normaliseMethod($r->payment_method ?? 'cash');
+            if (isset($accounts[$key])) $accounts[$key]['out'] += (float) $r->amount;
+        }
+
+        // 9. Expenses / other income booked on ledger accounts (incl. Cash Out → expense).
+        //    These entries carry no branch, so they are only included in "All branches".
+        $ledgerIncluded = $isAll;
+        if ($isAll) {
+            $ledgerQ = LedgerAccountEntry::query()
+                ->join('ledger_accounts', 'ledger_accounts.id', '=', 'ledger_account_entries.ledger_account_id')
+                ->whereIn('ledger_accounts.type', ['expense', 'income'])
+                ->get(['ledger_accounts.type', 'ledger_account_entries.payment_method', 'ledger_account_entries.debit', 'ledger_account_entries.credit']);
+            foreach ($ledgerQ as $e) {
+                $key = $this->normaliseMethod($e->payment_method ?? 'cash');
+                if (!isset($accounts[$key])) continue;
+                $net = (float) $e->debit - (float) $e->credit;          // expense: money out
+                if ($e->type === 'income') $net = -$net;                  // income: money in
+                if ($net >= 0) {
+                    $accounts[$key][$e->type === 'income' ? 'in' : 'out'] += $net;
+                } else {
+                    $accounts[$key][$e->type === 'income' ? 'out' : 'in'] += -$net;
+                }
+            }
+        }
+
         // Compute balance and remove zero accounts
         $summary = collect($accounts)->map(function ($a, $method) {
             return array_merge($a, [
@@ -444,9 +477,11 @@ class CashTransactionController extends Controller
         $totalBal = $totalIn - $totalOut;
 
         // Receivables & payables context
-        $totalReceivables = $this->scopeBranch(
-            Order::whereNotIn('status', ['cancelled', 'refunded'])->where('balance_amount', '>', 0)
-        )->sum('balance_amount');
+        // Wasooli: positive khata balances + unpaid bills without a customer account.
+        $totalReceivables = (float) $this->scopeBranch(Customer::query())->where('current_balance', '>', 0)->sum('current_balance')
+            + (float) $this->scopeBranch(Order::query())->whereNull('customer_id')
+                ->whereNotIn('status', ['cancelled', 'returned', 'refunded'])
+                ->where('balance_amount', '>', 0)->sum('balance_amount');
 
         $totalPayables = Purchase::where('payment_status', '!=', 'paid')
             ->whereRaw('total_amount > paid_amount')
@@ -462,7 +497,7 @@ class CashTransactionController extends Controller
         return view('admin.cash.available', compact(
             'summary', 'totalIn', 'totalOut', 'totalBal',
             'totalReceivables', 'totalPayables',
-            'paymentMethods', 'recentTransfers'
+            'paymentMethods', 'recentTransfers', 'ledgerIncluded'
         ));
     }
 
@@ -493,17 +528,36 @@ class CashTransactionController extends Controller
                 ' from ' . ucfirst($request->from_account) . ' to ' . ucfirst($request->to_account) . '.');
     }
 
-    private function normaliseMethod(string $method): string
+    /**
+     * Map a stored payment-method name to a cash-book account. Method names are
+     * free text set up in Settings (e.g. "JC/03344466912", "Bank Al Habib Rast",
+     * "ALMufeed Traders UBL"), so match by keywords, then by the method's own bank
+     * details, and never silently fall back to cash.
+     */
+    private function normaliseMethod(?string $method): string
     {
-        return match(true) {
-            in_array($method, ['cash', 'نقد'])                         => 'cash',
-            in_array($method, ['bank', 'bank_transfer', 'online'])     => 'bank',
-            in_array($method, ['mobile_money', 'jazzcash', 'easypaisa', 'mobile']) => 'mobile_money',
-            in_array($method, ['card', 'debit_card', 'credit_card'])   => 'card',
-            in_array($method, ['cheque', 'check'])                     => 'cheque',
-            in_array($method, ['credit', 'khata', 'cod'])              => 'credit',
-            default => 'cash',
-        };
+        $m = strtolower(trim((string) $method));
+        if ($m === '' || $m === 'نقد') return 'cash';
+
+        if ($m === 'cod' || str_contains($m, 'cash on delivery') || str_contains($m, 'cash_on_delivery')) return 'cod';
+        if (in_array($m, ['credit', 'khata', 'pending', 'udhaar'], true)) return 'credit';
+        if (preg_match('/jazz|easy|^jc\b|^jc\/|^ep\b|^ep\/|mobile|wallet|sadapay|nayapay|upaisa/', $m)) return 'mobile_money';
+        if (preg_match('/card/', $m)) return 'card';
+        if (preg_match('/cheque|check/', $m)) return 'cheque';
+        if (preg_match('/bank|ubl|hbl|mcb|nbp|bop|meezan|alfalah|habib|allied|askari|faysal|soneri|silk|js |transfer|iban|account|online/', $m)) return 'bank';
+        if (str_contains($m, 'cash')) return 'cash';
+
+        // A configured method with bank details is a bank account.
+        static $banked = null;
+        if ($banked === null) {
+            $banked = PaymentMethod::query()
+                ->where(fn ($q) => $q->whereNotNull('account_number')->where('account_number', '!=', '')
+                    ->orWhere(fn ($b) => $b->whereNotNull('bank_name')->where('bank_name', '!=', '')))
+                ->pluck('name')->map(fn ($n) => strtolower(trim($n)))->all();
+        }
+        if (in_array($m, $banked, true)) return 'bank';
+
+        return 'other';
     }
 
     // Find or create the global "Cash" ledger account (asset). One row, all branches.

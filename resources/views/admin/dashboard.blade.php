@@ -218,8 +218,8 @@
                 <p class="text-xs text-orange-200 mt-1">Today: Rs. {{ number_format($todayExpenses, 0) }}</p>
             </a>
             <div class="bg-gradient-to-br {{ $monthlyProfit >= 0 ? 'from-green-600 to-green-700' : 'from-red-600 to-red-700' }} text-white rounded-xl p-4 shadow-sm">
-                <p class="text-xs font-medium {{ $monthlyProfit >= 0 ? 'text-green-200' : 'text-red-200' }} uppercase">Est. Profit</p>
-                <p class="text-xl font-bold mt-1">Rs. {{ number_format(abs($monthlyProfit), 0) }}</p>
+                <p class="text-xs font-medium {{ $monthlyProfit >= 0 ? 'text-green-200' : 'text-red-200' }} uppercase">{{ $monthlyProfit >= 0 ? 'Est. Profit' : 'Est. Loss' }}</p>
+                <p class="text-xl font-bold mt-1">{{ $monthlyProfit < 0 ? '-' : '' }}Rs. {{ number_format(abs($monthlyProfit), 0) }}</p>
                 <p class="text-xs {{ $monthlyProfit >= 0 ? 'text-green-200' : 'text-red-200' }} mt-1">Cost: Rs. {{ number_format($monthlyCost, 0) }}</p>
             </div>
             <div class="bg-gradient-to-br from-cyan-600 to-cyan-700 text-white rounded-xl p-4 shadow-sm">

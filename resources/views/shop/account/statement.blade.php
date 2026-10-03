@@ -17,7 +17,7 @@
         </div>
 
         {{-- Summary cards --}}
-        <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6 reveal-stagger">
+        <div class="grid grid-cols-2 {{ $summary['is_reseller'] ? 'lg:grid-cols-4' : 'lg:grid-cols-3' }} gap-4 mb-6 reveal-stagger">
             <div class="bg-white border border-gray-100 rounded-2xl p-5">
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Total purchased</div>
                 <div class="text-2xl font-extrabold mt-1" style="color:var(--brand-navy);">{{ shop_price($summary['business']) }}</div>
@@ -27,6 +27,13 @@
                 <div class="text-xs text-gray-500 uppercase tracking-wide">Total paid</div>
                 <div class="text-2xl font-extrabold mt-1 text-emerald-600">{{ shop_price($summary['paid']) }}</div>
             </div>
+            @if ($summary['is_reseller'])
+                <div class="bg-white border border-emerald-100 rounded-2xl p-5">
+                    <div class="text-xs text-gray-500 uppercase tracking-wide">Your profit</div>
+                    <div class="text-2xl font-extrabold mt-1 text-emerald-600">{{ shop_price($summary['earnings']) }}</div>
+                    <div class="text-[11px] text-gray-400 mt-0.5">Retail price − your price, on orders not returned</div>
+                </div>
+            @endif
             <div class="rounded-2xl p-5 text-white" style="background:linear-gradient(135deg,var(--rose),var(--rose-deep));">
                 <div class="text-xs uppercase tracking-wide opacity-90">Remaining (khata)</div>
                 <div class="text-2xl font-extrabold mt-1">{{ shop_price(abs($summary['outstanding'])) }}</div>
@@ -82,6 +89,7 @@
                                         'payment' => 'Khata payment',
                                         'payout'  => 'Payout to you',
                                         'offset'  => 'Adjustment',
+                                        'refund'  => 'Refund',
                                         default   => ucfirst($r['type']),
                                     };
                                 @endphp

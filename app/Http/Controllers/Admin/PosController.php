@@ -249,6 +249,7 @@ class PosController extends Controller
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
+                    ...\App\Services\KhataService::itemSnapshot($product),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
@@ -482,7 +483,7 @@ class PosController extends Controller
 
             // Reverse old balance effect on customer
             $oldCustomer = $order->customer;
-            $oldNetEffect = ($order->total ?? 0) - ($order->paid_amount ?? 0);
+            $oldNetEffect = $order->khataNet();
             if ($oldCustomer) {
                 $oldCustomer->current_balance = $oldCustomer->current_balance - $oldNetEffect;
                 $oldCustomer->save();
@@ -583,6 +584,7 @@ class PosController extends Controller
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
+                    ...\App\Services\KhataService::itemSnapshot($product),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
@@ -726,7 +728,7 @@ class PosController extends Controller
             if ($order->customer_id) {
                 $customer = Customer::find($order->customer_id);
                 if ($customer) {
-                    $customer->current_balance = max(0, $customer->current_balance - $refundAmount);
+                    $customer->current_balance = round($customer->current_balance - $refundAmount, 2);
                     $customer->save();
                 }
             }
@@ -846,12 +848,8 @@ class PosController extends Controller
                 }
             }
 
-            if ($order->customer_id && $order->balance_amount > 0) {
-                $customer = Customer::find($order->customer_id);
-                if ($customer) {
-                    $customer->current_balance = max(0, $customer->current_balance - $order->balance_amount);
-                    $customer->save();
-                }
+            if ($order->customer_id && !in_array($order->status, Order::KHATA_EXCLUDED_STATUSES, true)) {
+                $this->reverseKhataEffect($order);
             }
 
             $order->update(['status' => Order::STATUS_CANCELLED]);
@@ -873,12 +871,8 @@ class PosController extends Controller
                 }
             }
 
-            if ($order->customer_id && $order->balance_amount > 0 && $order->status !== Order::STATUS_CANCELLED) {
-                $customer = Customer::find($order->customer_id);
-                if ($customer) {
-                    $customer->current_balance = max(0, $customer->current_balance - $order->balance_amount);
-                    $customer->save();
-                }
+            if ($order->customer_id && !in_array($order->status, Order::KHATA_EXCLUDED_STATUSES, true)) {
+                $this->reverseKhataEffect($order);
             }
 
             $order->items()->delete();
@@ -887,5 +881,20 @@ class PosController extends Controller
         });
 
         return redirect()->route('admin.reports.sales')->with('success', 'Order deleted successfully.');
+    }
+
+    /**
+     * Take a bill off the customer's khata (cancel / delete): its net effect
+     * (total − paid at counter) less any refunds already credited for it.
+     * May leave the customer in advance — never clamped to 0.
+     */
+    private function reverseKhataEffect(Order $order): void
+    {
+        $customer = Customer::find($order->customer_id);
+        if (!$customer) return;
+
+        $refunded = (float) $order->refunds()->where('status', 'completed')->sum('amount');
+        $customer->current_balance = round((float) $customer->current_balance - ($order->khataNet() - $refunded), 2);
+        $customer->save();
     }
 }

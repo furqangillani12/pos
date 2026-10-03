@@ -460,6 +460,12 @@
                         <p class="text-lg font-bold text-red-600">Rs. {{ number_format($summary['total_balance'], 0) }}
                         </p>
                     </div>
+                    @if (!empty($summary['is_reseller']))
+                        <div class="bg-white rounded-lg shadow p-3 border-l-4 border-emerald-500">
+                            <p class="text-xs text-gray-500">Reseller Profit</p>
+                            <p class="text-lg font-bold text-emerald-600">Rs. {{ number_format($summary['reseller_earnings'], 0) }}</p>
+                        </div>
+                    @endif
                     <div class="bg-white rounded-lg shadow p-3 border-l-4 border-purple-500">
                         <p class="text-xs text-gray-500">Entries</p>
                         <p class="text-lg font-bold text-purple-600">
@@ -537,7 +543,8 @@
                                         $isPayout  = $txn['type'] === 'payout';
                                         $isOffset  = $txn['type'] === 'offset';
                                         $isOrder   = $txn['type'] === 'order';
-                                        $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : ($isOffset ? 'bg-cyan-50/50' : ''));
+                                        $isRefund  = $txn['type'] === 'refund';
+                                        $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : ($isOffset ? 'bg-cyan-50/50' : ($isRefund ? 'bg-purple-50/50' : '')));
                                     @endphp
                                     <tr class="hover:bg-gray-50 transition {{ $rowClass }}">
 
@@ -580,6 +587,16 @@
                                                         @endif
                                                     </p>
                                                 </div>
+                                            @elseif ($isRefund)
+                                                <div>
+                                                    <p class="font-semibold text-purple-700"><i class="fas fa-rotate-left text-xs mr-1"></i>Refund (واپسی)</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        {{ $txn['reference'] }}
+                                                        @if (!empty($txn['notes']))
+                                                            — {{ $txn['notes'] }}
+                                                        @endif
+                                                    </p>
+                                                </div>
                                             @else
                                                 <div>
                                                     <a href="{{ route('admin.pos.receipt', $txn['id']) }}"
@@ -589,6 +606,11 @@
                                                     </a>
                                                     <p class="text-xs text-gray-500 mt-0.5">
                                                         {{ $txn['items_count'] }} item(s)
+                                                        @if (($txn['balance_on_bill'] ?? 0) > 0)
+                                                            · <span class="text-red-500">baqi Rs. {{ number_format($txn['balance_on_bill'], 0) }}</span>
+                                                        @elseif ($txn['amount'] > 0)
+                                                            · <span class="text-green-600">paid</span>
+                                                        @endif
                                                     </p>
                                                 </div>
                                             @endif
@@ -606,9 +628,9 @@
                                         </td>
 
                                         <td
-                                            class="px-3 py-3 text-right {{ $isPayment ? 'text-green-600 font-bold' : ($isOffset ? 'font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200')) }}"
+                                            class="px-3 py-3 text-right {{ ($isPayment || $isRefund) ? 'text-green-600 font-bold' : ($isOffset ? 'font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200')) }}"
                                             @if ($isOffset) style="color:#0891b2;" @endif>
-                                            @if ($isPayment)
+                                            @if ($isPayment || $isRefund)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @elseif($isOffset)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
@@ -696,6 +718,28 @@
                         </table>
                     </div>
                 </div>
+
+                {{-- Deleted khata payments (audit) --}}
+                @if ($deletedPayments->isNotEmpty())
+                    <div class="bg-white rounded-xl shadow-sm border border-red-100 mt-4 no-print">
+                        <div class="px-4 py-3 border-b border-red-100">
+                            <h3 class="font-bold text-red-700 text-sm"><i class="fas fa-trash-can mr-1"></i> Deleted payments (record)</h3>
+                            <p class="text-[11px] text-gray-500">Ye payments delete ki gayi thi — balance aur Cash book dono se wapas ho chuki hain.</p>
+                        </div>
+                        <table class="w-full text-xs">
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach ($deletedPayments as $dp)
+                                    <tr>
+                                        <td class="px-4 py-2">{{ $dp->payment_date?->format('d M Y') }}</td>
+                                        <td class="px-4 py-2">{{ $dp->payment_type === 'khata_payout' ? 'Cash Out' : 'Payment' }} · {{ $dp->payment_number }}</td>
+                                        <td class="px-4 py-2 text-right font-semibold line-through text-gray-500">Rs. {{ number_format($dp->amount, 0) }}</td>
+                                        <td class="px-4 py-2 text-gray-500">Deleted {{ $dp->deleted_at?->format('d M Y h:i A') }} by {{ $deletedByNames[$dp->deleted_by] ?? '—' }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
 
                 {{-- Online pay/withdraw requests + screenshots (client #10) --}}
                 @if ($accountRequests->isNotEmpty())

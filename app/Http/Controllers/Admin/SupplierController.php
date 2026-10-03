@@ -367,6 +367,10 @@ class SupplierController extends Controller
             }
         }
 
+        // A Cash In/Out entry also posted to the Cash account — reverse that too.
+        \App\Services\KhataService::reverseCashEntry('cash_supplier', $payment->id,
+            "Reversed: supplier payment {$payment->payment_number} deleted ({$supplier->name})");
+
         $payment->delete();
 
         $msg = $isReceipt ? 'Cash receipt reversed successfully.' : 'Payment reversed successfully.';

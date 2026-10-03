@@ -298,8 +298,7 @@ class CustomerController extends Controller
                     ->with('warning', 'Cannot disable credit. Customer has outstanding balance of Rs. ' . number_format($customer->current_balance, 2))
                     ->withInput();
             }
-            
-            $validated['current_balance'] = 0;
+            // Balance (incl. any advance) is left as is — it is only moved by khata entries.
         } else {
             $validated['credit_limit'] = $validated['credit_limit'] ?? 0;
             $validated['credit_due_days'] = $validated['credit_due_days'] ?? 30;
@@ -486,124 +485,45 @@ class CustomerController extends Controller
         $fromDate = $request->input('from_date', now()->subMonths(3)->toDateString());
         $toDate   = $request->input('to_date',   now()->toDateString());
 
-        // ── 1. Get orders in period ────────────────────────────────────────
-        $orders = $customer->orders()
-            ->with('items.product')
-            ->whereBetween('created_at', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
-            ->where('status', '!=', 'cancelled')
-            ->orderBy('created_at')
-            ->get();
-
-        // ── 2. Get standalone khata payments + payouts + offsets in period ───
-        $khataPayments = \App\Models\Payment::where('customer_id', $customer->id)
-            ->whereIn('payment_type', ['khata', 'khata_payout', 'khata_offset'])
-            ->whereBetween('payment_date', [$fromDate, $toDate])
-            ->orderBy('payment_date')
-            ->get();
-
-        // ── 3. Merge into one timeline sorted by date ──────────────────────
-        $transactions = collect();
-
-        foreach ($orders as $order) {
-            $transactions->push([
-                'type'            => 'order',
-                'date'            => $order->created_at,
-                'id'              => $order->id,
-                'reference'       => $order->order_number,
-                'amount'          => $order->total,              // debit (bill)
-                'paid'            => ($order->paid_amount == 0 && $order->balance_amount == 0) ? $order->total : $order->paid_amount,
-                'balance_on_bill' => $order->balance_amount ?? 0,
-                'method'          => $order->payment_method,
-                'items_count'     => $order->items->count(),
-                'running_balance' => 0,  // filled below
-            ]);
-        }
-
-        foreach ($khataPayments as $payment) {
-            $type = match ($payment->payment_type) {
-                'khata_payout' => 'payout',
-                'khata_offset' => 'offset',
-                default        => 'payment',
-            };
-            $transactions->push([
-                'type'            => $type,
-                'date'            => $payment->payment_date,
-                'id'              => $payment->id,
-                'reference'       => $payment->payment_number ?? $payment->reference_number,
-                'amount'          => $payment->amount,
-                'paid'            => $payment->amount,
-                'balance_on_bill' => 0,
-                'method'          => $payment->payment_method,
-                'notes'           => $payment->notes,
-                'items_count'     => 0,
-                'running_balance' => 0,  // filled below
-            ]);
-        }
-
-      // Sort by date ascending — convert to plain array so we can modify it
-        $transactions = $transactions->sortBy('date')->values()->toArray(); // ← toArray() added
-
-        // ── 4. Calculate running balance ──────────────────────────────────────
-        $runningBalance = (float) ($customer->current_balance ?? 0);
-
-        // Rewind to get opening balance before this period
-        foreach ($transactions as $txn) {
-            if ($txn['type'] === 'order') {
-                $runningBalance -= ($txn['amount'] - $txn['paid']);
-            } elseif ($txn['type'] === 'payout') {
-                $runningBalance -= $txn['amount'];
-            } else {
-                $runningBalance += $txn['amount'];
-            }
-        }
-        $openingBalance = $runningBalance;
-
-        // Walk forward and assign running balance to each row
-        foreach ($transactions as $i => $txn) {
-            if ($txn['type'] === 'order') {
-                $runningBalance += ($txn['amount'] - $txn['paid']);
-            } elseif ($txn['type'] === 'payout') {
-                $runningBalance += $txn['amount'];
-            } else {
-                $runningBalance -= $txn['amount'];
-            }
-            $transactions[$i]['running_balance'] = $runningBalance; // ✅ works on array
-        }
+        // ── 1-4. Khata rows (bills, payments, payouts, offsets, refunds) with a
+        //        running balance anchored to the customer's current balance.
+        $rows = \App\Services\KhataService::entries($customer, $fromDate, $toDate);
+        [$rows, $openingBalance] = \App\Services\KhataService::withRunningBalance($customer, $rows, $toDate);
 
         // Reverse for display: newest first
-        $transactions = array_reverse($transactions);
+        $transactions = $rows->reverse()->values()->toArray();
+        $orders = $rows->where('type', 'order')->pluck('order')->values();
+
         // ── 5. Period summary ──────────────────────────────────────────────
-        $allOrders = $customer->orders()
-            ->whereBetween('created_at', [$fromDate . ' 00:00:00', $toDate . ' 23:59:59'])
-            ->where('status', '!=', 'cancelled')
-            ->get();
+        $bills    = $rows->where('type', 'order');
+        $credits  = $rows->whereIn('type', ['payment', 'offset', 'refund']);
+        $payouts  = $rows->where('type', 'payout');
 
-        $allKhataPayments = \App\Models\Payment::where('customer_id', $customer->id)
-            ->where('payment_type', 'khata')
-            ->whereBetween('payment_date', [$fromDate, $toDate])
-            ->get();
-
-        $allKhataPayouts = \App\Models\Payment::where('customer_id', $customer->id)
-            ->where('payment_type', 'khata_payout')
-            ->whereBetween('payment_date', [$fromDate, $toDate])
-            ->get();
-
-        $totalBilled = $allOrders->sum('total');
-        $totalPaidOnOrders = $allOrders->sum(fn($o) => ($o->paid_amount == 0 && $o->balance_amount == 0) ? $o->total : $o->paid_amount);
-        $totalKhataPayments = $allKhataPayments->sum('amount');
-        $totalKhataPayouts = $allKhataPayouts->sum('amount');
-        $totalPaid = $totalPaidOnOrders + $totalKhataPayments;
+        $totalBilled        = $bills->sum('amount');
+        $totalKhataPayments = $credits->sum('amount');
+        $totalKhataPayouts  = $payouts->sum('amount');
+        $totalPaid          = $bills->sum('paid') + $totalKhataPayments;
 
         $summary = [
             'total_billed'         => $totalBilled,
             'total_paid'           => $totalPaid,
-            'total_balance'        => max(0, $totalBilled - $totalPaid),
-            'order_count'          => $allOrders->count(),
+            'total_balance'        => max(0, $totalBilled + $totalKhataPayouts - $totalPaid),
+            'order_count'          => $bills->count(),
             'total_khata_payments' => $totalKhataPayments,
-            'payments_count'       => $allKhataPayments->count(),
+            'payments_count'       => $credits->count(),
             'total_khata_payouts'  => $totalKhataPayouts,
-            'payouts_count'        => $allKhataPayouts->count(),
+            'payouts_count'        => $payouts->count(),
+            'is_reseller'          => in_array($customer->customer_type, ['reseller', 'wholesale'], true),
+            'reseller_earnings'    => in_array($customer->customer_type, ['reseller', 'wholesale'], true)
+                ? \App\Services\KhataService::resellerEarnings($customer, $fromDate, $toDate) : 0,
         ];
+
+        // Deleted khata payments (audit trail): who removed what, and when.
+        $deletedPayments = \App\Models\Payment::onlyTrashed()
+            ->where('customer_id', $customer->id)
+            ->whereIn('payment_type', \App\Services\KhataService::PAYMENT_TYPES)
+            ->latest('deleted_at')->limit(20)->get();
+        $deletedByNames = \App\Models\User::whereIn('id', $deletedPayments->pluck('deleted_by')->filter())->pluck('name', 'id');
 
         // ── 6. For pagination display we use the paginator on orders ──────
         $ordersPaginated = $customer->orders()
@@ -629,6 +549,8 @@ class CustomerController extends Controller
                     $typeLabel = match ($txn['type']) {
                         'payment' => 'Payment Received',
                         'payout'  => 'Cash Paid Out',
+                        'offset'  => 'Supplier Offset',
+                        'refund'  => 'Refund',
                         default   => 'Sale Bill',
                     };
                     $debit = match ($txn['type']) {
@@ -637,7 +559,7 @@ class CustomerController extends Controller
                         default  => '',
                     };
                     $credit = match ($txn['type']) {
-                        'payment' => number_format($txn['amount'], 2),
+                        'payment', 'offset', 'refund' => number_format($txn['amount'], 2),
                         'order'   => $txn['paid'] > 0 ? number_format($txn['paid'], 2) : '',
                         default   => '',
                     };
@@ -687,7 +609,7 @@ class CustomerController extends Controller
             'customer', 'orders', 'transactions',
             'fromDate', 'toDate', 'summary', 'openingBalance', 'paymentMethods',
             'linkedSupplier', 'linkedSupplierBalance', 'linkedNetBalance', 'availableSuppliers',
-            'accountRequests'
+            'accountRequests', 'deletedPayments', 'deletedByNames'
         ));
     }
 
@@ -759,6 +681,13 @@ class CustomerController extends Controller
         try {
             $delta = $isPayout ? -$payment->amount : $payment->amount;
             $customer->update(['current_balance' => $customer->current_balance + $delta]);
+
+            // Cash In/Out posted a counter-entry on the Cash account — reverse it too,
+            // so the cash book no longer shows money that is not on the khata.
+            \App\Services\KhataService::reverseCashEntry('cash_customer', $payment->id,
+                "Reversed: payment {$payment->payment_number} deleted ({$customer->name})");
+
+            $payment->update(['deleted_by' => auth()->id()]);
             $payment->delete();
             DB::commit();
 
@@ -785,34 +714,11 @@ class CustomerController extends Controller
 
         $isPayout = $payment->payment_type === 'khata_payout';
 
-        // Calculate balance before and after this payment
-        // All order nets before this payment
-        $orderNetBefore = (float) \App\Models\Order::where('customer_id', $customer->id)
-            ->where('status', '!=', 'cancelled')
-            ->where('created_at', '<', $payment->created_at)
-            ->selectRaw('COALESCE(SUM(
-                CASE
-                    WHEN (paid_amount = 0 OR paid_amount IS NULL)
-                         AND (balance_amount = 0 OR balance_amount IS NULL)
-                    THEN 0
-                    ELSE total - COALESCE(paid_amount, 0)
-                END
-            ), 0) as net')
-            ->value('net');
-
-        // All khata payments (in) before this one — reduce balance
-        $khataPaymentsBefore = (float) \App\Models\Payment::where('customer_id', $customer->id)
-            ->where('payment_type', 'khata')
-            ->where('id', '<', $payment->id)
-            ->sum('amount');
-
-        // All khata payouts (out) before this one — increase balance
-        $khataPayoutsBefore = (float) \App\Models\Payment::where('customer_id', $customer->id)
-            ->where('payment_type', 'khata_payout')
-            ->where('id', '<', $payment->id)
-            ->sum('amount');
-
-        $balanceBefore = $orderNetBefore - $khataPaymentsBefore + $khataPayoutsBefore;
+        // Balance before this payment: every khata row strictly before it.
+        $balanceBefore = round(\App\Services\KhataService::entries($customer)
+            ->reject(fn ($r) => $r['type'] !== 'order' && $r['type'] !== 'refund' && $r['id'] === $payment->id)
+            ->filter(fn ($r) => \Carbon\Carbon::parse($r['date'])->lt($payment->created_at))
+            ->sum('effect'), 2);
         $balanceAfter  = $balanceBefore + ($isPayout ? $payment->amount : -$payment->amount);
 
         return view('admin.customers.payment-voucher', compact(

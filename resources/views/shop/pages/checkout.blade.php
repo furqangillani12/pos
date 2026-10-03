@@ -10,6 +10,7 @@
         provinces: @js($provinces),
         countries: @js($countries),
         charges: @js($deliveryCharges),
+        groups: @js($groups),
         payments: @js($paymentMethods->map(fn($p)=>['name'=>$p->name,'label'=>$p->label,'is_cod'=>(bool)$p->is_cod,'account_title'=>$p->account_title,'account_number'=>$p->account_number,'bank_name'=>$p->bank_name,'instructions'=>$p->instructions])->values()),
         initDispatch: @js($dispatchMethods->first()?->name),
         methods: @js($dispatchMethods->map(fn($m)=>['name'=>$m->name,'intl'=>(bool)$m->is_international])->values()),
@@ -372,6 +373,15 @@
                         <div class="flex justify-between" x-show="packing > 0" x-cloak><span class="text-gray-500">Packing</span><span class="font-semibold" x-text="money(packing)"></span></div>
                         <div class="flex justify-between" x-show="taxAmt > 0"><span class="text-gray-500">Tax<template x-if="taxType==='percent'"><span> (<span x-text="taxRate"></span>%)</span></template></span><span class="font-semibold" x-text="money(taxAmt)"></span></div>
                     </div>
+                    {{-- Cart spans several branches → placed as one order per branch --}}
+                    @if ($groups->count() > 1)
+                        <div class="mt-3 rounded-lg bg-sky-50 border border-sky-100 p-3 text-xs text-sky-900">
+                            <div class="font-semibold mb-1"><i class="fas fa-boxes-stacked"></i> Your items ship from {{ $groups->count() }} of our stores, so this will be placed as {{ $groups->count() }} separate orders (delivery is charged per order):</div>
+                            <template x-for="g in groups" :key="g.name">
+                                <div class="flex justify-between"><span x-text="g.name + ' (' + g.count + ' item' + (g.count == 1 ? '' : 's') + ')'"></span><span x-text="money(g.sub)"></span></div>
+                            </template>
+                        </div>
+                    @endif
                     <input type="hidden" name="redeem_points" :value="appliedPoints">
                     <hr class="my-4 border-gray-100">
                     <div class="flex items-baseline justify-between">
@@ -409,6 +419,7 @@
             countries: cfg.countries || [],
             openDd: { country: false, province: false, district: false },
             charges: cfg.charges || {},
+            groups: cfg.groups || [],
             payments: cfg.payments || [],
             sub: Number(cfg.sub) || 0,
             disc: Number(cfg.disc) || 0,
@@ -453,11 +464,21 @@
             },
             get pointsDiscount() { return Math.round(this.appliedPoints * this.pointValue * 100) / 100; },
             get afterDiscount() { return Math.max(0, this.sub - this.disc - this.pointsDiscount); },
-            get taxAmt() {
+            taxOn(base) {
                 if (this.taxRate <= 0) return 0;
                 if (this.taxType === 'fixed') return this.taxRate;
-                const base = this.afterDiscount + this.charge;
                 return Math.round(base * this.taxRate / 100 * 100) / 100;
+            },
+            // Multi-branch carts are billed as one order per branch, so tax is
+            // worked out per branch order (discounts shared by subtotal).
+            get taxAmt() {
+                if (this.groups.length <= 1) return this.taxOn(this.afterDiscount + this.charge);
+                const off = this.disc + this.pointsDiscount;
+                return this.groups.reduce((t, g) => {
+                    const share = this.sub > 0 ? g.sub / this.sub : 0;
+                    const after = Math.max(0, g.sub - off * share);
+                    return t + this.taxOn(after + Number(g.charges[this.dispatch] ?? 0));
+                }, 0);
             },
             get grand() { return Math.max(0, this.afterDiscount + this.taxAmt + this.charge + this.packing); },
             money(n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); },

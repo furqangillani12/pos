@@ -788,7 +788,10 @@
                         <i class="fas fa-bag-shopping mr-2 text-xs"></i> Online Orders
                         @php
                             try {
-                                $newOrders = \App\Models\Order::where('order_source', 'online')->where('status', 'pending')->count();
+                                $navBranch = session('branch_id');
+                                $newOrders = \App\Models\Order::where('order_source', 'online')->where('status', 'pending')
+                                    ->when($navBranch && $navBranch !== 'all', fn ($q) => $q->where('branch_id', $navBranch))
+                                    ->count();
                             } catch (\Throwable $e) { $newOrders = 0; }
                         @endphp
                         @if ($newOrders > 0)

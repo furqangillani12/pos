@@ -21,7 +21,25 @@
                 <span class="block {{ $nameSize }} mt-1 break-words">{{ $greetName }}</span>
             @endif
         </h1>
-        <p class="text-gray-600 text-lg">Your order <span class="font-bold" style="color:var(--brand-navy);">#{{ $order->order_number }}</span> has been placed.</p>
+        @if (($checkoutOrders ?? collect())->count() > 1)
+            <p class="text-gray-600 text-lg">Your items ship from {{ $checkoutOrders->count() }} of our stores, so we placed <span class="font-bold" style="color:var(--brand-navy);">{{ $checkoutOrders->count() }} orders</span>:</p>
+            <div class="mt-4 inline-block text-left bg-white border border-gray-100 rounded-xl px-5 py-3 text-sm">
+                @foreach ($checkoutOrders as $co)
+                    <div class="flex justify-between gap-8 py-1">
+                        @if ($order->customer_id)
+                            <a href="{{ route('shop.account.order', $co) }}" class="font-bold underline" style="color:var(--brand-navy);">#{{ $co->order_number }}</a>
+                        @else
+                            <a href="{{ route('shop.track.view', $co->receipt_token) }}" class="font-bold underline" style="color:var(--brand-navy);">#{{ $co->order_number }}</a>
+                        @endif
+                        <span class="font-semibold">{{ shop_price($co->total) }}</span>
+                    </div>
+                @endforeach
+                <div class="flex justify-between gap-8 pt-2 mt-1 border-t border-gray-100 font-extrabold"><span>Total</span><span>{{ shop_price($checkoutOrders->sum('total')) }}</span></div>
+            </div>
+            <p class="text-xs text-gray-500 mt-3">Details below are for order #{{ $order->order_number }}.</p>
+        @else
+            <p class="text-gray-600 text-lg">Your order <span class="font-bold" style="color:var(--brand-navy);">#{{ $order->order_number }}</span> has been placed.</p>
+        @endif
         <p class="text-sm text-gray-500 mt-2">We've sent a confirmation to <strong>{{ $order->customer_email ?? '—' }}</strong>.</p>
 
         <div class="mt-10 bg-white border border-gray-100 rounded-2xl p-6 text-left">

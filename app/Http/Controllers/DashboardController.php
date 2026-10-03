@@ -27,15 +27,15 @@ class DashboardController extends Controller
         $monthStart = Carbon::now()->startOfMonth();
 
         // ── Today's stats ──
-        $todaySales     = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'))->sum('total');
-        $yesterdaySales = $this->scopeBranch(Order::whereDate('created_at', $yesterday)->where('status', '!=', 'cancelled'))->sum('total');
-        $todayOrders    = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'))->count();
-        $todayPaid      = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'))->sum('paid_amount');
+        $todaySales     = $this->sales(Order::whereDate('created_at', $today))->sum('total');
+        $yesterdaySales = $this->sales(Order::whereDate('created_at', $yesterday))->sum('total');
+        $todayOrders    = $this->sales(Order::whereDate('created_at', $today))->count();
+        $todayPaid      = $this->sales(Order::whereDate('created_at', $today))->sum('paid_amount');
 
         // ── Weekly & Monthly ──
-        $weeklySales   = $this->scopeBranch(Order::where('created_at', '>=', $weekStart)->where('status', '!=', 'cancelled'))->sum('total');
-        $monthlySales  = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->sum('total');
-        $monthlyOrders = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->count();
+        $weeklySales   = $this->sales(Order::where('created_at', '>=', $weekStart))->sum('total');
+        $monthlySales  = $this->sales(Order::where('created_at', '>=', $monthStart))->sum('total');
+        $monthlyOrders = $this->sales(Order::where('created_at', '>=', $monthStart))->count();
 
         // ── Sales trend ──
         $salesChange = $yesterdaySales > 0
@@ -69,10 +69,9 @@ class DashboardController extends Controller
         }
 
         // ── Financial ──
-        // Receivables: sum of actual outstanding order balances (more accurate than current_balance)
-        $totalReceivables = $this->scopeBranch(
-            Order::whereNotIn('status', ['cancelled', 'refunded'])->where('balance_amount', '>', 0)
-        )->sum('balance_amount');
+        // Receivables (wasooli): what customers owe on their khata, plus unpaid
+        // bills that have no customer account (walk-in / website guest).
+        $totalReceivables = $this->receivablesTotal();
         $totalAdvances = $this->scopeBranch(Customer::query())->where('current_balance', '<', 0)->sum(DB::raw('ABS(current_balance)'));
         // Expenses from ledger accounts of type 'expense' (debit = expense incurred)
         $expenseAccountIds = \App\Models\LedgerAccount::where('type', 'expense')->pluck('id');
@@ -86,14 +85,14 @@ class DashboardController extends Controller
         // ── Profit estimate (this month) ──
         // profit = item sales revenue - COGS - expenses - delivery (delivery is pass-through to courier)
         // order.total includes delivery, so we subtract it back out
-        $monthlyCostQuery = OrderItem::whereHas('order', function ($q) use ($monthStart) {
-            $q->where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled');
-            $this->scopeBranch($q);
-        })->join('products', 'order_items.product_id', '=', 'products.id')
-          ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost');
-        $monthlyCost             = $monthlyCostQuery->value('cost') ?? 0;
-        $monthlyDeliveryCharges  = $this->scopeBranch(Order::where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled'))->sum('delivery_charges');
-        $monthlyProfit           = $monthlySales - $monthlyCost - $monthlyExpenses - $monthlyDeliveryCharges;
+        // Counted sales only (POS not cancelled/returned/refunded; online once delivered).
+        // Profit = sales − tax (govt.) − delivery (courier) − cost − partial refunds − expenses.
+        // Cost uses the cost saved at sale time, else today's product cost.
+        $monthlyCost             = $this->costOf(fn ($q) => $q->where('created_at', '>=', $monthStart));
+        $monthlyDeliveryCharges  = $this->sales(Order::where('created_at', '>=', $monthStart))->sum('delivery_charges');
+        $monthlyTax              = $this->sales(Order::where('created_at', '>=', $monthStart))->sum('tax');
+        $monthlyRefunds          = $this->refundsOf(fn ($q) => $q->where('refunds.created_at', '>=', $monthStart));
+        $monthlyProfit           = $monthlySales - $monthlyTax - $monthlyDeliveryCharges - $monthlyCost - $monthlyRefunds - $monthlyExpenses;
 
         // ── Employees ──
         $presentEmployees = $this->scopeBranch(Attendance::whereDate('date', $today)->where('status', 'present'))->count();
@@ -101,10 +100,7 @@ class DashboardController extends Controller
 
         // ── Top 5 products (this month) ──
         $topProducts = OrderItem::select('product_id', DB::raw('SUM(quantity) as total_qty'), DB::raw('SUM(total_price) as total_revenue'))
-            ->whereHas('order', function ($q) use ($monthStart) {
-                $q->where('created_at', '>=', $monthStart)->where('status', '!=', 'cancelled');
-                $this->scopeBranch($q);
-            })
+            ->whereHas('order', fn ($q) => $this->sales($q->where('created_at', '>=', $monthStart)))
             ->groupBy('product_id')
             ->orderByDesc('total_revenue')
             ->with('product:id,name')
@@ -127,14 +123,13 @@ class DashboardController extends Controller
         $employeeAttendance = $this->scopeBranch(Attendance::with('employee.user')->whereDate('date', $today))->get();
 
         // ── Last 7 days sales chart ──
-        $chartQuery = $this->scopeBranch(
+        $chartQuery = $this->sales(
             Order::select(
                 DB::raw('DATE(created_at) as date'),
                 DB::raw('SUM(total) as total'),
                 DB::raw('COUNT(*) as orders')
             )
             ->where('created_at', '>=', Carbon::now()->subDays(6)->startOfDay())
-            ->where('status', '!=', 'cancelled')
         )->groupBy('date')->orderBy('date');
         $chartData = $chartQuery->get();
 
@@ -150,22 +145,17 @@ class DashboardController extends Controller
         }
 
         // ── Payment breakdown ──
-        $paymentBreakdown = $this->scopeBranch(
+        $paymentBreakdown = $this->sales(
             Order::select('payment_method', DB::raw('COUNT(*) as count'), DB::raw('SUM(total) as total'))
                 ->where('created_at', '>=', $monthStart)
-                ->where('status', '!=', 'cancelled')
         )->groupBy('payment_method')->get();
 
         // Daily stats for today
-        $todayCost = OrderItem::whereHas('order', function ($q) use ($today) {
-            $q->whereDate('created_at', $today)->where('status', '!=', 'cancelled');
-            $this->scopeBranch($q);
-        })->join('products', 'order_items.product_id', '=', 'products.id')
-          ->selectRaw('SUM(order_items.quantity * COALESCE(products.cost_price, 0)) as cost')
-          ->value('cost') ?? 0;
-
-        $todayDelivery = $this->scopeBranch(Order::whereDate('created_at', $today)->where('status', '!=', 'cancelled'))->sum('delivery_charges');
-        $todayProfit   = $todaySales - $todayCost - $todayExpenses - $todayDelivery;
+        $todayCost     = $this->costOf(fn ($q) => $q->whereDate('created_at', $today));
+        $todayDelivery = $this->sales(Order::whereDate('created_at', $today))->sum('delivery_charges');
+        $todayTax      = $this->sales(Order::whereDate('created_at', $today))->sum('tax');
+        $todayRefunds  = $this->refundsOf(fn ($q) => $q->whereDate('refunds.created_at', $today));
+        $todayProfit   = $todaySales - $todayTax - $todayDelivery - $todayCost - $todayRefunds - $todayExpenses;
 
         $todayPurchases = Purchase::whereDate('purchase_date', $today)
             ->when(!$this->isAllBranches(), fn($q) => $q->where('branch_id', $this->branchId()))
@@ -203,41 +193,33 @@ class DashboardController extends Controller
     // Customers who owe us money (receivables / wusooli)
     public function receivables()
     {
-        $branchId = $this->branchId();
+        // Named customers: their khata balance (what the statement says they owe),
+        // with the bills that are still unpaid after khata payments are applied.
+        $customers = $this->scopeBranch(Customer::query())
+            ->where('current_balance', '>', 0)
+            ->orderByDesc('current_balance')
+            ->get();
 
-        // Base query: non-cancelled/refunded orders with outstanding balance
-        $baseQuery = Order::with('customer')
-            ->whereIn('status', [Order::STATUS_COMPLETED, Order::STATUS_PENDING ?? 'pending', 'processing', 'shipped', 'partial'])
-            ->where('balance_amount', '>', 0);
+        $unpaid = Order::whereIn('customer_id', $customers->pluck('id'))
+            ->whereNotIn('status', self::NOT_RECEIVABLE)
+            ->where('balance_amount', '>', 0)
+            ->latest()->get()->groupBy('customer_id');
 
-        if (!$this->isAllBranches()) {
-            $baseQuery->where('branch_id', $branchId);
-        }
+        $customerRows = $customers->map(fn ($c) => [
+            'customer'    => $c,
+            'orders'      => $unpaid->get($c->id, collect()),
+            'total_due'   => (float) $c->current_balance,
+            'order_count' => $unpaid->get($c->id, collect())->count(),
+        ])->all();
 
-        $orders = $baseQuery->latest()->get();
+        // Bills with no customer account (walk-in / website guest) still unpaid.
+        $walkinOrders = $this->scopeBranch(Order::with('customer'))
+            ->whereNull('customer_id')
+            ->whereNotIn('status', self::NOT_RECEIVABLE)
+            ->where('balance_amount', '>', 0)
+            ->latest()->get();
 
-        // Group by customer_id (null = walk-in)
-        $customerGroups = $orders->groupBy(fn($o) => $o->customer_id ?? 'walkin');
-
-        // Build structured list: named customers
-        $customerRows = [];
-        foreach ($customerGroups as $customerId => $custOrders) {
-            if ($customerId === 'walkin') continue;
-            $customer = $custOrders->first()->customer;
-            $customerRows[] = [
-                'customer'     => $customer,
-                'orders'       => $custOrders,
-                'total_due'    => $custOrders->sum('balance_amount'),
-                'order_count'  => $custOrders->count(),
-            ];
-        }
-        // Sort by total_due descending
-        usort($customerRows, fn($a, $b) => $b['total_due'] <=> $a['total_due']);
-
-        // Walk-in orders with pending balance
-        $walkinOrders = $customerGroups->get('walkin', collect());
-
-        $total = $orders->sum('balance_amount');
+        $total = $customers->sum('current_balance') + $walkinOrders->sum('balance_amount');
 
         return view('admin.dashboard-detail.receivables', compact('customerRows', 'walkinOrders', 'total'));
     }
@@ -253,5 +235,58 @@ class DashboardController extends Controller
         $total = abs($customers->sum('current_balance'));
 
         return view('admin.dashboard-detail.advances', compact('customers', 'total'));
+    }
+
+    /** Order statuses whose unpaid balance is not money to collect. */
+    private const NOT_RECEIVABLE = ['cancelled', 'returned', 'refunded'];
+
+    /**
+     * Restrict an order query to counted sales in the current branch scope:
+     * POS bills that were not cancelled / returned / fully refunded, and website
+     * orders only once delivered (same point the ledger records the sale).
+     */
+    private function sales($query)
+    {
+        return $this->scopeBranch($query)->where(function ($w) {
+            $w->where(function ($pos) {
+                $pos->where(fn ($x) => $x->where('order_source', '!=', 'online')->orWhereNull('order_source'))
+                    ->whereNotIn('status', ['cancelled', 'returned', 'refunded']);
+            })->orWhere(function ($online) {
+                $online->where('order_source', 'online')->whereIn('status', ['delivered', 'completed']);
+            });
+        });
+    }
+
+    /** Cost of goods for counted sales matching $period (cost at sale time, else today's). */
+    private function costOf(\Closure $period): float
+    {
+        return (float) (OrderItem::whereHas('order', fn ($q) => $this->sales($period($q)))
+            ->join('products', 'order_items.product_id', '=', 'products.id')
+            ->selectRaw('SUM(order_items.quantity * COALESCE(order_items.cost_price, products.cost_price, 0)) as cost')
+            ->value('cost') ?? 0);
+    }
+
+    /** Partial refunds (on bills still counted as sales) made in $period. */
+    private function refundsOf(\Closure $period): float
+    {
+        $q = \App\Models\Refund::query()
+            ->join('orders', 'orders.id', '=', 'refunds.order_id')
+            ->where('refunds.status', 'completed')
+            ->whereNotIn('orders.status', ['cancelled', 'returned', 'refunded']);
+        $period($q);
+        $this->scopeBranch($q, 'orders.branch_id');
+        return (float) $q->sum('refunds.amount');
+    }
+
+    /** Wasooli: positive khata balances + unpaid bills without a customer account. */
+    private function receivablesTotal(): float
+    {
+        $khata = (float) $this->scopeBranch(Customer::query())->where('current_balance', '>', 0)->sum('current_balance');
+        $guest = (float) $this->scopeBranch(Order::query())
+            ->whereNull('customer_id')
+            ->whereNotIn('status', self::NOT_RECEIVABLE)
+            ->where('balance_amount', '>', 0)
+            ->sum('balance_amount');
+        return round($khata + $guest, 2);
     }
 }
