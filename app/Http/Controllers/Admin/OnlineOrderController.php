@@ -113,8 +113,8 @@ class OnlineOrderController extends Controller
                 foreach ($order->items as $item) {
                     if ($item->product && $item->product->track_inventory && $order->branch_id) {
                         $isOff
-                            ? $item->product->incrementBranchStock($order->branch_id, (float) $item->quantity)
-                            : $item->product->decrementBranchStock($order->branch_id, (float) $item->quantity);
+                            ? $item->product->incrementBranchStock($order->branch_id, (float) $item->quantity, $item->variant_id)
+                            : $item->product->decrementBranchStock($order->branch_id, (float) $item->quantity, $item->variant_id);
                     }
                 }
                 if ($order->customer) {

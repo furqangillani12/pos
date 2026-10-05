@@ -339,6 +339,7 @@
                                 <img src="{{ shop_image($i->product?->image) }}" class="w-14 h-16 object-cover rounded-lg" style="background:#f5f1e8;">
                                 <div class="flex-1 min-w-0">
                                     <div class="text-sm font-semibold truncate">{{ $i->product?->name }}</div>
+                                    @if ($i->variant)<div class="text-[11px] text-pink-600 font-semibold">{{ $i->variant->label }}</div>@endif
                                     <div class="text-[11px] text-gray-500">Qty {{ (int) $i->qty }}</div>
                                 </div>
                                 <div class="text-sm font-bold whitespace-nowrap" style="color:var(--brand-navy);">{{ shop_price($i->qty * $i->unit_price) }}</div>

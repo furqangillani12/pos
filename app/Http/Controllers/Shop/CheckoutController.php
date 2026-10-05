@@ -193,6 +193,21 @@ class CheckoutController extends Controller
         // packing and tax are worked out per branch order.
         $groups     = $this->branchGroups($items);
         if ($groups->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+
+        // Colour / size items: the chosen option must still exist and be in stock.
+        foreach ($items as $row) {
+            if (!$row->product?->has_variants) continue;
+            $v = $row->variant;
+            if (!$v || !$v->is_active) {
+                return redirect()->route('shop.cart')->with('shop_error', "Please choose a colour / size again for {$row->product->name}.");
+            }
+            if ($row->product->track_inventory) {
+                $need = (float) $items->where('variant_id', $v->id)->sum('qty');
+                if ($need > (float) $v->stock) {
+                    return redirect()->route('shop.cart')->with('shop_error', "{$row->product->name} ({$v->label}): only " . (int) max(0, $v->stock) . ' left.');
+                }
+            }
+        }
         $lastKey    = $groups->keys()->last();
         $couponLeft = (float) $totals['discount'];
         $pointsLeft = $redeemPoints;
@@ -299,15 +314,17 @@ class CheckoutController extends Controller
                     OrderItem::create([
                         'order_id'    => $order->id,
                         'product_id'  => $product->id,
+                        'variant_id'  => $row->variant_id,
+                        'variant_label' => $row->variant?->label,
                         'quantity'    => $row->qty,
                         'unit_price'  => $row->unit_price,
                         'total_price' => round((float) $row->qty * (float) $row->unit_price, 2),
-                        ...\App\Services\KhataService::itemSnapshot($product),
+                        ...\App\Services\KhataService::itemSnapshot($product, $row->variant),
                         'packing_charge' => (float) ($product->packing_charge ?? 0),
                         'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                     ]);
                     if ($product->track_inventory && $branchId) {
-                        $product->decrementBranchStock($branchId, (float) $row->qty);
+                        $product->decrementBranchStock($branchId, (float) $row->qty, $row->variant_id);
                     }
                 }
 

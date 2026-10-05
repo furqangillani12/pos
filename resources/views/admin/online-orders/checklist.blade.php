@@ -50,7 +50,7 @@
                         <td><input type="checkbox" class="pick" checked style="width:20px;height:20px;"></td>
                         <td><img src="{{ shop_image($item->product?->image) }}" alt=""></td>
                         <td>
-                            <div style="font-weight:700;">{{ $item->product?->name ?? 'Product' }}</div>
+                            <div style="font-weight:700;">{{ $item->product?->name ?? 'Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</div>
                             @if ($item->product?->brand)<div class="muted">{{ $item->product->brand->name }}</div>@endif
                         </td>
                         <td><span class="code">{{ $item->product?->barcode ?: '—' }}</span></td>

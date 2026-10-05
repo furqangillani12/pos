@@ -267,7 +267,8 @@
                     <div class="item-row" data-product-id="{{ $item->product_id }}">
                         <div class="product-search-wrap">
                             <input type="hidden" class="edit-product-id" value="{{ $item->product_id }}">
-                            <input type="text" class="product-search-input" value="{{ $item->product?->name ?? 'Product' }}" onfocus="openProductDropdown(this)" oninput="filterProductDropdown(this)">
+                            <input type="hidden" class="edit-variant-id" value="{{ $item->variant_id }}">
+                            <input type="text" class="product-search-input" value="{{ $item->product?->name ?? 'Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}" onfocus="openProductDropdown(this)" oninput="filterProductDropdown(this)">
                             <div class="product-dropdown"></div>
                         </div>
                         <input type="number" class="item-input edit-qty" value="{{ $item->quantity }}" step="0.01"
@@ -364,7 +365,19 @@
 
 @push('scripts')
     <script>
-        const productsData = @json($products);
+        // Colour / size products appear once per variant ("Abaya (Black / 54)").
+        const productsData = (@json($products)).flatMap(p => {
+            const vs = (p.has_variants && p.active_variants) ? p.active_variants : [];
+            if (!vs.length) return [p];
+            return vs.map(v => Object.assign({}, p, {
+                variant_id: v.id,
+                name: p.name + ' (' + [v.color, v.size].filter(Boolean).join(' / ') + ')',
+                barcode: v.barcode || p.barcode,
+                sale_price: parseFloat(v.sale_price) || parseFloat(p.sale_price) || 0,
+                resale_price: parseFloat(v.resale_price) || parseFloat(p.resale_price) || parseFloat(v.sale_price) || parseFloat(p.sale_price) || 0,
+                wholesale_price: parseFloat(v.wholesale_price) || parseFloat(p.wholesale_price) || parseFloat(v.sale_price) || parseFloat(p.sale_price) || 0,
+            }));
+        });
         const customersData = @json($customers);
         const fmt = n => parseFloat(n || 0).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
 
@@ -432,7 +445,8 @@
             document.querySelectorAll('.item-row').forEach(row => {
                 const productId = row.querySelector('.edit-product-id')?.value;
                 if (!productId) return;
-                const product = productsData.find(p => p.id == productId);
+                const variantId = row.querySelector('.edit-variant-id')?.value || '';
+                const product = productsData.find(p => p.id == productId && String(p.variant_id || '') === variantId);
                 if (!product) return;
                 row.querySelector('.edit-price').value = getPriceForCustomerType(product, customerType);
             });
@@ -446,6 +460,7 @@
             row.innerHTML = `
             <div class="product-search-wrap">
                 <input type="hidden" class="edit-product-id" value="">
+                <input type="hidden" class="edit-variant-id" value="">
                 <input type="text" class="product-search-input" placeholder="Search product..." onfocus="openProductDropdown(this)" oninput="filterProductDropdown(this)">
                 <div class="product-dropdown"></div>
             </div>
@@ -482,7 +497,7 @@
                 dropdown.innerHTML = '<div class="product-option" style="color:#9ca3af;cursor:default;">No products found</div>';
             } else {
                 dropdown.innerHTML = filtered.map(p => `
-                    <div class="product-option" data-id="${p.id}" data-name="${p.name}" data-price="${p.sale_price}" onclick="selectProduct(this)">
+                    <div class="product-option" data-id="${p.id}" data-variant-id="${p.variant_id || ''}" data-name="${p.name}" data-price="${p.sale_price}" onclick="selectProduct(this)">
                         <div class="po-name">${p.name}</div>
                         <div class="po-meta">${p.barcode || ''} · ${p.category?.name || ''} · Rs.${parseFloat(p.sale_price||0).toLocaleString()}</div>
                     </div>
@@ -501,10 +516,11 @@
 
             input.value = option.dataset.name;
             hiddenInput.value = option.dataset.id;
+            wrap.querySelector('.edit-variant-id').value = option.dataset.variantId || '';
 
             // Use customer-type-aware price
             const customerType = getCurrentCustomerType();
-            const product = productsData.find(p => p.id == option.dataset.id);
+            const product = productsData.find(p => p.id == option.dataset.id && String(p.variant_id || '') === String(option.dataset.variantId || ''));
             priceInput.value = product ? getPriceForCustomerType(product, customerType) : option.dataset.price;
 
             dropdown.classList.remove('show');
@@ -554,8 +570,10 @@
                     row.querySelector('.product-search-input').style.borderColor = '#ef4444';
                     return;
                 }
+                const variantId = row.querySelector('.edit-variant-id')?.value;
                 items.push({
                     product_id: parseInt(productId),
+                    variant_id: variantId ? parseInt(variantId) : null,
                     quantity: parseFloat(row.querySelector('.edit-qty').value),
                     unit_price: parseFloat(row.querySelector('.edit-price').value),
                 });

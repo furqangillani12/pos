@@ -712,13 +712,18 @@
             fd.append('qty', qty);
             if (opts.size)  fd.append('size',  opts.size);
             if (opts.color) fd.append('color', opts.color);
+            if (opts.variantId) fd.append('variant_id', opts.variantId);
             try {
                 const res = await fetch('{{ route('shop.cart.add') }}', {
                     method: 'POST', body: fd,
                     headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content, 'Accept': 'application/json' }
                 });
                 const data = await res.json();
-                if (!res.ok || !data.ok) { window.toast(data.message || 'Could not add', 'error'); return false; }
+                if (!res.ok || !data.ok) {
+                    // Colour / size product added from a card → open its page to choose.
+                    if (data.choose_variant && data.url && !opts.variantId) { window.location = data.url; return false; }
+                    window.toast(data.message || 'Could not add', 'error'); return false;
+                }
                 window.toast(data.message || 'Added to cart', 'success');
 
                 // Update body's Alpine state (cartCount + reload mini-cart)
@@ -786,8 +791,8 @@
         };
 
         // ── Buy now: add to cart silently, then jump straight to checkout ──
-        window.buyNow = async function (productId, qty = 1) {
-            const ok = await window.addToCart(productId, qty, { openDrawer: false });
+        window.buyNow = async function (productId, qty = 1, opts = {}) {
+            const ok = await window.addToCart(productId, qty, Object.assign({}, opts, { openDrawer: false }));
             if (ok) window.location = '{{ route('shop.checkout') }}';
         };
 

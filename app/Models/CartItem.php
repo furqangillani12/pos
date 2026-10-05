@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class CartItem extends Model
 {
     protected $fillable = [
-        'customer_id', 'session_id', 'product_id', 'branch_id',
+        'customer_id', 'session_id', 'product_id', 'variant_id', 'branch_id',
         'qty', 'unit_price', 'selected_size', 'selected_color',
     ];
 
@@ -30,5 +30,10 @@ class CartItem extends Model
     public function getLineTotalAttribute(): float
     {
         return round((float) $this->qty * (float) $this->unit_price, 2);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
     }
 }

@@ -48,7 +48,7 @@
                     </option>
                 @endforeach
             </select>
-            <p class="mt-1 text-xs text-gray-500">Ctrl/Cmd dabaye rakh kar ek se zyada category chunein — product in sab me dikhega.</p>
+            <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select more than one category — the product will appear in all of them.</p>
         </div>
 
         <div>
@@ -77,9 +77,9 @@
         <div>
             <label for="note" class="block text-sm font-medium text-gray-700">Important Note</label>
             <textarea name="note" id="note" rows="2"
-                placeholder="Koi ahem baat is product se related (e.g. handle with care, limited stock)…"
+                placeholder="Any important note about this product (e.g. handle with care, limited stock)…"
                 class="mt-1 block w-full border border-amber-300 bg-amber-50 rounded-md shadow-sm py-2 px-3 sm:text-sm">{{ old('note', $product->note ?? '') }}</textarea>
-            <p class="mt-1 text-xs text-gray-500">Website par product ke sath aur search me bhi shamil hoga.</p>
+            <p class="mt-1 text-xs text-gray-500">Shown with the product on the website and included in search.</p>
         </div>
 
         <!-- Rank/Box Placement -->
@@ -386,6 +386,8 @@
             </div>
         </div>
 
+        @include('admin.products._variants')
+
         <!-- Image -->
         <div class="grid grid-cols-1 gap-6">
             <div>
@@ -405,7 +407,7 @@
                 <label for="gallery" class="block text-sm font-medium text-gray-700">More Images (Gallery)</label>
                 <input type="file" name="gallery[]" id="gallery" accept="image/*" multiple
                     class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
-                <p class="mt-1 text-xs text-gray-500">Ek se zyada tasveerein select kar sakte hain. Website product page par slider me dikhengi.</p>
+                <p class="mt-1 text-xs text-gray-500">You can select multiple images. They appear in the slider on the website product page.</p>
                 @if (isset($product) && !empty($product->gallery))
                     <div class="mt-3">
                         <div class="flex flex-wrap gap-2">
@@ -418,7 +420,7 @@
                                 </label>
                             @endforeach
                         </div>
-                        <p class="mt-1 text-xs text-gray-400">Kisi tasveer ke ✕ pe tick lagayein to save par wo hat jayegi. Nayi upload existing me add hoti hain.</p>
+                        <p class="mt-1 text-xs text-gray-400">Tick ✕ on an image to remove it when you save. New uploads are added to the existing images.</p>
                     </div>
                 @endif
             </div>

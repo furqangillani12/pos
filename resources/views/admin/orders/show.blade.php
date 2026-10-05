@@ -164,7 +164,7 @@
                     @foreach($order->items as $i => $item)
                         <tr>
                             <td class="px-4 py-2">{{ $i + 1 }}</td>
-                            <td class="px-4 py-2">{{ $item->product->name ?? 'Deleted Product' }}</td>
+                            <td class="px-4 py-2">{{ $item->product->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</td>
                             <td class="px-4 py-2 text-right">Rs. {{ number_format($item->unit_price, 2) }}</td>
                             <td class="px-4 py-2 text-right">{{ $item->quantity }}</td>
                             <td class="px-4 py-2 text-right">Rs. {{ number_format($item->total_price ?? $item->unit_price * $item->quantity, 2) }}</td>

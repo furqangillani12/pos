@@ -186,6 +186,8 @@ class AccountController extends Controller
                 \App\Models\OrderItem::create([
                     'order_id'    => $new->id,
                     'product_id'  => $item->product_id,
+                    'variant_id'  => $item->variant_id,
+                    'variant_label' => $item->variant_label,
                     'quantity'    => $item->quantity,
                     'unit_price'  => $item->unit_price,
                     'total_price' => $lineTotal,
@@ -194,7 +196,7 @@ class AccountController extends Controller
                     'packing_label'  => $item->packing_label,
                 ]);
                 if ($item->product && $item->product->track_inventory && $new->branch_id) {
-                    $item->product->decrementBranchStock($new->branch_id, (float) $item->quantity);
+                    $item->product->decrementBranchStock($new->branch_id, (float) $item->quantity, $item->variant_id);
                 }
             }
             $packingTotal = round($packingTotal, 2);

@@ -119,7 +119,7 @@
                         <div class="p-4 flex gap-3">
                             <img src="{{ shop_image($item->product?->image) }}" class="w-14 h-16 rounded-lg object-cover" style="background:#f5f1e8;">
                             <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-gray-800 text-sm">{{ $item->product?->name ?? 'Product' }}</div>
+                                <div class="font-semibold text-gray-800 text-sm">{{ $item->product?->name ?? 'Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</div>
                                 <div class="text-[11px] text-gray-500 mt-0.5">Qty {{ (int) $item->quantity }} × Rs. {{ number_format($item->unit_price, 0) }}</div>
                             </div>
                             <div class="text-sm font-bold whitespace-nowrap" style="color:#0c1f3d;">Rs. {{ number_format($item->total_price, 0) }}</div>

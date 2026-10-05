@@ -66,12 +66,13 @@ class PosController extends Controller
 
     public function searchProducts(Request $request)
     {
-        $query = $this->scopeBranch(Product::query())->with(['unit']);
+        $query = $this->scopeBranch(Product::query())->with(['unit', 'activeVariants']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                  ->orWhere('barcode', 'like', "%{$search}%");
+                  ->orWhere('barcode', 'like', "%{$search}%")
+                  ->orWhereHas('variants', fn ($v) => $v->where('barcode', $search));
             });
         }
 
@@ -80,12 +81,13 @@ class PosController extends Controller
         }
 
         $branchId = $this->branchId();
+        $search   = $request->input('search');
 
         $products = $query->orderBy('created_at', 'desc')
                           ->paginate($request->input('per_page', 30));
 
         return response()->json([
-            'data' => $products->map(function ($p) use ($branchId) {
+            'data' => $products->map(function ($p) use ($branchId, $search) {
                 return [
                     'id'              => $p->id,
                     'name'            => $p->name,
@@ -100,6 +102,22 @@ class PosController extends Controller
                     'reorder_level'   => $p->reorder_level ?? 5,
                     'rank'            => $p->rank,
                     'image'           => $p->image ? asset('storage/' . $p->image) : null,
+                    // Colour / size combinations (prices already fall back to the product's).
+                    'variants'        => $p->has_variants ? $p->activeVariants->map(fn ($v) => [
+                        'id'              => $v->id,
+                        'label'           => $v->label,
+                        'color'           => $v->color,
+                        'size'            => $v->size,
+                        'barcode'         => $v->barcode,
+                        'sale_price'      => $v->priceFor('customer'),
+                        'resale_price'    => $v->priceFor('reseller'),
+                        'wholesale_price' => $v->priceFor('wholesale'),
+                        'stock'           => (float) $v->stock,
+                        'image'           => !empty($p->color_images[$v->color]) ? asset('storage/' . $p->color_images[$v->color]) : null,
+                    ])->values() : [],
+                    // A scanned variant barcode → add that variant straight away.
+                    'matched_variant_id' => $search && $p->has_variants
+                        ? $p->activeVariants->firstWhere('barcode', $search)?->id : null,
                 ];
             }),
             'current_page' => $products->currentPage(),
@@ -115,6 +133,7 @@ class PosController extends Controller
                 'customer_id'        => 'nullable|exists:customers,id',
                 'items'              => 'required|array',
                 'items.*.product_id'     => 'required|exists:products,id',
+                'items.*.variant_id'     => 'nullable|integer',
                 'items.*.quantity'       => 'required|numeric|min:0.01',
                 'items.*.unit_price'     => 'nullable|numeric|min:0',
                 'items.*.original_price' => 'nullable|numeric|min:0',
@@ -150,9 +169,17 @@ class PosController extends Controller
 
             foreach ($validated['items'] as $item) {
                 $product   = Product::findOrFail($item['product_id']);
+                // Colour / size products are sold as a specific variant.
+                $variant   = null;
+                if ($product->has_variants) {
+                    $variant = $product->variants()->where('id', $item['variant_id'] ?? 0)->first();
+                    if (!$variant) {
+                        throw new \Exception("Please choose a colour / size for {$product->name}");
+                    }
+                }
                 $unitPrice = !empty($item['unit_price'])
                     ? (float) $item['unit_price']
-                    : $this->getPriceForCustomerType($product, $customerType);
+                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType));
                 $itemTotal = $unitPrice * $item['quantity'];
                 $subtotal += $itemTotal;
 
@@ -160,14 +187,16 @@ class PosController extends Controller
                     $totalWeight += $product->weight * $item['quantity'];
                 }
 
-                // Check branch stock
-                $branchStock = $product->getStockForBranch($branchId);
+                // Check branch stock (the chosen variant's own stock for colour / size items)
+                $branchStock = $variant && $product->track_inventory ? (float) $variant->stock : $product->getStockForBranch($branchId);
                 if ($branchStock < $item['quantity']) {
-                    throw new \Exception("Not enough stock for {$product->name} (Available: {$branchStock})");
+                    $what = $variant ? "{$product->name} ({$variant->label})" : $product->name;
+                    throw new \Exception("Not enough stock for {$what} (Available: {$branchStock})");
                 }
 
                 $orderItems[] = [
                     'product'        => $product,
+                    'variant'        => $variant,
                     'quantity'       => $item['quantity'],
                     'unit_price'     => $unitPrice,
                     'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
@@ -244,18 +273,20 @@ class PosController extends Controller
                 OrderItem::create([
                     'order_id'       => $order->id,
                     'product_id'     => $product->id,
+                    'variant_id'     => $itemData['variant']?->id,
+                    'variant_label'  => $itemData['variant']?->label,
                     'quantity'       => $itemData['quantity'],
                     'unit_price'     => $itemData['unit_price'],
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
-                    ...\App\Services\KhataService::itemSnapshot($product),
+                    ...\App\Services\KhataService::itemSnapshot($product, $itemData['variant']),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
-                    $product->decrementBranchStock($branchId, $itemData['quantity']);
+                    $product->decrementBranchStock($branchId, $itemData['quantity'], $itemData['variant']?->id);
                 }
             }
 
@@ -419,7 +450,7 @@ class PosController extends Controller
     public function editOrder(Order $order)
     {
         $order->load('items.product.unit', 'customer');
-        $products   = $this->scopeBranch(Product::query())->with(['category', 'unit'])->orderBy('created_at', 'desc')->get();
+        $products   = $this->scopeBranch(Product::query())->with(['category', 'unit', 'activeVariants'])->orderBy('created_at', 'desc')->get();
         $customers  = $this->scopeBranch(Customer::query())->get();
         $categories = $this->scopeBranch(Category::query())->get();
 
@@ -444,6 +475,7 @@ class PosController extends Controller
                 'customer_id'        => 'nullable|exists:customers,id',
                 'items'              => 'required|array',
                 'items.*.product_id'     => 'required|exists:products,id',
+                'items.*.variant_id'     => 'nullable|integer',
                 'items.*.quantity'       => 'required|numeric|min:0.01',
                 'items.*.unit_price'     => 'nullable|numeric|min:0',
                 'items.*.original_price' => 'nullable|numeric|min:0',
@@ -467,7 +499,7 @@ class PosController extends Controller
             // Restore old branch stock
             foreach ($order->items as $oldItem) {
                 if ($oldItem->product && $oldItem->product->track_inventory && $branchId && $branchId !== 'all') {
-                    $oldItem->product->incrementBranchStock($branchId, $oldItem->quantity);
+                    $oldItem->product->incrementBranchStock($branchId, $oldItem->quantity, $oldItem->variant_id);
                 }
             }
 
@@ -499,9 +531,17 @@ class PosController extends Controller
 
             foreach ($validated['items'] as $item) {
                 $product   = Product::findOrFail($item['product_id']);
+                // Colour / size products are sold as a specific variant.
+                $variant   = null;
+                if ($product->has_variants) {
+                    $variant = $product->variants()->where('id', $item['variant_id'] ?? 0)->first();
+                    if (!$variant) {
+                        throw new \Exception("Please choose a colour / size for {$product->name}");
+                    }
+                }
                 $unitPrice = !empty($item['unit_price'])
                     ? (float) $item['unit_price']
-                    : $this->getPriceForCustomerType($product, $customerType);
+                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType));
                 $itemTotal = $unitPrice * $item['quantity'];
                 $subtotal += $itemTotal;
 
@@ -516,6 +556,7 @@ class PosController extends Controller
 
                 $orderItems[] = [
                     'product'        => $product,
+                    'variant'        => $variant,
                     'quantity'       => $item['quantity'],
                     'unit_price'     => $unitPrice,
                     'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
@@ -579,18 +620,20 @@ class PosController extends Controller
                 OrderItem::create([
                     'order_id'       => $order->id,
                     'product_id'     => $product->id,
+                    'variant_id'     => $itemData['variant']?->id,
+                    'variant_label'  => $itemData['variant']?->label,
                     'quantity'       => $itemData['quantity'],
                     'unit_price'     => $itemData['unit_price'],
                     'original_price' => $itemData['original_price'],
                     'line_discount'  => $itemData['line_discount'],
                     'total_price'    => $itemData['total'],
-                    ...\App\Services\KhataService::itemSnapshot($product),
+                    ...\App\Services\KhataService::itemSnapshot($product, $itemData['variant']),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
-                    $product->decrementBranchStock($branchId, $itemData['quantity']);
+                    $product->decrementBranchStock($branchId, $itemData['quantity'], $itemData['variant']?->id);
                 }
             }
 
@@ -676,6 +719,7 @@ class PosController extends Controller
             ->map(function ($item) {
                 return [
                     'product_id' => $item['product_id'],
+                    'variant_id' => !empty($item['variant_id']) ? (int) $item['variant_id'] : null,
                     'name'       => $item['name'] ?? '',
                     'quantity'   => (float) $item['quantity'],
                     'unit_price' => (float) $item['unit_price'],
@@ -738,7 +782,7 @@ class PosController extends Controller
                 foreach ($refundItems as $ri) {
                     $product = Product::find($ri['product_id']);
                     if ($product && $product->track_inventory && $branchId) {
-                        $product->incrementBranchStock($branchId, $ri['quantity']);
+                        $product->incrementBranchStock($branchId, $ri['quantity'], $ri['variant_id'] ?? null);
                         $product->inventoryLogs()->create([
                             'action'          => 'refund_return',
                             'quantity_change' => $ri['quantity'],
@@ -790,7 +834,7 @@ class PosController extends Controller
                 foreach ($refund->items as $ri) {
                     $product = Product::find($ri['product_id'] ?? null);
                     if ($product && $product->track_inventory && $order->branch_id) {
-                        $product->decrementBranchStock($order->branch_id, $ri['quantity'] ?? 0);
+                        $product->decrementBranchStock($order->branch_id, $ri['quantity'] ?? 0, $ri['variant_id'] ?? null);
                     }
                 }
             }
@@ -844,7 +888,7 @@ class PosController extends Controller
             // Restore branch stock
             foreach ($order->items as $item) {
                 if ($item->product && $branchId) {
-                    $item->product->incrementBranchStock($branchId, $item->quantity);
+                    $item->product->incrementBranchStock($branchId, $item->quantity, $item->variant_id);
                 }
             }
 
@@ -866,7 +910,7 @@ class PosController extends Controller
             if ($order->status !== Order::STATUS_CANCELLED && $order->status !== Order::STATUS_REFUNDED) {
                 foreach ($order->items as $item) {
                     if ($item->product && $branchId) {
-                        $item->product->incrementBranchStock($branchId, $item->quantity);
+                        $item->product->incrementBranchStock($branchId, $item->quantity, $item->variant_id);
                     }
                 }
             }

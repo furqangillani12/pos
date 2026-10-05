@@ -23,10 +23,10 @@ class CartService
     public function query()
     {
         if (Auth::guard('customer')->check()) {
-            return CartItem::with('product.category', 'product.brand')
+            return CartItem::with('product.category', 'product.brand', 'variant')
                 ->where('customer_id', Auth::guard('customer')->id());
         }
-        return CartItem::with('product.category', 'product.brand')
+        return CartItem::with('product.category', 'product.brand', 'variant')
             ->where('session_id', $this->sessionKey());
     }
 
@@ -45,12 +45,19 @@ class CartService
         return (float) $this->items()->sum(fn ($i) => (float) $i->qty * (float) $i->unit_price);
     }
 
-    public function add(Product $product, float $qty = 1, ?string $size = null, ?string $color = null, ?float $priceOverride = null): CartItem
+    public function add(Product $product, float $qty = 1, ?string $size = null, ?string $color = null, ?float $priceOverride = null, ?\App\Models\ProductVariant $variant = null): CartItem
     {
-        $price = $priceOverride !== null ? $priceOverride : shop_product_price($product);
+        // A colour/size variant carries its own price, colour and size.
+        if ($variant) {
+            $size  = $variant->size;
+            $color = $variant->color;
+        }
+        $price = $priceOverride !== null ? $priceOverride
+            : ($variant ? $variant->priceFor(Auth::guard('customer')->user()?->customer_type ?? 'customer') : shop_product_price($product));
 
         $existing = $this->query()
             ->where('product_id', $product->id)
+            ->where('variant_id', $variant?->id)
             ->where('selected_size', $size)
             ->where('selected_color', $color)
             ->first();
@@ -66,6 +73,7 @@ class CartService
             'customer_id'    => Auth::guard('customer')->id(),
             'session_id'     => Auth::guard('customer')->check() ? null : $this->sessionKey(),
             'product_id'     => $product->id,
+            'variant_id'     => $variant?->id,
             'branch_id'      => $product->branch_id,
             'qty'            => $qty,
             'unit_price'     => $price,
@@ -142,6 +150,7 @@ class CartService
         foreach ($guest as $row) {
             $existing = CartItem::where('customer_id', $customerId)
                 ->where('product_id', $row->product_id)
+                ->where('variant_id', $row->variant_id)
                 ->where('selected_size', $row->selected_size)
                 ->where('selected_color', $row->selected_color)
                 ->first();

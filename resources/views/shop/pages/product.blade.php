@@ -21,6 +21,28 @@
         : ($product->stock_quantity ?? 0);
     $inWishlist = auth('customer')->check()
         && $product->wishlists()->where('customer_id', auth('customer')->id())->exists();
+
+    // Colour × size variants: data for the selector (prices for this customer's tier).
+    $hasVariants = $product->has_variants && $product->activeVariants->isNotEmpty();
+    $variantData = [];
+    if ($hasVariants) {
+        $ctype  = auth('customer')->user()?->customer_type ?? 'customer';
+        $isRes  = shop_is_reseller();
+        foreach ($product->activeVariants as $v) {
+            $vp = $v->priceFor($ctype);
+            $vr = $v->retailPrice();
+            $variantData[] = [
+                'id' => $v->id, 'color' => $v->color, 'size' => $v->size, 'label' => $v->label,
+                'price' => $vp,
+                'strike' => $isRes ? ($vr > $vp ? $vr : null) : ((float) $product->price > $vp ? (float) $product->price : null),
+                'stock' => $product->track_inventory ? (float) $v->stock : 9999,
+            ];
+        }
+        $vColors = collect($product->variantColors())->map(fn ($c) => ['name' => $c, 'image' => !empty($product->color_images[$c]) ? shop_image($product->color_images[$c]) : null])->values();
+        $vSizes  = $product->variantSizes();
+        $prices  = collect($variantData)->pluck('price');
+        $stock   = collect($variantData)->sum('stock');
+    }
 @endphp
 
 <section class="py-10 sm:py-14">
@@ -35,8 +57,9 @@
 
         <div class="grid lg:grid-cols-2 gap-10">
             {{-- Gallery --}}
-            <div x-data="{ active: 0 }" class="reveal">
+            <div x-data="{ active: 0, colorImg: null }" @variant-image.window="colorImg = $event.detail" class="reveal">
                 <div class="rounded-3xl overflow-hidden bg-gray-100 mb-4 relative" style="aspect-ratio:4/5;">
+                    <img x-show="colorImg" x-cloak :src="colorImg" alt="" class="w-full h-full object-cover absolute inset-0 z-10">
                     <template x-for="(img, i) in {{ $gallery->map(fn($g) => shop_image($g))->toJson() }}" :key="i">
                         <img :src="img" :alt="'{{ addslashes($product->name) }}'"
                              class="w-full h-full object-cover absolute inset-0 transition-opacity duration-500"
@@ -49,7 +72,7 @@
                     <div class="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1 snap-x"
                          style="scrollbar-width:thin;">
                         @foreach ($gallery as $i => $g)
-                            <button @click="active = {{ $i }}" type="button"
+                            <button @click="active = {{ $i }}; colorImg = null" type="button"
                                     class="flex-none w-16 sm:w-20 rounded-xl overflow-hidden border-2 transition snap-start" style="aspect-ratio:4/5;"
                                     :class="active === {{ $i }} ? 'border-blue-500' : 'border-transparent'">
                                 <img src="{{ shop_image($g) }}" loading="lazy" class="w-full h-full object-cover">
@@ -60,7 +83,7 @@
             </div>
 
             {{-- Details --}}
-            <div x-data="{ qty: 1 }" class="reveal">
+            <div x-data="variantPicker({ variants: @js($variantData), colors: @js($vColors ?? []), sizes: @js($vSizes ?? []) })" class="reveal">
                 @if ($product->brand)
                     <a href="{{ route('shop.brand', $product->brand->slug) }}" class="text-xs uppercase tracking-widest font-semibold hover:underline" style="color:var(--brand-cyan);">{{ $product->brand->name }}</a>
                 @endif
@@ -82,6 +105,18 @@
                     </div>
                 @endif
 
+                @if ($hasVariants)
+                    <div class="flex items-baseline flex-wrap gap-x-3 gap-y-1 mt-6">
+                        <span class="text-3xl font-extrabold" style="color:var(--brand-navy);"
+                              x-text="selected ? money(selected.price) : rangeText()">{{ $prices->min() == $prices->max() ? shop_price($prices->min()) : shop_price($prices->min()) . ' – ' . shop_price($prices->max()) }}</span>
+                        <template x-if="selected && selected.strike">
+                            <span class="text-lg text-gray-400 line-through" x-text="money(selected.strike)"></span>
+                        </template>
+                        <template x-if="selected && selected.strike">
+                            <span class="chip" style="background:#dcfce7;color:#047857;" x-text="Math.round((selected.strike - selected.price) / selected.strike * 100) + '% OFF'"></span>
+                        </template>
+                    </div>
+                @else
                 <div class="flex items-baseline flex-wrap gap-x-3 gap-y-1 mt-6">
                     <span class="text-3xl font-extrabold" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
                     @if ($hasSale)
@@ -95,6 +130,7 @@
                         @endif
                     @endif
                 </div>
+                @endif
 
                 @if ($product->summary)
                     <p class="text-gray-600 mt-5 leading-relaxed">{{ $product->summary }}</p>
@@ -107,6 +143,51 @@
                     </div>
                 @endif
 
+                @if ($hasVariants)
+                    {{-- Colour / size selector (Daraz-style) --}}
+                    <div class="mt-6 space-y-5">
+                        <template x-if="colors.length">
+                            <div>
+                                <div class="text-sm text-gray-600 mb-2">Color: <span class="font-semibold text-gray-900" x-text="color || 'Select'"></span></div>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="c in colors" :key="c.name">
+                                        <button type="button" @click="pickColor(c)"
+                                                class="relative rounded-xl border-2 transition text-sm font-semibold"
+                                                :class="[color === c.name ? 'border-blue-600 ring-2 ring-blue-100' : 'border-gray-200 hover:border-gray-400', colorAvailable(c.name) ? '' : 'opacity-40']"
+                                                :title="c.name">
+                                            <template x-if="c.image"><img :src="c.image" :alt="c.name" class="w-14 h-14 object-cover rounded-[10px]"></template>
+                                            <template x-if="!c.image"><span class="block px-4 py-2" x-text="c.name"></span></template>
+                                        </button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                        <template x-if="sizes.length">
+                            <div>
+                                <div class="text-sm text-gray-600 mb-2">Size: <span class="font-semibold text-gray-900" x-text="size || 'Select'"></span></div>
+                                <div class="flex flex-wrap gap-2">
+                                    <template x-for="z in sizes" :key="z">
+                                        <button type="button" @click="sizeAvailable(z) && (size = z)" :disabled="!sizeAvailable(z)"
+                                                class="min-w-[3rem] px-4 py-2 rounded-xl border-2 text-sm font-semibold transition"
+                                                :class="size === z ? 'border-blue-600 bg-blue-50 text-blue-800' : (sizeAvailable(z) ? 'border-gray-200 hover:border-gray-400' : 'border-gray-100 text-gray-300 line-through cursor-not-allowed')"
+                                                x-text="z"></button>
+                                    </template>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                    <div class="mt-5 inline-flex items-center gap-2 text-sm">
+                        <template x-if="selected && selected.stock > 0">
+                            <span class="inline-flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span><span class="text-emerald-700 font-semibold" x-text="selected.stock < 9999 && selected.stock <= 5 ? 'Only ' + Math.floor(selected.stock) + ' left' : 'In stock'"></span></span>
+                        </template>
+                        <template x-if="selected && selected.stock <= 0">
+                            <span class="text-red-600 font-semibold">Out of stock</span>
+                        </template>
+                        <template x-if="!selected">
+                            <span class="text-gray-500">{{ $stock > 0 ? 'Choose your color / size' : 'Out of stock' }}</span>
+                        </template>
+                    </div>
+                @else
                 <div class="mt-6 inline-flex items-center gap-2 text-sm">
                     @if ($stock > 0)
                         <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -116,6 +197,7 @@
                         <span class="text-red-600 font-semibold">Out of stock</span>
                     @endif
                 </div>
+                @endif
 
                 {{-- Add to cart / Buy now --}}
                 <div class="mt-8 flex flex-wrap items-center gap-3">
@@ -124,11 +206,11 @@
                         <input type="number" min="1" x-model.number="qty" class="w-14 bg-transparent text-center font-bold border-0 focus:ring-0">
                         <button type="button" @click="qty = qty + 1" class="px-4 py-3 text-gray-600 hover:text-gray-900"><i class="fas fa-plus text-xs"></i></button>
                     </div>
-                    <button type="button" @click="addToCart({{ $product->id }}, qty)"
+                    <button type="button" @click="go(() => addToCart({{ $product->id }}, qty, { variantId: selected?.id }))"
                             class="btn btn-ghost flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
                         <i class="fas fa-cart-plus"></i> Add to cart
                     </button>
-                    <button type="button" @click="buyNow({{ $product->id }}, qty)"
+                    <button type="button" @click="go(() => buyNow({{ $product->id }}, qty, { variantId: selected?.id }))"
                             class="btn btn-primary flex-1 sm:flex-none" {{ $stock <= 0 ? 'disabled' : '' }}>
                         <i class="fas fa-bolt"></i> Buy now
                     </button>
@@ -299,3 +381,52 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+    // Colour / size picker. Without variants it only carries the quantity.
+    window.variantPicker = function (cfg) {
+        return {
+            qty: 1,
+            variants: cfg.variants || [],
+            colors: cfg.colors || [],
+            sizes: cfg.sizes || [],
+            color: null,
+            size: null,
+            init() {
+                // Single option on an axis → pre-select it.
+                if (this.colors.length === 1) this.pickColor(this.colors[0]);
+                if (this.sizes.length === 1) this.size = this.sizes[0];
+            },
+            get selected() {
+                if (!this.variants.length) return null;
+                if (this.colors.length && !this.color) return null;
+                if (this.sizes.length && !this.size) return null;
+                return this.variants.find(v => (v.color || null) === (this.color || null) && (v.size || null) === (this.size || null)) || null;
+            },
+            pickColor(c) {
+                this.color = c.name;
+                if (c.image) window.dispatchEvent(new CustomEvent('variant-image', { detail: c.image }));
+                if (this.size && !this.sizeAvailable(this.size)) this.size = null;
+            },
+            colorAvailable(name) { return this.variants.some(v => v.color === name && v.stock > 0); },
+            sizeAvailable(z) {
+                return this.variants.some(v => v.size === z && v.stock > 0 && (!this.colors.length || !this.color || v.color === this.color));
+            },
+            rangeText() {
+                const p = this.variants.map(v => v.price);
+                const lo = Math.min(...p), hi = Math.max(...p);
+                return lo === hi ? this.money(lo) : this.money(lo) + ' – ' + this.money(hi);
+            },
+            money(n) { return 'Rs. ' + Math.round(Number(n) || 0).toLocaleString(); },
+            go(fn) {
+                if (this.variants.length) {
+                    if (!this.selected) { window.toast(this.colors.length && !this.color ? 'Please select a color' : 'Please select a size', 'error'); return; }
+                    if (this.selected.stock <= 0) { window.toast('This option is out of stock', 'error'); return; }
+                }
+                fn();
+            },
+        };
+    };
+</script>
+@endpush

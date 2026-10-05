@@ -772,10 +772,10 @@
                             <td>{{ $index + 1 }}</td>
                             <td>
                                 @if($isFullReturn)
-                                    <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product->name ?? 'Deleted Product' }}</span>
+                                    <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</span>
                                     <span style="display:inline-block;background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">RETURNED</span>
                                 @else
-                                    {{ $item->product->name ?? 'Deleted Product' }}
+                                    {{ $item->product->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
                                     @if($isPartial)
                                         <span style="display:inline-block;background:#fff7ed;color:#c2410c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">{{ $retQty }} RETURNED</span>
                                     @endif

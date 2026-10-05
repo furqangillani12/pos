@@ -466,10 +466,10 @@
                             <tr style="{{ $isFull ? 'background:#fef2f2;' : '' }}">
                                 <td>
                                     @if($isFull)
-                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product?->name ?? 'Deleted Product' }}</span>
+                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</span>
                                         <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">RETURNED</span>
                                     @else
-                                        {{ $item->product?->name ?? 'Deleted Product' }}
+                                        {{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
                                         @if($isPartial)
                                             <span style="background:#fff7ed;color:#c2410c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">{{ $rQty }} RETURNED</span>
                                         @endif
@@ -857,7 +857,7 @@
                                 {{ $fullyRet ? 'disabled' : '' }}>
                             <div style="flex:1;">
                                 <div style="font-size:13px;font-weight:600;color:{{ $fullyRet ? '#9ca3af' : '#1e293b' }};">
-                                    {{ $item->product?->name ?? 'Unknown' }}
+                                    {{ $item->product?->name ?? 'Unknown' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
                                     @if($fullyRet)
                                         <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">FULLY RETURNED</span>
                                     @elseif($alreadyRet > 0)
@@ -877,7 +877,8 @@
                             </div>
                             <div>
                                 <input type="hidden" name="items[{{ $idx }}][product_id]" value="{{ $item->product_id }}">
-                                <input type="hidden" name="items[{{ $idx }}][name]" value="{{ $item->product?->name }}">
+                                <input type="hidden" name="items[{{ $idx }}][variant_id]" value="{{ $item->variant_id }}">
+                                <input type="hidden" name="items[{{ $idx }}][name]" value="{{ $item->display_name }}">
                                 <input type="hidden" name="items[{{ $idx }}][unit_price]" value="{{ $item->unit_price }}">
                                 <input type="number" name="items[{{ $idx }}][quantity]"
                                     class="refund-qty-input" data-idx="{{ $idx }}"

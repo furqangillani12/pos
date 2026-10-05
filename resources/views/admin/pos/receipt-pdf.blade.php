@@ -66,7 +66,7 @@
         @foreach($order->items as $item)
             <tr>
                 <td>
-                    {{ $item->product?->name ?? 'Deleted' }}
+                    {{ $item->product?->name ?? 'Deleted' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
                     @if($item->hasLineDiscount())
                         <br><small style="color:#dc2626;">−Rs.{{ number_format($item->line_discount,0) }}/unit disc.</small>
                     @endif

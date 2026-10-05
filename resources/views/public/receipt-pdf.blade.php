@@ -187,7 +187,7 @@
                     @foreach($order->items as $index => $item)
                     <tr>
                         <td>{{ $index + 1 }}</td>
-                        <td>{{ $item->product?->name ?? 'Deleted Product' }}</td>
+                        <td>{{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</td>
                         <td class="text-center">{{ $item->quantity ?? 0 }}@if($item->product?->unit?->abbreviation) {{ $item->product->unit->abbreviation }}@endif</td>
                         <td class="text-right">Rs. {{ number_format($item->unit_price ?? 0, 2) }}</td>
                         <td class="text-right">Rs. {{ number_format($item->total_price ?? 0, 2) }}</td>

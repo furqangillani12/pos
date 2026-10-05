@@ -41,10 +41,14 @@ class Product extends Model
         'views',
         'track_inventory',
         'rank',
+        'has_variants',
+        'color_images',
     ];
 
     protected $casts = [
         'gallery'         => 'array',
+        'color_images'    => 'array',
+        'has_variants'    => 'boolean',
         'is_featured'     => 'boolean',
         'show_on_website' => 'boolean',
         'avg_rating'      => 'decimal:2',
@@ -195,8 +199,57 @@ class Product extends Model
         return $this->stockEntries()->sum('stock_quantity');
     }
 
-    public function decrementBranchStock($branchId, $quantity)
+    /** Colour × size combinations, in display order. */
+    public function variants()
     {
+        return $this->hasMany(ProductVariant::class)->orderBy('sort_order')->orderBy('id');
+    }
+
+    public function activeVariants()
+    {
+        return $this->variants()->where('is_active', true);
+    }
+
+    /** Distinct colours / sizes of the active variants, in display order. */
+    public function variantColors(): array
+    {
+        return $this->activeVariants->pluck('color')->filter(fn ($v) => $v !== null && $v !== '')->unique()->values()->all();
+    }
+
+    public function variantSizes(): array
+    {
+        return $this->activeVariants->pluck('size')->filter(fn ($v) => $v !== null && $v !== '')->unique()->values()->all();
+    }
+
+    /** Image for a colour (falls back to the main image). */
+    public function colorImage(?string $color): ?string
+    {
+        return ($color && !empty($this->color_images[$color])) ? $this->color_images[$color] : $this->image;
+    }
+
+    /**
+     * Keep the product's branch stock equal to the sum of its variants, so stock
+     * lists, low-stock and reports keep working on products with variants.
+     */
+    public function syncStockFromVariants(): void
+    {
+        if (!$this->has_variants || !$this->branch_id) return;
+        $total = (float) $this->variants()->sum('stock');
+        BranchProductStock::updateOrCreate(
+            ['branch_id' => $this->branch_id, 'product_id' => $this->id],
+            ['stock_quantity' => $total]
+        );
+    }
+
+    /**
+     * Take stock out of a branch; with $variantId the variant's own stock goes down
+     * too (variant stock lives at the product's branch).
+     */
+    public function decrementBranchStock($branchId, $quantity, $variantId = null)
+    {
+        if ($variantId) {
+            ProductVariant::where('id', $variantId)->where('product_id', $this->id)->decrement('stock', $quantity);
+        }
         $entry = BranchProductStock::firstOrCreate(
             ['branch_id' => $branchId, 'product_id' => $this->id],
             ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]
@@ -205,8 +258,11 @@ class Product extends Model
         return $entry;
     }
 
-    public function incrementBranchStock($branchId, $quantity)
+    public function incrementBranchStock($branchId, $quantity, $variantId = null)
     {
+        if ($variantId) {
+            ProductVariant::where('id', $variantId)->where('product_id', $this->id)->increment('stock', $quantity);
+        }
         $entry = BranchProductStock::firstOrCreate(
             ['branch_id' => $branchId, 'product_id' => $this->id],
             ['stock_quantity' => 0, 'reorder_level' => $this->reorder_level ?? 10]

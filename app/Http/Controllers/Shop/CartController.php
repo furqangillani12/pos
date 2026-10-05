@@ -28,6 +28,7 @@ class CartController extends Controller
             'qty'        => 'required|numeric|min:0.01|max:9999',
             'size'       => 'nullable|string|max:50',
             'color'      => 'nullable|string|max:50',
+            'variant_id' => 'nullable|integer',
         ]);
 
         $product = Product::findOrFail($data['product_id']);
@@ -35,7 +36,24 @@ class CartController extends Controller
             return response()->json(['ok' => false, 'message' => 'Product unavailable'], 422);
         }
 
-        $item = $this->cart->add($product, (float) $data['qty'], $data['size'] ?? null, $data['color'] ?? null);
+        // Products with colours / sizes must be added as a specific variant.
+        $variant = null;
+        if ($product->has_variants) {
+            $variant = $product->activeVariants()->where('id', $data['variant_id'] ?? 0)->first();
+            if (!$variant) {
+                return response()->json(['ok' => false, 'message' => 'Please choose a colour / size first.', 'choose_variant' => true, 'url' => route('shop.product', $product->slug)], 422);
+            }
+            if ($product->track_inventory) {
+                $inCart = (float) $this->cart->query()->where('variant_id', $variant->id)->sum('qty');
+                if ($inCart + (float) $data['qty'] > (float) $variant->stock) {
+                    return response()->json(['ok' => false, 'message' => $variant->stock > 0
+                        ? 'Only ' . (int) $variant->stock . ' left in ' . $variant->label . '.'
+                        : $variant->label . ' is out of stock.'], 422);
+                }
+            }
+        }
+
+        $item = $this->cart->add($product, (float) $data['qty'], $data['size'] ?? null, $data['color'] ?? null, null, $variant);
         $totals = $this->cart->totals();
 
         return response()->json([
@@ -80,7 +98,7 @@ class CartController extends Controller
         $items   = $this->cart->items()->map(fn ($i) => [
             'id'         => $i->id,
             'product_id' => $i->product_id,
-            'name'       => $i->product?->name ?? 'Product',
+            'name'       => ($i->product?->name ?? 'Product') . ($i->variant ? ' (' . $i->variant->label . ')' : ''),
             'image'      => shop_image($i->product?->image),
             'qty'        => (float) $i->qty,
             'unit_price' => (float) $i->unit_price,

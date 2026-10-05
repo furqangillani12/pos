@@ -1802,45 +1802,60 @@
             card.dataset.weight = p.weight;
             card.dataset.unit = p.unit || '';
             card.dataset.categoryId = p.category_id || '';
+            card._variants = p.variants || [];
+            const vPrices = card._variants.map(v => parseFloat(v.sale_price) || 0);
+            const priceLabel = card._variants.length
+                ? (Math.min(...vPrices) !== Math.max(...vPrices) ? 'From Rs. ' + Math.min(...vPrices).toLocaleString() : 'Rs. ' + Math.min(...vPrices).toLocaleString())
+                : null;
+            const optBadge = card._variants.length
+                ? `<div style="font-size:10px;font-weight:700;color:#db2777;margin-top:2px;"><i class="fas fa-palette"></i> ${card._variants.length} options</div>` : '';
 
             card.innerHTML = `
                 <div class="img-area">${imgHtml}</div>
                 <div class="card-info">
                     <h3>${p.name}${unitLabel}</h3>
                     ${barcodeHtml}
-                    <div class="price-text">Rs. ${Number.isInteger(parseFloat(p.sale_price)) ? parseInt(p.sale_price) : parseFloat(p.sale_price).toFixed(2)}</div>
+                    <div class="price-text">${priceLabel || ('Rs. ' + (Number.isInteger(parseFloat(p.sale_price)) ? parseInt(p.sale_price) : parseFloat(p.sale_price).toFixed(2)))}</div>
+                    ${optBadge}
                     <div class="stock-text ${stockClass}">Stock: ${Math.floor(p.stock_quantity)}${p.unit ? ' ' + p.unit : ''}</div>
                 </div>`;
 
             card.addEventListener('click', function() {
-                addProductToCart(this);
+                if (this._variants && this._variants.length) openVariantPicker(this);
+                else addProductToCart(this);
             });
 
             return card;
         }
 
-        function addProductToCart(card) {
+        function addProductToCart(card, variant = null) {
             const typeSelect = document.querySelector('.customer-type-select');
             const type = typeSelect?.value || 'walkin';
 
-            let price = parseFloat(card.dataset.salePrice);
-            if (type === 'reseller') price = parseFloat(card.dataset.resalePrice) || price;
-            if (type === 'wholesale') price = parseFloat(card.dataset.wholesalePrice) || price;
+            const sale      = variant ? parseFloat(variant.sale_price) : parseFloat(card.dataset.salePrice);
+            const resale    = variant ? parseFloat(variant.resale_price) : (parseFloat(card.dataset.resalePrice) || sale);
+            const wholesale = variant ? parseFloat(variant.wholesale_price) : (parseFloat(card.dataset.wholesalePrice) || sale);
 
-            const existing = window.cart.find(i => i.id === card.dataset.id);
+            let price = sale;
+            if (type === 'reseller') price = resale || price;
+            if (type === 'wholesale') price = wholesale || price;
+
+            const variantId = variant ? String(variant.id) : null;
+            const existing = window.cart.find(i => i.id === card.dataset.id && (i.variantId || null) === variantId);
             if (existing) {
                 existing.quantity++;
             } else {
                 window.cart.push({
                     id: card.dataset.id,
-                    name: card.dataset.name,
+                    variantId: variantId,
+                    name: card.dataset.name + (variant ? ' (' + variant.label + ')' : ''),
                     price: price,
                     weight: parseFloat(card.dataset.weight) || 0,
                     unit: card.dataset.unit || '',
                     quantity: 1,
-                    salePrice: parseFloat(card.dataset.salePrice),
-                    resalePrice: parseFloat(card.dataset.resalePrice) || parseFloat(card.dataset.salePrice),
-                    wholesalePrice: parseFloat(card.dataset.wholesalePrice) || parseFloat(card.dataset.salePrice),
+                    salePrice: sale,
+                    resalePrice: resale || sale,
+                    wholesalePrice: wholesale || sale,
                     line_discount: 0,
                     line_discount_type: 'percent',
                 });
@@ -1851,6 +1866,44 @@
                 card.style.borderColor = '';
             }, 300);
             updateCartDisplay();
+        }
+
+        // ── Colour / size picker for variant products ──
+        function openVariantPicker(card) {
+            document.getElementById('variantPickerModal')?.remove();
+            const vs = card._variants || [];
+            const wrap = document.createElement('div');
+            wrap.id = 'variantPickerModal';
+            wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+            wrap.innerHTML = `
+                <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;max-height:85vh;overflow:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);">
+                    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #f1f5f9;">
+                        <div style="font-weight:800;color:#0f172a;">${card.dataset.name}<div style="font-size:11px;font-weight:500;color:#64748b;">Choose color / size</div></div>
+                        <button type="button" data-close style="font-size:22px;line-height:1;color:#94a3b8;background:none;border:0;cursor:pointer;">&times;</button>
+                    </div>
+                    <div style="padding:12px 16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;">
+                        ${vs.map((v, i) => `
+                            <button type="button" data-idx="${i}" ${v.stock <= 0 ? 'disabled' : ''}
+                                style="text-align:left;border:2px solid ${v.stock > 0 ? '#e2e8f0' : '#f1f5f9'};border-radius:10px;padding:8px;background:${v.stock > 0 ? '#fff' : '#f8fafc'};cursor:${v.stock > 0 ? 'pointer' : 'not-allowed'};opacity:${v.stock > 0 ? 1 : .5};display:flex;gap:8px;align-items:center;">
+                                ${v.image ? `<img src="${v.image}" style="width:36px;height:36px;object-fit:cover;border-radius:6px;">` : ''}
+                                <span>
+                                    <span style="display:block;font-weight:700;font-size:13px;color:#0f172a;">${v.label}</span>
+                                    <span style="display:block;font-size:12px;color:#16a34a;font-weight:700;">Rs. ${Number(v.sale_price).toLocaleString()}</span>
+                                    <span style="display:block;font-size:11px;color:${v.stock > 0 ? '#64748b' : '#dc2626'};">${v.stock > 0 ? 'Stock: ' + Math.floor(v.stock) : 'Out of stock'}</span>
+                                </span>
+                            </button>`).join('')}
+                    </div>
+                </div>`;
+            wrap.addEventListener('click', e => {
+                if (e.target === wrap || e.target.closest('[data-close]')) { wrap.remove(); return; }
+                const btn = e.target.closest('[data-idx]');
+                if (btn && !btn.disabled) {
+                    addProductToCart(card, vs[parseInt(btn.dataset.idx)]);
+                    wrap.remove();
+                }
+            });
+            document.addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { wrap.remove(); document.removeEventListener('keydown', esc); } });
+            document.body.appendChild(wrap);
         }
 
         async function loadProducts(append = false) {
@@ -1875,7 +1928,13 @@
                 if (!append) productGrid.innerHTML = '';
 
                 json.data.forEach(p => {
-                    productGrid.appendChild(renderProductCard(p));
+                    const card = renderProductCard(p);
+                    productGrid.appendChild(card);
+                    // Scanned a variant's barcode → add that colour / size straight away.
+                    if (!append && json.data.length === 1 && p.matched_variant_id) {
+                        const v = (p.variants || []).find(x => x.id === p.matched_variant_id);
+                        if (v) addProductToCart(card, v);
+                    }
                 });
 
                 window.productLastPage = json.last_page;
@@ -3044,6 +3103,7 @@
                     const effectivePrice = Math.max(0, parseFloat(i.price) - dAmt);
                     return {
                         product_id: parseInt(i.id),
+                        variant_id: i.variantId ? parseInt(i.variantId) : null,
                         quantity: parseFloat(i.quantity),
                         unit_price: effectivePrice,
                         original_price: dAmt > 0 ? parseFloat(i.price) : null,

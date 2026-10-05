@@ -247,7 +247,7 @@
     @foreach ($order->items as $item)
         <div class="item-row">
             <span class="col-name">
-                {{ $item->product?->name ?? 'Deleted' }}
+                {{ $item->product?->name ?? 'Deleted' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
                 @if($item->hasLineDiscount())
                     <br><small style="font-size:9px;color:#888;">was {{ number_format($item->original_price,0) }}, disc -{{ number_format($item->line_discount,0) }}</small>
                 @endif

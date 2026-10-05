@@ -35,6 +35,7 @@
                             </a>
                             <div class="flex-1 min-w-0">
                                 <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-blue-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
+                                @if ($item->variant)<div class="text-xs text-pink-600 font-semibold mt-0.5">{{ $item->variant->label }}</div>@endif
                                 @if ($item->product?->brand)
                                     <div class="text-[10px] uppercase tracking-widest text-gray-400 mt-0.5">{{ $item->product->brand->name }}</div>
                                 @endif

@@ -82,7 +82,7 @@ class ProductController extends Controller
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
-        ]);
+        ] + $this->variantRules());
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
@@ -116,6 +116,8 @@ class ProductController extends Controller
             $validated['gallery'] = $gallery;
         }
 
+        $this->applyVariantStock($request, $validated);
+
         // Assign to current branch
         $branchId = $this->branchId();
         if ($branchId && $branchId !== 'all') {
@@ -127,14 +129,16 @@ class ProductController extends Controller
         // Extra categories (#16).
         $product->categories()->sync($request->input('categories', []));
 
+        if ($error = $this->syncVariants($request, $product)) {
+            return back()->withInput()->withErrors(['variants' => $error]);
+        }
+
         // Create branch stock entry
         if ($branchId && $branchId !== 'all') {
-            BranchProductStock::create([
-                'branch_id'      => $branchId,
-                'product_id'     => $product->id,
-                'stock_quantity' => $validated['stock_quantity'],
-                'reorder_level'  => $validated['reorder_level'],
-            ]);
+            BranchProductStock::updateOrCreate(
+                ['branch_id' => $branchId, 'product_id' => $product->id],
+                ['stock_quantity' => $validated['stock_quantity'], 'reorder_level' => $validated['reorder_level']]
+            );
         }
 
         // Log inventory change
@@ -185,7 +189,7 @@ class ProductController extends Controller
             'is_active'        => 'boolean',
             'track_inventory'  => 'boolean',
             'show_on_website'  => 'boolean',
-        ]);
+        ] + $this->variantRules());
 
         // Checkbox: present only when ticked, so resolve explicitly.
         $validated['show_on_website'] = $request->boolean('show_on_website');
@@ -230,10 +234,16 @@ class ProductController extends Controller
         }
         $validated['gallery'] = $gallery ?: null;
 
+        $this->applyVariantStock($request, $validated);
+
         $product->update($validated);
 
         // Extra categories (#16).
         $product->categories()->sync($request->input('categories', []));
+
+        if ($error = $this->syncVariants($request, $product)) {
+            return back()->withInput()->withErrors(['variants' => $error]);
+        }
 
         // Sync branch stock if editing from a specific branch
         $branchId = $this->branchId();
@@ -293,5 +303,109 @@ class ProductController extends Controller
     public function export()
     {
         return Excel::download(new ProductsExport($this->branchId()), 'products_'.now()->format('Ymd_His').'.xlsx');
+    }
+
+    // ── Colour × size variants ───────────────────────────────────────────────
+
+    private function variantRules(): array
+    {
+        return [
+            'has_variants'                => 'nullable|boolean',
+            'variants'                    => 'nullable|array',
+            'variants.*.id'               => 'nullable|integer',
+            'variants.*.color'            => 'nullable|string|max:100',
+            'variants.*.size'             => 'nullable|string|max:100',
+            'variants.*.barcode'          => 'nullable|string|max:100',
+            'variants.*.sale_price'       => 'nullable|numeric|min:0',
+            'variants.*.resale_price'     => 'nullable|numeric|min:0',
+            'variants.*.wholesale_price'  => 'nullable|numeric|min:0',
+            'variants.*.stock'            => 'nullable|numeric|min:0',
+            'variants.*.is_active'        => 'nullable|boolean',
+            'color_image'                 => 'nullable|array',
+            'color_image.*'               => 'nullable|image|max:5120',
+            'color_image_names'           => 'nullable|array',
+            'remove_color_image'          => 'nullable|array',
+        ];
+    }
+
+    /** With variants, the product's stock is the sum of its variants' stock. */
+    private function applyVariantStock(Request $request, array &$validated): void
+    {
+        $validated['has_variants'] = $request->boolean('has_variants') && !empty($request->input('variants'));
+        foreach (['variants', 'color_image', 'color_image_names', 'remove_color_image'] as $k) unset($validated[$k]);
+
+        if ($validated['has_variants']) {
+            $validated['stock_quantity'] = collect($request->input('variants', []))->sum(fn ($v) => (float) ($v['stock'] ?? 0));
+        }
+    }
+
+    /**
+     * Save the variant table: update rows by id, add new ones, and remove rows no
+     * longer listed (rows already used on an order or cart are switched off
+     * instead). Also stores per-colour photos. Returns an error message or null.
+     */
+    private function syncVariants(Request $request, Product $product): ?string
+    {
+        if (!$product->has_variants) return null;
+
+        $rows = collect($request->input('variants', []))
+            ->map(fn ($v) => [
+                'id'              => !empty($v['id']) ? (int) $v['id'] : null,
+                'color'           => trim((string) ($v['color'] ?? '')) ?: null,
+                'size'            => trim((string) ($v['size'] ?? '')) ?: null,
+                'barcode'         => trim((string) ($v['barcode'] ?? '')) ?: null,
+                'sale_price'      => ($v['sale_price'] ?? '') === '' ? null : (float) $v['sale_price'],
+                'resale_price'    => ($v['resale_price'] ?? '') === '' ? null : (float) $v['resale_price'],
+                'wholesale_price' => ($v['wholesale_price'] ?? '') === '' ? null : (float) $v['wholesale_price'],
+                'stock'           => (float) ($v['stock'] ?? 0),
+                'is_active'       => (bool) ($v['is_active'] ?? true),
+            ])
+            ->filter(fn ($v) => $v['color'] || $v['size'])
+            ->values();
+
+        // Barcodes must not clash with another product or variant.
+        foreach ($rows as $v) {
+            if (!$v['barcode']) continue;
+            $clash = Product::where('barcode', $v['barcode'])->where('id', '!=', $product->id)->exists()
+                || \App\Models\ProductVariant::where('barcode', $v['barcode'])->where('id', '!=', $v['id'] ?? 0)->exists()
+                || $rows->where('barcode', $v['barcode'])->count() > 1;
+            if ($clash) return "Barcode {$v['barcode']} is already used by another product or variant.";
+        }
+
+        $keep = [];
+        foreach ($rows as $i => $v) {
+            $data = collect($v)->except('id')->all() + ['sort_order' => $i];
+            $variant = $v['id'] ? $product->variants()->where('id', $v['id'])->first() : null;
+            if (!$variant) {
+                // Same colour/size typed again after removal → reuse that row.
+                $variant = $product->variants()->where('color', $v['color'])->where('size', $v['size'])->first();
+            }
+            $variant ? $variant->update($data) : ($variant = $product->variants()->create($data));
+            $keep[] = $variant->id;
+        }
+
+        foreach ($product->variants()->whereNotIn('id', $keep)->get() as $old) {
+            $used = \App\Models\OrderItem::where('variant_id', $old->id)->exists()
+                || \App\Models\CartItem::where('variant_id', $old->id)->exists();
+            $used ? $old->update(['is_active' => false, 'stock' => 0]) : $old->delete();
+        }
+
+        // Per-colour photos.
+        $images  = $product->color_images ?? [];
+        $colors  = $rows->pluck('color')->filter()->unique()->values()->all();
+        foreach ((array) $request->input('remove_color_image', []) as $c) {
+            if (isset($images[$c])) { Storage::disk('public')->delete($images[$c]); unset($images[$c]); }
+        }
+        foreach ((array) $request->file('color_image', []) as $k => $file) {
+            $color = $request->input("color_image_names.$k");
+            if (!$file || !$color) continue;
+            if (isset($images[$color])) Storage::disk('public')->delete($images[$color]);
+            $images[$color] = $file->store('products', 'public');
+        }
+        $images = array_intersect_key($images, array_flip($colors));
+        $product->update(['color_images' => $images ?: null]);
+
+        $product->refresh()->syncStockFromVariants();
+        return null;
     }
 }

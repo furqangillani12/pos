@@ -8,7 +8,7 @@ class OrderItem extends Model
 {
     protected $fillable = [
         'order_id', 'product_id',
-        'quantity', 'unit_price', 'cost_price', 'retail_price', 'original_price', 'line_discount', 'total_price',
+        'variant_id', 'variant_label', 'quantity', 'unit_price', 'cost_price', 'retail_price', 'original_price', 'line_discount', 'total_price',
         'packing_charge', 'packing_label',
     ];
 
@@ -33,6 +33,18 @@ class OrderItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(ProductVariant::class, 'variant_id');
+    }
+
+    /** Product name with its colour / size, e.g. "Abaya (Black / 54)". */
+    public function getDisplayNameAttribute(): string
+    {
+        $name = $this->product?->name ?? 'Item';
+        return $this->variant_label ? "{$name} ({$this->variant_label})" : $name;
     }
 
     // Calculate total price for the item

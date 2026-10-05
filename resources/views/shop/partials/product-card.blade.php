@@ -10,6 +10,16 @@
     // Out of stock only when the product tracks inventory and has none (client #17).
     $outOfStock = ($product->track_inventory ?? false) && (($product->stock_quantity ?? 0) <= 0);
     $badge     = $hasSale ? 'sale' : ($product->condition_label ?? 'default');
+    // Colour / size products: show the lowest variant price as "From".
+    $variantFrom = null; $variantInfo = null;
+    if ($product->has_variants && $product->activeVariants->isNotEmpty()) {
+        $ctype = auth('customer')->user()?->customer_type ?? 'customer';
+        $vps   = $product->activeVariants->map(fn ($v) => $v->priceFor($ctype));
+        $variantFrom = $vps->min() != $vps->max() ? $vps->min() : null;
+        if ($variantFrom !== null) { $price = $variantFrom; $hasSale = false; $pctOff = 0; }
+        $nc = count($product->variantColors()); $ns = count($product->variantSizes());
+        $variantInfo = trim(($nc > 1 ? $nc . ' colors' : '') . ($nc > 1 && $ns > 1 ? ' · ' : '') . ($ns > 1 ? $ns . ' sizes' : ''));
+    }
     $inWishlist = auth('customer')->check()
         && $product->wishlists()->where('customer_id', auth('customer')->id())->exists();
 @endphp
@@ -63,7 +73,10 @@
         @endif
 
         <div class="flex items-center flex-wrap gap-x-2 gap-y-0.5 mt-2">
-            <span class="font-bold text-base" style="color:var(--brand-navy);">{{ shop_price($price) }}</span>
+            <span class="font-bold text-base" style="color:var(--brand-navy);">@if ($variantFrom !== null)<span class="text-[10px] font-semibold text-gray-500">From </span>@endif{{ shop_price($price) }}</span>
+            @if ($variantInfo)
+                <span class="text-[10px] font-semibold text-pink-600">{{ $variantInfo }}</span>
+            @endif
             @if ($hasSale)
                 <span class="text-xs text-gray-400 line-through">{{ shop_price($strike) }}</span>
                 @if ($pctOff > 0)
