@@ -90,6 +90,7 @@
                                         'payout'  => 'Payout to you',
                                         'offset'  => 'Adjustment',
                                         'refund'  => 'Refund',
+                                        'adjust'  => 'Balance adjustment',
                                         default   => ucfirst($r['type']),
                                     };
                                 @endphp
@@ -109,7 +110,7 @@
                                             <span class="text-xs text-gray-500 ml-1">{{ $r['items_count'] }} {{ \Str::plural('item', $r['items_count']) }} · {{ $r['channel'] }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-right whitespace-nowrap">{{ $isOrder ? shop_price($r['amount']) : '—' }}</td>
+                                    <td class="px-4 py-3 text-right whitespace-nowrap">{{ ($isOrder || ($r['effect'] ?? 0) > 0) ? shop_price($r['amount']) : '—' }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap text-emerald-600">{{ $r['paid'] > 0 ? shop_price($r['paid']) : '—' }}</td>
                                     <td class="px-4 py-3 text-right whitespace-nowrap font-bold" style="color:var(--brand-navy);">{{ shop_price($r['running']) }}</td>
                                 </tr>

@@ -26,7 +26,7 @@ use Illuminate\Support\Collection;
 class KhataService
 {
     /** Payment types that live on the khata (not tied to the bill-time payment). */
-    public const PAYMENT_TYPES = ['khata', 'khata_offset', 'khata_payout'];
+    public const PAYMENT_TYPES = ['khata', 'khata_offset', 'khata_payout', 'khata_adjust'];
 
     /**
      * Re-spread the customer's khata payments over their bills, oldest bill first.
@@ -38,7 +38,9 @@ class KhataService
         if (!$customerId) return;
 
         $pool = (float) Payment::where('customer_id', $customerId)->whereIn('payment_type', ['khata', 'khata_offset'])->sum('amount')
-              - (float) Payment::where('customer_id', $customerId)->where('payment_type', 'khata_payout')->sum('amount');
+              - (float) Payment::where('customer_id', $customerId)->where('payment_type', 'khata_payout')->sum('amount')
+              // Balance adjustments are signed: + adds to what is owed, − works like a payment.
+              - (float) Payment::where('customer_id', $customerId)->where('payment_type', 'khata_adjust')->sum('amount');
 
         $orders = Order::where('customer_id', $customerId)
             ->whereNotIn('status', Order::KHATA_EXCLUDED_STATUSES)
@@ -126,9 +128,12 @@ class KhataService
             $type = match ($p->payment_type) {
                 'khata_payout' => 'payout',
                 'khata_offset' => 'offset',
+                'khata_adjust' => 'adjust',
                 default        => 'payment',
             };
-            $amount = (float) $p->amount;
+            // Adjustments are stored signed (+ owed more / − owed less); others positive.
+            $signed = (float) $p->amount;
+            $amount = abs($signed);
             $rows->push([
                 'type'            => $type,
                 // Payments carry a date only; order them by their real creation time
@@ -138,8 +143,8 @@ class KhataService
                 'id'              => $p->id,
                 'reference'       => $p->payment_number ?? $p->reference_number,
                 'amount'          => $amount,
-                'paid'            => $amount,
-                'effect'          => $type === 'payout' ? $amount : -$amount,
+                'paid'            => ($type === 'payout' || ($type === 'adjust' && $signed > 0)) ? 0 : $amount,
+                'effect'          => match ($type) { 'payout' => $amount, 'adjust' => $signed, default => -$amount },
                 'balance_on_bill' => 0,
                 'method'          => $p->payment_method,
                 'notes'           => $p->notes,
@@ -321,12 +326,12 @@ class KhataService
     }
 
     /** Sale-time snapshot stored on each order item (cost & retail price). */
-    public static function itemSnapshot(?Product $product): array
+    public static function itemSnapshot(?Product $product, ?\App\Models\ProductVariant $variant = null): array
     {
         if (!$product) return [];
         return [
             'cost_price'   => $product->cost_price !== null ? (float) $product->cost_price : null,
-            'retail_price' => self::retailPrice($product) ?: null,
+            'retail_price' => ($variant ? $variant->retailPrice() : self::retailPrice($product)) ?: null,
         ];
     }
 }

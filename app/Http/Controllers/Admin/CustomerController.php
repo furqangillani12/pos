@@ -507,7 +507,7 @@ class CustomerController extends Controller
         $summary = [
             'total_billed'         => $totalBilled,
             'total_paid'           => $totalPaid,
-            'total_balance'        => max(0, $totalBilled + $totalKhataPayouts - $totalPaid),
+            'total_balance'        => max(0, round($rows->sum('effect'), 2)),
             'order_count'          => $bills->count(),
             'total_khata_payments' => $totalKhataPayments,
             'payments_count'       => $credits->count(),

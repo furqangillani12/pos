@@ -544,6 +544,8 @@
                                         $isOffset  = $txn['type'] === 'offset';
                                         $isOrder   = $txn['type'] === 'order';
                                         $isRefund  = $txn['type'] === 'refund';
+                                        $isAdjust  = $txn['type'] === 'adjust';
+                                        $adjUp     = $isAdjust && ($txn['effect'] ?? 0) > 0;
                                         $rowClass  = $isPayment ? 'bg-green-50/50' : ($isPayout ? 'bg-orange-50/50' : ($isOffset ? 'bg-cyan-50/50' : ($isRefund ? 'bg-purple-50/50' : '')));
                                     @endphp
                                     <tr class="hover:bg-gray-50 transition {{ $rowClass }}">
@@ -587,6 +589,11 @@
                                                         @endif
                                                     </p>
                                                 </div>
+                                            @elseif ($isAdjust)
+                                                <div>
+                                                    <p class="font-semibold text-gray-700"><i class="fas fa-scale-balanced text-xs mr-1"></i>Balance adjustment</p>
+                                                    <p class="text-xs text-gray-500">{{ $txn['notes'] }}</p>
+                                                </div>
                                             @elseif ($isRefund)
                                                 <div>
                                                     <p class="font-semibold text-purple-700"><i class="fas fa-rotate-left text-xs mr-1"></i>Refund (واپسی)</p>
@@ -618,7 +625,7 @@
 
                                         <td
                                             class="px-3 py-3 text-right {{ $isOrder ? 'text-red-600 font-semibold' : ($isPayout ? 'text-orange-600 font-bold' : 'text-gray-200') }}">
-                                            @if ($isOrder)
+                                            @if ($isOrder || $adjUp)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @elseif ($isPayout)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
@@ -630,7 +637,7 @@
                                         <td
                                             class="px-3 py-3 text-right {{ ($isPayment || $isRefund) ? 'text-green-600 font-bold' : ($isOffset ? 'font-bold' : (($isOrder && $txn['paid'] > 0) ? 'text-green-500' : 'text-gray-200')) }}"
                                             @if ($isOffset) style="color:#0891b2;" @endif>
-                                            @if ($isPayment || $isRefund)
+                                            @if ($isPayment || $isRefund || ($isAdjust && !$adjUp))
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @elseif($isOffset)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
@@ -673,6 +680,8 @@
                                                         </button>
                                                     </form>
                                                 </div>
+                                            @elseif ($isAdjust)
+                                                <span class="text-[10px] text-gray-400 italic">Adjustment</span>
                                             @elseif ($isOffset)
                                                 <span class="text-[10px] text-gray-400 italic" title="Yeh entry supplier ke saath jori hui hai — sirf yahan se delete nahi hoti">Mila hua</span>
                                             @else
