@@ -23,7 +23,7 @@
 
     @if (empty($ledgerIncluded))
         <div class="mb-4 rounded-lg bg-amber-50 border border-amber-200 px-4 py-2 text-xs text-amber-800">
-            Kharche (expense accounts / Cash Out → expense) kisi branch ke naam par nahi hote, is liye yeh sirf "All Branches" me minus hote hain.
+            Expenses (expense accounts / Cash Out → expense) are not linked to a branch, so they are only deducted under "All Branches".
         </div>
     @endif
 

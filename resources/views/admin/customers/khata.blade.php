@@ -733,7 +733,7 @@
                     <div class="bg-white rounded-xl shadow-sm border border-red-100 mt-4 no-print">
                         <div class="px-4 py-3 border-b border-red-100">
                             <h3 class="font-bold text-red-700 text-sm"><i class="fas fa-trash-can mr-1"></i> Deleted payments (record)</h3>
-                            <p class="text-[11px] text-gray-500">Ye payments delete ki gayi thi — balance aur Cash book dono se wapas ho chuki hain.</p>
+                            <p class="text-[11px] text-gray-500">These payments were deleted — reversed from both the balance and the Cash book.</p>
                         </div>
                         <table class="w-full text-xs">
                             <tbody class="divide-y divide-gray-100">

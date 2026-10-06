@@ -101,7 +101,7 @@
                     </div>
                     <div>
                         <label class="block text-xs font-semibold text-gray-600 mb-1.5">Reason / note to customer <span class="text-gray-400 font-normal">(optional — shown to customer, e.g. "payment short" / "confirmation pending")</span></label>
-                        <input type="text" name="status_note" value="{{ $order->status_note }}" maxlength="500" placeholder="Customer ko dikhne wali chhoti wajah…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
+                        <input type="text" name="status_note" value="{{ $order->status_note }}" maxlength="500" placeholder="Short reason shown to the customer…" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     </div>
                 </form>
             </div>
@@ -262,27 +262,27 @@
                     @php $due = (float) $order->balance_amount; $dlv = min($due, (float) ($order->delivery_charges ?? 0)); @endphp
                     <form method="POST" action="{{ route('admin.online-orders.mark-paid', $order) }}" enctype="multipart/form-data" class="mt-4 pt-4 border-t border-gray-100"
                           x-data="{ amt: {{ $due }}, due: {{ $due }}, hasKhata: {{ $order->customer_id ? 'true' : 'false' }} }"
-                          @submit="if (!confirm(amt > due ? 'Rs. ' + Math.round(amt).toLocaleString() + ' receive — order fully paid ho jayega, aur Rs. ' + Math.round(amt - due).toLocaleString() + ' extra customer ke khata me advance jayega.' : (amt >= due ? 'Rs. ' + Math.round(amt).toLocaleString() + ' receive — order fully paid ho jayega. Customer khata se itna kam hoga.' : 'Rs. ' + Math.round(amt).toLocaleString() + ' receive (partial). Rs. ' + Math.round(due - amt).toLocaleString() + ' baqi rahega. Customer khata se itna kam hoga.'))) $event.preventDefault()">
+                          @submit="if (!confirm(amt > due ? 'Receive Rs. ' + Math.round(amt).toLocaleString() + '? The order will be fully paid and Rs. ' + Math.round(amt - due).toLocaleString() + ' extra will be added to the customer\'s khata as advance.' : (amt >= due ? 'Receive Rs. ' + Math.round(amt).toLocaleString() + '? The order will be fully paid and the customer\'s khata reduced by this amount.' : 'Receive Rs. ' + Math.round(amt).toLocaleString() + ' (partial)? Rs. ' + Math.round(due - amt).toLocaleString() + ' will remain due. The customer\'s khata will be reduced by this amount.'))) $event.preventDefault()">
                         @csrf @method('PATCH')
                         <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2"><i class="fas fa-hand-holding-dollar text-emerald-500"></i> Receive payment</div>
-                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Kitni payment aayi? (Rs.)</label>
+                        <label class="block text-[11px] font-semibold text-gray-500 mb-1">Amount received (Rs.)</label>
                         <input type="number" name="amount" step="0.01" min="1" @if (!$order->customer_id) max="{{ $due }}" @endif x-model.number="amt" required
                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-semibold mb-1 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
                         <div class="flex flex-wrap gap-1 mb-2">
-                            <button type="button" @click="amt = due" class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Poora (Rs. {{ number_format($due, 0) }})</button>
-                            <button type="button" @click="amt = Math.round(due / 2)" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Aadha (Rs. {{ number_format(round($due / 2), 0) }})</button>
+                            <button type="button" @click="amt = due" class="text-[11px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 hover:bg-emerald-100">Full (Rs. {{ number_format($due, 0) }})</button>
+                            <button type="button" @click="amt = Math.round(due / 2)" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Half (Rs. {{ number_format(round($due / 2), 0) }})</button>
                             @if ($dlv > 0)
-                                <button type="button" @click="amt = {{ $dlv }}" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Sirf delivery (Rs. {{ number_format($dlv, 0) }})</button>
+                                <button type="button" @click="amt = {{ $dlv }}" class="text-[11px] px-2 py-0.5 rounded bg-gray-100 text-gray-700 hover:bg-gray-200">Delivery only (Rs. {{ number_format($dlv, 0) }})</button>
                             @endif
                         </div>
                         <p class="text-[11px] mb-2" x-show="amt > 0 && amt < due" x-cloak>
-                            Baqi rahega: <span class="font-bold text-rose-600" x-text="'Rs. ' + Math.round(due - amt).toLocaleString()"></span>
+                            Remaining due: <span class="font-bold text-rose-600" x-text="'Rs. ' + Math.round(due - amt).toLocaleString()"></span>
                         </p>
                         <p class="text-[11px] mb-2 rounded bg-emerald-50 border border-emerald-100 px-2 py-1" x-show="hasKhata && amt > due" x-cloak>
-                            Order fully paid + <span class="font-bold text-emerald-700" x-text="'Rs. ' + Math.round(amt - due).toLocaleString()"></span> extra customer ke khata me <b>advance</b> (credit) jayega.
+                            Order fully paid + <span class="font-bold text-emerald-700" x-text="'Rs. ' + Math.round(amt - due).toLocaleString()"></span> extra will be added to the customer's khata as <b>advance</b> (credit).
                         </p>
                         @if (!$order->customer_id)
-                            <p class="text-[11px] text-gray-400 mb-2">Guest order — baqaya se zyada raqam nahi li ja sakti (customer ka khata nahi hai).</p>
+                            <p class="text-[11px] text-gray-400 mb-2">Guest order — you can't receive more than the balance due (no customer khata to hold the extra).</p>
                         @endif
                         <label class="block text-[11px] font-semibold text-gray-500 mb-1">Payment method</label>
                         <select name="payment_method" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs mb-2">
@@ -303,7 +303,7 @@
                         <button class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg">
                             <i class="fas fa-check-circle"></i> <span x-text="amt >= due ? 'Mark as Paid' : 'Receive partial payment'">Mark as Paid</span>
                         </button>
-                        <p class="text-[11px] text-gray-400 mt-1">Optional — sirf tab lagayein jab payment mil jaye. Dispatch/print ke liye zaroori nahi.</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Optional — record it only once the payment is received. Not required for dispatch or printing.</p>
                     </form>
                 @endif
             </div>
