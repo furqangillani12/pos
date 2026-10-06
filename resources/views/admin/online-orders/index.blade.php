@@ -48,7 +48,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
             <div class="sm:col-span-4">
                 <input type="text" name="search" value="{{ request('search') }}"
-                       placeholder="Search order #, customer name, email, phone..."
+                       placeholder="Search order #, tracking ID, customer name, email, phone..."
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
             </div>
             <div class="sm:col-span-2">
@@ -62,10 +62,9 @@
             <div class="sm:col-span-2">
                 <select name="online_payment_status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
                     <option value="">All payments</option>
-                    <option value="cod"          @selected(request('online_payment_status') === 'cod')>COD</option>
-                    <option value="bank_pending" @selected(request('online_payment_status') === 'bank_pending')>Bank pending</option>
-                    <option value="bank_paid"    @selected(request('online_payment_status') === 'bank_paid')>Bank paid</option>
-                    <option value="partial"      @selected(request('online_payment_status') === 'partial')>Partially paid</option>
+                    @foreach ($paymentFilters as $key => $label)
+                        <option value="{{ $key }}" @selected(request('online_payment_status') === $key)>{{ $label }} ({{ $paymentCounts[$key] ?? 0 }})</option>
+                    @endforeach
                 </select>
             </div>
             <div class="sm:col-span-2">

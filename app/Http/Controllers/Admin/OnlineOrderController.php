@@ -31,11 +31,12 @@ class OnlineOrderController extends Controller
             $query->where('status', $status);
         }
         if ($payment = $request->input('online_payment_status')) {
-            $query->where('online_payment_status', $payment);
+            $this->applyPaymentFilter($query, $payment);
         }
         if ($search = trim((string) $request->input('search'))) {
             $query->where(function ($q) use ($search) {
                 $q->where('order_number', 'like', "%{$search}%")
+                  ->orWhere('tracking_id', 'like', "%{$search}%")
                   ->orWhere('customer_email', 'like', "%{$search}%")
                   ->orWhere('shipping_first_name', 'like', "%{$search}%")
                   ->orWhere('shipping_last_name', 'like', "%{$search}%")
@@ -65,7 +66,16 @@ class OnlineOrderController extends Controller
             'revenue'   => (clone $statBase)->where('status', '!=', 'cancelled')->sum('total'),
         ];
 
-        return view('admin.online-orders.index', compact('orders', 'stats'));
+        // Order count per payment filter (same branch scope), shown in the dropdown.
+        $paymentCounts = [];
+        foreach (array_keys(self::PAYMENT_FILTERS) as $key) {
+            $q = $this->scopeBranch(Order::query())->where('order_source', 'online');
+            $this->applyPaymentFilter($q, $key);
+            $paymentCounts[$key] = $q->count();
+        }
+        $paymentFilters = self::PAYMENT_FILTERS;
+
+        return view('admin.online-orders.index', compact('orders', 'stats', 'paymentCounts', 'paymentFilters'));
     }
 
     public function show(Order $order)
@@ -405,6 +415,31 @@ class OnlineOrderController extends Controller
         return back()->with('success', $full
             ? 'Payment of Rs. ' . number_format($amount, 0) . ' received — order fully paid.'
             : 'Payment of Rs. ' . number_format($amount, 0) . ' received — Rs. ' . number_format($due - $amount, 0) . ' still due.');
+    }
+
+    /** Payment filter options on the Online Orders list: key => label. */
+    private const PAYMENT_FILTERS = [
+        'not_received'    => '⏳ Payment not received yet',
+        'proof_submitted' => 'Proof submitted — confirm',
+        'partial'         => 'Partially paid',
+        'fully_paid'      => '✓ Fully paid',
+        'cod'             => 'COD',
+        'bank_pending'    => 'Bank pending (no proof)',
+        'bank_paid'       => 'Bank paid',
+    ];
+
+    /**
+     * "not_received" = still has a balance to collect (unpaid or part-paid), and
+     * "fully_paid" = nothing left; both ignore cancelled/returned orders. Other
+     * keys match the stored online payment status.
+     */
+    private function applyPaymentFilter($query, string $key): void
+    {
+        match ($key) {
+            'not_received' => $query->where('balance_amount', '>', 0)->whereNotIn('status', ['cancelled', 'returned']),
+            'fully_paid'   => $query->where('balance_amount', '<=', 0)->whereNotIn('status', ['cancelled', 'returned']),
+            default        => $query->where('online_payment_status', $key),
+        };
     }
 
     /** COD order? (status may already read 'partial' after an earlier part-payment.) */
