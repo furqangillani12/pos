@@ -366,10 +366,15 @@ class OnlineOrderController extends Controller
         ]);
 
         $amount = round((float) $data['amount'], 2);
-        if ($amount > $due) {
-            return back()->with('error', 'Amount Rs. ' . number_format($amount, 0) . ' is more than the balance due (Rs. ' . number_format($due, 0) . ').');
+        // More than the balance (e.g. a reseller sends extra): the order is settled
+        // and the extra goes to the customer's khata as an advance / credit, which
+        // they can later withdraw. Guest orders have no khata to hold it.
+        $extra = round(max(0, $amount - $due), 2);
+        if ($extra > 0 && !$order->customer) {
+            return back()->with('error', 'Amount Rs. ' . number_format($amount, 0) . ' is more than the balance due (Rs. ' . number_format($due, 0) . '). This is a guest order with no customer khata, so the extra cannot be kept as advance.');
         }
-        $full   = abs($amount - $due) < 0.01;
+        $onOrder = round($amount - $extra, 2);
+        $full    = abs($onOrder - $due) < 0.01;
         $method = ($data['payment_method'] ?? '') !== '' ? $data['payment_method'] : $order->payment_method;
 
         // Admin can attach a payment receipt here (#7).
@@ -378,13 +383,13 @@ class OnlineOrderController extends Controller
             $proofPath = $request->file('payment_proof')->store('payment-proofs', 'public');
         }
 
-        DB::transaction(function () use ($order, $data, $proofPath, $amount, $due, $full, $method) {
+        DB::transaction(function () use ($order, $data, $proofPath, $amount, $onOrder, $extra, $due, $full, $method) {
             \App\Models\Payment::create([
                 'payment_number'   => \App\Models\Payment::generatePaymentNumber(),
                 'payment_type'     => 'order',
                 'order_id'         => $order->id,
                 'customer_id'      => $order->customer_id,
-                'amount'           => $amount,
+                'amount'           => $onOrder,
                 'payment_date'     => now()->toDateString(),
                 'payment_method'   => $method,
                 'reference_number' => $data['payment_ref'] ?? null,
@@ -393,9 +398,26 @@ class OnlineOrderController extends Controller
                 'created_by'       => auth()->id(),
             ]);
 
+            // The extra becomes a khata payment (advance) on the customer's account.
+            if ($extra > 0) {
+                \App\Models\Payment::create([
+                    'payment_number'   => \App\Models\Payment::generatePaymentNumber(),
+                    'payment_type'     => 'khata',
+                    'order_id'         => null,
+                    'customer_id'      => $order->customer_id,
+                    'amount'           => $extra,
+                    'payment_date'     => now()->toDateString(),
+                    'payment_method'   => $method,
+                    'reference_number' => $data['payment_ref'] ?? null,
+                    'notes'            => "Extra received with order {$order->order_number} payment (Rs. " . number_format($amount, 0) . ' total) — kept as advance',
+                    'status'           => 'completed',
+                    'created_by'       => auth()->id(),
+                ]);
+            }
+
             $order->update([
-                'paid_amount'           => round((float) $order->paid_amount + $amount, 2),
-                'balance_amount'        => round($due - $amount, 2),
+                'paid_amount'           => round((float) $order->paid_amount + $onOrder, 2),
+                'balance_amount'        => round($due - $onOrder, 2),
                 'payment_status'        => $full ? 'paid' : 'partial',
                 'online_payment_status' => $full
                     ? ($this->isCodOrder($order) ? 'paid' : 'bank_paid')
@@ -412,9 +434,11 @@ class OnlineOrderController extends Controller
             }
         });
 
-        return back()->with('success', $full
-            ? 'Payment of Rs. ' . number_format($amount, 0) . ' received — order fully paid.'
-            : 'Payment of Rs. ' . number_format($amount, 0) . ' received — Rs. ' . number_format($due - $amount, 0) . ' still due.');
+        return back()->with('success', $extra > 0
+            ? 'Payment of Rs. ' . number_format($amount, 0) . ' received — order fully paid, Rs. ' . number_format($extra, 0) . ' extra added to the customer\'s khata as advance.'
+            : ($full
+                ? 'Payment of Rs. ' . number_format($amount, 0) . ' received — order fully paid.'
+                : 'Payment of Rs. ' . number_format($amount, 0) . ' received — Rs. ' . number_format($due - $amount, 0) . ' still due.'));
     }
 
     /** Payment filter options on the Online Orders list: key => label. */
