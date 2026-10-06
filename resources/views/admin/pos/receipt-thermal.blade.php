@@ -296,14 +296,15 @@
 
     {{-- ── Payment / Balance ── --}}
     @php
-        $paidAmount = $order->paid_amount ?? $order->total;
+        $paidAmount = $order->counterPaid();
         $balanceOnBill = max(0, $order->total - $paidAmount);
         $prevBalance = $order->computePreviousBalance();
-        // Live khata balance so a cash in/out done after the sale reflects on a
-        // reprint (client #2) — same as the A4 & public receipts.
-        $currentBalance = ($order->customer_id && $order->customer)
-            ? (float) $order->customer->current_balance
-            : ($prevBalance + $order->total - $paidAmount);
+        // Balance as it stood right after THIS bill (previous balance + this bill's
+        // unpaid part), so every old bill shows its own position in the khata. The
+        // customer's balance today is shown on a separate line when it differs.
+        $currentBalance = round($prevBalance + $order->total - $paidAmount, 2);
+        $todayBalance = ($order->customer_id && $order->customer) ? (float) $order->customer->current_balance : null;
+        $showToday = $todayBalance !== null && abs($todayBalance - $currentBalance) >= 1;
         $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
     @endphp
 
@@ -354,6 +355,12 @@
         @elseif($prevBalance != 0)
             <div class="total-row grand center">
                 <span>ALL SETTLED</span>
+            </div>
+        @endif
+        @if ($showToday)
+            <div class="total-row small">
+                <span>Today's bal. ({{ now()->format('d/m/y') }})</span>
+                <span>{{ $todayBalance < 0 ? 'Adv ' : '' }}Rs.{{ number_format(abs($todayBalance), 0) }}</span>
             </div>
         @endif
     @endif

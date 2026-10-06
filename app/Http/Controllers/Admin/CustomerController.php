@@ -482,7 +482,13 @@ class CustomerController extends Controller
 
     public function khata(Request $request, Customer $customer)
     {
-        $fromDate = $request->input('from_date', now()->subMonths(3)->toDateString());
+        // Default: the customer's whole history (first bill / payment to today), so
+        // the statement opens at 0 and every running balance is explained.
+        $firstOrder   = $customer->orders()->min('created_at');
+        $firstPayment = \App\Models\Payment::where('customer_id', $customer->id)
+            ->whereIn('payment_type', \App\Services\KhataService::PAYMENT_TYPES)->min('payment_date');
+        $first = collect([$firstOrder, $firstPayment])->filter()->min();
+        $fromDate = $request->input('from_date', $first ? \Carbon\Carbon::parse($first)->toDateString() : now()->subMonths(3)->toDateString());
         $toDate   = $request->input('to_date',   now()->toDateString());
 
         // ── 1-4. Khata rows (bills, payments, payouts, offsets, refunds) with a

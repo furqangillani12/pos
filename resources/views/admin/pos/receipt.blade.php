@@ -591,17 +591,15 @@
 
                 {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
                 @php
-                    $paidAmount = $order->paid_amount ?? $order->total;
+                    $paidAmount = $order->counterPaid();
                     $balanceOnBill = max(0, $order->total - $paidAmount);
                     $prevBalance = $order->computePreviousBalance();
-                    // "Current Balance Due" must reflect the customer's LIVE khata
-                    // balance so a cash in/out done after this sale shows up when the
-                    // bill is reprinted (client #2). The live customers.current_balance
-                    // is the running total that cash in/out actually updates. Fall back
-                    // to the arithmetic for walk-ins / orders with no customer record.
-                    $currentBalance = ($order->customer_id && $order->customer)
-                        ? (float) $order->customer->current_balance
-                        : ($prevBalance + $order->total - $paidAmount);
+                    // Balance as it stood right after THIS bill (previous balance + this bill's
+                    // unpaid part), so every old bill shows its own position in the khata. The
+                    // customer's balance today is shown on a separate line when it differs.
+                    $currentBalance = round($prevBalance + $order->total - $paidAmount, 2);
+                    $todayBalance = ($order->customer_id && $order->customer) ? (float) $order->customer->current_balance : null;
+                    $showToday = $todayBalance !== null && abs($todayBalance - $currentBalance) >= 1;
                     $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
                 @endphp
 
@@ -644,7 +642,7 @@
 
                     @if ($currentBalance > 0)
                         <div class="total-row due">
-                            <span class="label">Current Balance Due</span>
+                            <span class="label">Balance Due (after this bill)</span>
                             <span class="value">Rs. {{ number_format($currentBalance, 0) }}</span>
                         </div>
                     @elseif ($currentBalance < 0)
@@ -655,6 +653,12 @@
                     @elseif ($prevBalance != 0)
                         <div class="total-row settled">
                             <span>✅ All Settled (حساب برابر)</span>
+                        </div>
+                    @endif
+                    @if ($showToday)
+                        <div class="total-row" style="background:#f8fafc;padding:5px 8px;border-radius:6px;margin-top:4px;border:1px dashed #cbd5e1;">
+                            <span class="label" style="color:#475569;font-size:12px;">Today's khata balance ({{ now()->format('d M Y') }})</span>
+                            <span class="value" style="color:#475569;font-size:12px;">{{ $todayBalance < 0 ? 'Advance ' : '' }}Rs. {{ number_format(abs($todayBalance), 0) }}</span>
                         </div>
                     @endif
                 @endif
@@ -1080,9 +1084,12 @@
                         message += `*Previous Balance*: Rs. {{ number_format($prevBalance, 0) }}\n`;
                     @endif
                     @if ($currentBalance > 0)
-                        message += `\n*Total Balance Due*: Rs. {{ number_format($currentBalance, 0) }}\n`;
+                        message += `\n*Balance Due (after this bill)*: Rs. {{ number_format($currentBalance, 0) }}\n`;
                     @elseif ($currentBalance < 0)
                         message += `\n*Change Due (واپسی)*: Rs. {{ number_format(abs($currentBalance), 0) }}\n`;
+                    @endif
+                    @if ($showToday)
+                        message += `*Today's khata balance ({{ now()->format('d M Y') }})*: {{ $todayBalance < 0 ? 'Advance ' : '' }}Rs. {{ number_format(abs($todayBalance), 0) }}\n`;
                     @endif
                 @endif
                 message += `\n*Payment Method*: {{ ucfirst(str_replace('_', ' ', $order->payment_method ?? 'N/A')) }}\n`;
