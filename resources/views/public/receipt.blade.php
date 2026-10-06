@@ -878,11 +878,8 @@
                 $balanceOnBill = max(0, $order->total - $paidAmount);
                 $prevBalance = $order->computePreviousBalance();
                 // Balance as it stood right after THIS bill (previous balance + this bill's
-                // unpaid part), so every old bill shows its own position in the khata. The
-                // customer's balance today is shown on a separate line when it differs.
+                // unpaid part), so every bill shows its own position in the khata.
                 $currentBalance = round($prevBalance + $order->total - $paidAmount, 2);
-                $todayBalance = ($order->customer_id && $order->customer) ? (float) $order->customer->current_balance : null;
-                $showToday = $todayBalance !== null && abs($todayBalance - $currentBalance) >= 1;
                 $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
             @endphp
 
@@ -936,12 +933,6 @@
                 @elseif ($prevBalance != 0)
                     <div class="summary-row" style="background:#f0fdf4;padding:8px;border-radius:6px;margin-top:4px;border:1.5px solid #4ade80;text-align:center;">
                         <span style="color:#16a34a;font-weight:800;width:100%;text-align:center;">✅ All Settled (حساب برابر)</span>
-                    </div>
-                @endif
-                @if ($showToday)
-                    <div class="summary-row" style="background:#f8fafc;padding:5px 8px;border-radius:6px;margin-top:4px;border:1px dashed #cbd5e1;">
-                        <span class="label" style="color:#475569;font-size:12px;">Today's khata balance ({{ now()->format('d M Y') }})</span>
-                        <span class="value" style="color:#475569;font-size:12px;">{{ $todayBalance < 0 ? 'Advance ' : '' }}Rs. {{ number_format(abs($todayBalance), 0) }}</span>
                     </div>
                 @endif
             @endif
