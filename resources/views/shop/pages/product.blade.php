@@ -87,7 +87,13 @@
                 @if ($product->brand)
                     <a href="{{ route('shop.brand', $product->brand->slug) }}" class="text-xs uppercase tracking-widest font-semibold hover:underline" style="color:var(--brand-cyan);">{{ $product->brand->name }}</a>
                 @endif
-                <h1 class="display text-3xl sm:text-4xl font-bold mt-2 leading-tight">{{ $product->name }}</h1>
+                {{-- English + Urdu name: stacked on mobile, side by side on desktop --}}
+                <div class="mt-2 flex flex-col lg:flex-row lg:items-start lg:justify-between gap-1 lg:gap-6">
+                    <h1 class="display text-3xl sm:text-4xl font-bold leading-tight">{{ $product->name }}</h1>
+                    @if ($product->name_ur)
+                        <div class="urdu text-2xl sm:text-3xl font-semibold text-gray-800 lg:text-right" dir="rtl" lang="ur">{{ $product->name_ur }}</div>
+                    @endif
+                </div>
 
                 @if ($product->barcode)
                     <div class="flex items-center gap-2 mt-2 text-xs text-gray-500">
@@ -140,6 +146,11 @@
                     <div class="mt-5 flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
                         <i class="fas fa-circle-info text-amber-500 mt-0.5"></i>
                         <p class="text-sm text-amber-800 leading-relaxed">{{ $product->note }}</p>
+                    </div>
+                @endif
+                @if ($product->note_ur)
+                    <div class="mt-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2">
+                        <p class="urdu text-sm text-amber-800" dir="rtl" lang="ur">{{ $product->note_ur }}</p>
                     </div>
                 @endif
 
@@ -266,10 +277,31 @@
                     <div class="flex items-center gap-2"><i class="fas fa-rotate-left" style="color:var(--brand-cyan);"></i> 7-day returns</div>
                 </div>
 
-                @if ($product->description)
-                    <div class="mt-8 prose max-w-none text-gray-700">
+                @if ($product->description || $product->description_ur)
+                    <div class="mt-8 max-w-none text-gray-700">
                         <h3 class="display text-xl font-bold mb-3 text-gray-900">About this product</h3>
-                        <div>{!! nl2br(e($product->description)) !!}</div>
+                        {{-- English + Urdu: stacked on mobile, side by side on desktop --}}
+                        <div class="grid grid-cols-1 {{ $product->description && $product->description_ur ? 'lg:grid-cols-2' : '' }} gap-6">
+                            @if ($product->description)<div class="leading-relaxed">{!! nl2br(e($product->description)) !!}</div>@endif
+                            @if ($product->description_ur)<div class="urdu" dir="rtl" lang="ur">{!! nl2br(e($product->description_ur)) !!}</div>@endif
+                        </div>
+                    </div>
+                @endif
+
+                {{-- How-to video (upload or YouTube / video link) --}}
+                @php $ytEmbed = shop_video_embed($product->video_url); @endphp
+                @if ($product->video || $product->video_url)
+                    <div class="mt-8">
+                        <h3 class="display text-xl font-bold mb-3 text-gray-900"><i class="fas fa-circle-play" style="color:var(--brand-cyan);"></i> Video</h3>
+                        @if ($product->video)
+                            <video src="{{ shop_image($product->video) }}" controls preload="metadata" playsinline class="w-full rounded-2xl bg-black" style="max-height:480px;"></video>
+                        @elseif ($ytEmbed)
+                            <div class="relative w-full rounded-2xl overflow-hidden bg-black" style="aspect-ratio:16/9;">
+                                <iframe src="{{ $ytEmbed }}" class="absolute inset-0 w-full h-full" title="Product video" loading="lazy" allow="accelerometer; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                            </div>
+                        @else
+                            <a href="{{ $product->video_url }}" target="_blank" rel="noopener" class="btn btn-ghost"><i class="fas fa-play"></i> Watch video</a>
+                        @endif
                     </div>
                 @endif
             </div>

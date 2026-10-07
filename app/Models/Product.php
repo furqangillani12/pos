@@ -43,11 +43,21 @@ class Product extends Model
         'rank',
         'has_variants',
         'color_images',
+        'name_ur',
+        'description_ur',
+        'note_ur',
+        'subcategory_id',
+        'price_breakdown',
+        'other_charges',
+        'video',
+        'video_url',
     ];
 
     protected $casts = [
         'gallery'         => 'array',
         'color_images'    => 'array',
+        'price_breakdown' => 'array',
+        'other_charges'   => 'array',
         'has_variants'    => 'boolean',
         'is_featured'     => 'boolean',
         'show_on_website' => 'boolean',
@@ -73,6 +83,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function subcategory(): BelongsTo
+    {
+        return $this->belongsTo(Category::class, 'subcategory_id');
     }
 
     /**

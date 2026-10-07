@@ -41,6 +41,7 @@ class CatalogController extends Controller
             // Match the product's primary category OR any of its extra categories (#16).
             $query->where(function ($w) use ($catIds) {
                 $w->whereIn('category_id', $catIds)
+                  ->orWhereIn('subcategory_id', $catIds)
                   ->orWhereHas('categories', fn ($c) => $c->whereIn('categories.id', $catIds));
             });
         }
@@ -50,6 +51,8 @@ class CatalogController extends Controller
         if ($q) {
             $query->where(function ($w) use ($q) {
                 $w->where('name', 'like', "%{$q}%")
+                  ->orWhere('name_ur', 'like', "%{$q}%")
+                  ->orWhere('description_ur', 'like', "%{$q}%")
                   ->orWhere('summary', 'like', "%{$q}%")
                   ->orWhere('description', 'like', "%{$q}%")
                   ->orWhere('note', 'like', "%{$q}%")

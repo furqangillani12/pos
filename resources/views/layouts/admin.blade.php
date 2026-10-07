@@ -686,6 +686,10 @@
                             class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
                             <i class="fas fa-ruler mr-2 text-xs"></i> Units
                         </a>
+                        <a href="{{ route('product-options.index') }}"
+                            class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">
+                            <i class="fas fa-palette mr-2 text-xs"></i> Sizes &amp; Colors
+                        </a>
                     @endcan
                     <a href="{{ route('admin.packages.index') }}"
                         class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.packages.*') ? 'bg-purple-100 text-purple-700 font-semibold' : 'hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700' }}">

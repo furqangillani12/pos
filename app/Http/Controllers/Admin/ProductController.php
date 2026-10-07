@@ -49,102 +49,22 @@ class ProductController extends Controller
 
     public function create()
     {
-        $categories = $this->scopeBranch(Category::query())->get();
-        $units = Unit::where('is_active', true)->get();
-        return view('admin.products.create', compact('categories', 'units'));
+        return view('admin.products.create', $this->formData());
     }
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name'             => 'required|string|max:255',
-            'barcode'          => 'nullable|string|unique:products',
-            'category_id'      => 'required|exists:categories,id',
-            'unit_id'          => 'nullable|exists:units,id',
-            'description'      => 'nullable|string',
-            'note'             => 'nullable|string',
-            'rank'             => 'nullable|string|max:50', 
-            'sale_price'       => 'required|numeric|min:0',
-            'resale_price'     => 'required|numeric|min:0',
-            'wholesale_price'  => 'required|numeric|min:0',
-            'cost_price'       => 'required|numeric|min:0',
-            'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
-            'weight_g'         => 'nullable|integer|min:0',
-            'packing_charge'   => 'nullable|numeric|min:0',
-            'packing_label'    => 'nullable|string|max:120',
-            'stock_quantity'   => 'required|numeric|min:0',
-            'reorder_level'    => 'required|numeric|min:0',
-            'image'            => 'nullable|image|max:5120',
-            'gallery'          => 'nullable|array',
-            'gallery.*'        => 'image|max:5120',
-            'categories'       => 'nullable|array',
-            'categories.*'     => 'exists:categories,id',
-            'is_active'        => 'boolean',
-            'track_inventory'  => 'boolean',
-            'show_on_website'  => 'boolean',
-        ] + $this->variantRules());
-
-        // Checkbox: present only when ticked, so resolve explicitly.
-        $validated['show_on_website'] = $request->boolean('show_on_website');
-        // Packing charge is a NOT NULL decimal. A blank field arrives as '' (this app
-        // has no ConvertEmptyStringsToNull middleware), and '' would crash the insert
-        // with "Incorrect decimal value" — so coerce blank/null to 0 explicitly.
-        $pc = $validated['packing_charge'] ?? null;
-        $validated['packing_charge'] = ($pc === null || $pc === '') ? 0 : (float) $pc;
-        $validated['packing_label']  = trim((string) ($validated['packing_label'] ?? '')) ?: null;
-
-        if (!empty($validated['weight_kg'])) {
-            $weight = $validated['weight_kg'];
-        } elseif (!empty($validated['weight_g'])) {
-            $weight = $validated['weight_g'] / 1000;
-        } else {
-            $weight = null;
-        }
-        unset($validated['weight_kg'], $validated['weight_g']);
-        $validated['weight'] = $weight;
-
-        if ($request->hasFile('image')) {
-            $validated['image'] = $request->file('image')->store('products', 'public');
-        }
-
-        // Gallery (#5): store each uploaded image; saved as a JSON array on the product.
-        if ($request->hasFile('gallery')) {
-            $gallery = [];
-            foreach ($request->file('gallery') as $file) {
-                $gallery[] = $file->store('products', 'public');
-            }
-            $validated['gallery'] = $gallery;
-        }
-
-        $this->applyVariantStock($request, $validated);
-
-        // Assign to current branch
         $branchId = $this->branchId();
-        if ($branchId && $branchId !== 'all') {
-            $validated['branch_id'] = $branchId;
+        $product  = new Product();
+        if ($branchId && $branchId !== 'all') $product->branch_id = $branchId;
+
+        if ($error = $this->saveProduct($request, $product)) {
+            return back()->withInput()->withErrors(['rows' => $error]);
         }
 
-        $product = Product::create($validated);
-
-        // Extra categories (#16).
-        $product->categories()->sync($request->input('categories', []));
-
-        if ($error = $this->syncVariants($request, $product)) {
-            return back()->withInput()->withErrors(['variants' => $error]);
-        }
-
-        // Create branch stock entry
-        if ($branchId && $branchId !== 'all') {
-            BranchProductStock::updateOrCreate(
-                ['branch_id' => $branchId, 'product_id' => $product->id],
-                ['stock_quantity' => $validated['stock_quantity'], 'reorder_level' => $validated['reorder_level']]
-            );
-        }
-
-        // Log inventory change
         $product->inventoryLogs()->create([
             'action'          => 'initial',
-            'quantity_change' => $validated['stock_quantity'],
+            'quantity_change' => (float) $product->stock_quantity,
             'branch_id'       => $branchId !== 'all' ? $branchId : null,
             'notes'           => 'Initial stock entry',
             'user_id'         => auth()->id(),
@@ -155,106 +75,28 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $categories = $this->scopeBranch(Category::query())->get();
-        $units = Unit::where('is_active', true)->get();
         $product->branch_stock = $product->getStockForBranch($this->branchId());
-        return view('admin.products.edit', compact('product', 'categories', 'units'));
+        $product->load('variants', 'categories');
+        return view('admin.products.edit', ['product' => $product] + $this->formData());
     }
 
     public function update(Request $request, Product $product)
     {
-        $validated = $request->validate([
-            'name'             => 'required|string|max:255',
-            'barcode'          => 'nullable|string|unique:products,barcode,'.$product->id,
-            'category_id'      => 'required|exists:categories,id',
-            'unit_id'          => 'nullable|exists:units,id', 
-            'description'      => 'nullable|string',
-            'note'             => 'nullable|string',
-            'rank'             => 'nullable|string|max:50', 
-            'sale_price'       => 'required|numeric|min:0',
-            'resale_price'     => 'required|numeric|min:0',
-            'wholesale_price'  => 'required|numeric|min:0',
-            'cost_price'       => 'required|numeric|min:0',
-            'weight_kg'        => 'nullable|numeric|min:0|decimal:0,4',
-            'weight_g'         => 'nullable|integer|min:0',
-            'packing_charge'   => 'nullable|numeric|min:0',
-            'packing_label'    => 'nullable|string|max:120',
-            'stock_quantity'   => 'required|numeric|min:0',
-            'reorder_level'    => 'required|numeric|min:0',
-            'image'            => 'nullable|image|max:5120',
-            'gallery'          => 'nullable|array',
-            'gallery.*'        => 'image|max:5120',
-            'categories'       => 'nullable|array',
-            'categories.*'     => 'exists:categories,id',
-            'is_active'        => 'boolean',
-            'track_inventory'  => 'boolean',
-            'show_on_website'  => 'boolean',
-        ] + $this->variantRules());
-
-        // Checkbox: present only when ticked, so resolve explicitly.
-        $validated['show_on_website'] = $request->boolean('show_on_website');
-        // Packing charge is a NOT NULL decimal. A blank field arrives as '' (this app
-        // has no ConvertEmptyStringsToNull middleware), and '' would crash the insert
-        // with "Incorrect decimal value" — so coerce blank/null to 0 explicitly.
-        $pc = $validated['packing_charge'] ?? null;
-        $validated['packing_charge'] = ($pc === null || $pc === '') ? 0 : (float) $pc;
-        $validated['packing_label']  = trim((string) ($validated['packing_label'] ?? '')) ?: null;
-
-        if (!empty($validated['weight_kg'])) {
-        $weight = $validated['weight_kg'];
-        } elseif (!empty($validated['weight_g'])) {
-            $weight = $validated['weight_g'] / 1000;
-        } else {
-            $weight = null;
+        if ($error = $this->saveProduct($request, $product)) {
+            return back()->withInput()->withErrors(['rows' => $error]);
         }
-
-        unset($validated['weight_kg'], $validated['weight_g']);
-        $validated['weight'] = $weight;
-
-        if ($request->hasFile('image')) {
-            if ($product->image) {
-                Storage::disk('public')->delete($product->image);
-            }
-            $validated['image'] = $request->file('image')->store('products', 'public');
-        }
-
-        // Gallery (#5): keep existing minus any ticked for removal, then append new uploads.
-        $gallery = $product->gallery ?? [];
-        $remove  = (array) $request->input('remove_gallery', []);
-        foreach ($remove as $rm) {
-            if (in_array($rm, $gallery, true)) {
-                Storage::disk('public')->delete($rm);
-            }
-        }
-        $gallery = array_values(array_diff($gallery, $remove));
-        if ($request->hasFile('gallery')) {
-            foreach ($request->file('gallery') as $file) {
-                $gallery[] = $file->store('products', 'public');
-            }
-        }
-        $validated['gallery'] = $gallery ?: null;
-
-        $this->applyVariantStock($request, $validated);
-
-        $product->update($validated);
-
-        // Extra categories (#16).
-        $product->categories()->sync($request->input('categories', []));
-
-        if ($error = $this->syncVariants($request, $product)) {
-            return back()->withInput()->withErrors(['variants' => $error]);
-        }
-
-        // Sync branch stock if editing from a specific branch
-        $branchId = $this->branchId();
-        if ($branchId && $branchId !== 'all') {
-            BranchProductStock::updateOrCreate(
-                ['branch_id' => $branchId, 'product_id' => $product->id],
-                ['stock_quantity' => $validated['stock_quantity'], 'reorder_level' => $validated['reorder_level']]
-            );
-        }
-
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
+    }
+
+    /** Dropdown data for the product form. */
+    private function formData(): array
+    {
+        return [
+            'categories' => $this->scopeBranch(Category::query())->get(),
+            'units'      => Unit::where('is_active', true)->get(),
+            'sizes'      => \App\Models\ProductSize::active()->get(),
+            'colors'     => \App\Models\ProductColor::active()->get(),
+        ];
     }
 
     /** Quick toggle of website visibility from the products list. */
@@ -305,82 +147,238 @@ class ProductController extends Controller
         return Excel::download(new ProductsExport($this->branchId()), 'products_'.now()->format('Ymd_His').'.xlsx');
     }
 
-    // ── Colour × size variants ───────────────────────────────────────────────
+    // ── Product form (client design, Oct 2026) ───────────────────────────────
 
-    private function variantRules(): array
+    private const PRICE_COLUMNS = ['cost' => 'cost_price', 'wholesale' => 'wholesale_price', 'resale' => 'resale_price', 'walkin' => 'sale_price'];
+
+    /**
+     * Validate and save the whole product form: details, price grid, product-type
+     * rows (plain product or size/colour variants), billed other charges, images
+     * and video. Returns an error message for the rows, or null when saved.
+     */
+    private function saveProduct(Request $request, Product $product): ?string
     {
-        return [
-            'has_variants'                => 'nullable|boolean',
-            'variants'                    => 'nullable|array',
-            'variants.*.id'               => 'nullable|integer',
-            'variants.*.color'            => 'nullable|string|max:100',
-            'variants.*.size'             => 'nullable|string|max:100',
-            'variants.*.barcode'          => 'nullable|string|max:100',
-            'variants.*.sale_price'       => 'nullable|numeric|min:0',
-            'variants.*.resale_price'     => 'nullable|numeric|min:0',
-            'variants.*.wholesale_price'  => 'nullable|numeric|min:0',
-            'variants.*.stock'            => 'nullable|numeric|min:0',
-            'variants.*.is_active'        => 'nullable|boolean',
-            'color_image'                 => 'nullable|array',
-            'color_image.*'               => 'nullable|image|max:5120',
-            'color_image_names'           => 'nullable|array',
-            'remove_color_image'          => 'nullable|array',
-        ];
-    }
+        $isNew = !$product->exists;
+        $data = $request->validate([
+            'name'              => 'required|string|max:255',
+            'name_ur'           => 'nullable|string|max:255',
+            'barcode'           => 'nullable|string|unique:products,barcode' . ($isNew ? '' : ',' . $product->id),
+            'category_id'       => 'required|exists:categories,id',
+            'subcategory_id'    => 'nullable|exists:categories,id',
+            'unit_id'           => 'nullable|exists:units,id',
+            'rank'              => 'nullable|string|max:50',
+            'note'              => 'nullable|string',
+            'note_ur'           => 'nullable|string',
+            'description'       => 'nullable|string',
+            'description_ur'    => 'nullable|string',
+            'categories'        => 'nullable|array',
+            'categories.*'      => 'exists:categories,id',
+            'pricing'           => 'required|array',
+            'pricing.*.*'       => 'nullable|numeric|min:0',
+            'rows'              => 'required|array|min:1',
+            'rows.*.id'         => 'nullable|integer',
+            'rows.*.size'       => 'nullable|string|max:100',
+            'rows.*.color'      => 'nullable|string|max:100',
+            'rows.*.price'      => 'nullable|numeric|min:0',
+            'rows.*.qty'        => 'nullable|numeric|min:0',
+            'rows.*.weight'     => 'nullable|numeric|min:0',
+            'rows.*.reorder'    => 'nullable|numeric|min:0',
+            'rows.*.images'     => 'nullable|array',
+            'rows.*.images.*'   => 'image|max:5120',
+            'rows.*.remove_images' => 'nullable|array',
+            'charges'           => 'nullable|array',
+            'charges.*.title'   => 'nullable|string|max:120',
+            'charges.*.amount'  => 'nullable|numeric|min:0',
+            'images'            => 'nullable|array',
+            'images.*'          => 'image|max:5120',
+            'main_image'        => 'nullable|string',
+            'remove_gallery'    => 'nullable|array',
+            'video'             => 'nullable|file|mimetypes:video/mp4,video/webm,video/quicktime|max:51200',
+            'video_url'         => 'nullable|url|max:500',
+            'remove_video'      => 'nullable|boolean',
+        ]);
 
-    /** With variants, the product's stock is the sum of its variants' stock. */
-    private function applyVariantStock(Request $request, array &$validated): void
-    {
-        $validated['has_variants'] = $request->boolean('has_variants') && !empty($request->input('variants'));
-        foreach (['variants', 'color_image', 'color_image_names', 'remove_color_image'] as $k) unset($validated[$k]);
-
-        if ($validated['has_variants']) {
-            $validated['stock_quantity'] = collect($request->input('variants', []))->sum(fn ($v) => (float) ($v['stock'] ?? 0));
+        // Product-type rows: one row without size/colour = plain product.
+        $rows = collect($data['rows'])->values()->map(fn ($r, $i) => [
+            'i'       => $i,
+            'id'      => !empty($r['id']) ? (int) $r['id'] : null,
+            'size'    => trim((string) ($r['size'] ?? '')) ?: null,
+            'color'   => trim((string) ($r['color'] ?? '')) ?: null,
+            'price'   => ($r['price'] ?? '') === '' || !isset($r['price']) ? null : (float) $r['price'],
+            'qty'     => (float) ($r['qty'] ?? 0),
+            'weight'  => ($r['weight'] ?? '') === '' || !isset($r['weight']) ? null : (float) $r['weight'],
+            'reorder' => ($r['reorder'] ?? '') === '' || !isset($r['reorder']) ? null : (float) $r['reorder'],
+            'remove'  => (array) ($r['remove_images'] ?? []),
+        ]);
+        $hasVariants = $rows->contains(fn ($r) => $r['size'] || $r['color']);
+        if ($hasVariants) {
+            if ($rows->contains(fn ($r) => !$r['size'] && !$r['color'])) {
+                return 'Each product type row needs a size or a color (or keep a single row with neither for a plain product).';
+            }
+            $keys = $rows->map(fn ($r) => strtolower($r['size'] . '|' . $r['color']));
+            if ($keys->count() !== $keys->unique()->count()) {
+                return 'The same size / color combination is listed twice.';
+            }
         }
+        if ($data['subcategory_id'] ?? null) {
+            $sub = Category::find($data['subcategory_id']);
+            if ((int) $sub?->parent_id !== (int) $data['category_id']) {
+                return 'The sub category does not belong to the selected category.';
+            }
+        }
+
+        // Price grid → stored prices. price = walk-in list price (shown struck through on the website).
+        [$breakdown, $finals] = $this->priceGrid($data['pricing']);
+        $first = $rows->first();
+
+        $product->fill([
+            'name'            => $data['name'],
+            'name_ur'         => $data['name_ur'] ?? null,
+            'barcode'         => $data['barcode'] ?? null,
+            'category_id'     => $data['category_id'],
+            'subcategory_id'  => $data['subcategory_id'] ?? null,
+            'unit_id'         => $data['unit_id'] ?? null,
+            'rank'            => $data['rank'] ?? null,
+            'note'            => $data['note'] ?? null,
+            'note_ur'         => $data['note_ur'] ?? null,
+            'description'     => $data['description'] ?? null,
+            'description_ur'  => $data['description_ur'] ?? null,
+            'price_breakdown' => $breakdown,
+            'cost_price'      => $finals['cost'],
+            'wholesale_price' => $finals['wholesale'] ?: $finals['walkin'],
+            'resale_price'    => $finals['resale'] ?: $finals['walkin'],
+            'sale_price'      => $finals['walkin'],
+            'price'           => max($finals['walkin'], (float) ($breakdown['walkin']['base'] ?? 0)),
+            'is_active'       => $request->boolean('is_active'),
+            'track_inventory' => $request->boolean('track_inventory'),
+            'show_on_website' => $request->boolean('show_on_website'),
+            'has_variants'    => $hasVariants,
+            'stock_quantity'  => $rows->sum('qty'),
+            'reorder_level'   => $first['reorder'] ?? 0,
+            'weight'          => $first['weight'],
+        ]);
+
+        // Other charges billed to the customer per unit → packing_charge / label used by POS & checkout.
+        $charges = collect($data['charges'] ?? [])
+            ->map(fn ($c) => ['title' => trim((string) ($c['title'] ?? '')), 'amount' => round((float) ($c['amount'] ?? 0), 2)])
+            ->filter(fn ($c) => $c['amount'] > 0)->values();
+        $product->other_charges  = $charges->isEmpty() ? null : $charges->all();
+        $product->packing_charge = round($charges->sum('amount'), 2);
+        $product->packing_label  = $charges->isEmpty() ? null : ($charges->pluck('title')->filter()->implode(', ') ?: 'Other charges');
+
+        // Images: gallery minus removed, plus uploads (and plain-product row images); main image kept or chosen.
+        $gallery = collect([$product->image])->merge($product->gallery ?? [])->filter()->unique()->values();
+        $remove  = collect($data['remove_gallery'] ?? []);
+        foreach ($remove as $rm) if ($gallery->contains($rm)) Storage::disk('public')->delete($rm);
+        $gallery = $gallery->reject(fn ($g) => $remove->contains($g))->values();
+        foreach ((array) $request->file('images', []) as $f) $gallery->push($f->store('products', 'public'));
+        if (!$hasVariants) {
+            foreach ((array) $request->file('rows.0.images', []) as $f) $gallery->push($f->store('products', 'public'));
+        }
+        $main = $data['main_image'] ?? null;
+        $main = ($main && $gallery->contains($main)) ? $main : $gallery->first();
+        $product->image   = $main;
+        $product->gallery = $gallery->reject(fn ($g) => $g === $main)->values()->all() ?: null;
+
+        // Video: upload or link.
+        if ($request->boolean('remove_video')) {
+            if ($product->video) Storage::disk('public')->delete($product->video);
+            $product->video = null;
+            $product->video_url = null;
+        }
+        if ($request->hasFile('video')) {
+            if ($product->video) Storage::disk('public')->delete($product->video);
+            $product->video = $request->file('video')->store('product-videos', 'public');
+        }
+        if (array_key_exists('video_url', $data) && !$request->boolean('remove_video')) {
+            $product->video_url = $data['video_url'] ?: null;
+        }
+
+        $product->save();
+        $product->categories()->sync($data['categories'] ?? []);
+
+        if ($hasVariants) {
+            $this->saveVariantRows($request, $product, $rows, $breakdown);
+        } else {
+            // A product that had variants and now has none: switch them off.
+            $product->variants()->update(['is_active' => false]);
+            $product->update(['color_images' => null]);
+        }
+
+        // Branch stock follows the form (sum of rows) at the product's branch.
+        $branchId = $this->branchId();
+        $stockBranch = ($branchId && $branchId !== 'all') ? $branchId : $product->branch_id;
+        if ($stockBranch) {
+            BranchProductStock::updateOrCreate(
+                ['branch_id' => $stockBranch, 'product_id' => $product->id],
+                ['stock_quantity' => $rows->sum('qty'), 'reorder_level' => $first['reorder'] ?? 0]
+            );
+        }
+
+        return null;
     }
 
     /**
-     * Save the variant table: update rows by id, add new ones, and remove rows no
-     * longer listed (rows already used on an order or cart are switched off
-     * instead). Also stores per-colour photos. Returns an error message or null.
+     * Price − Discount + Charges = Final for each column. Discount / charges come
+     * as % and/or Rs; the amount wins when given. Returns [breakdown, finals].
      */
-    private function syncVariants(Request $request, Product $product): ?string
+    private function priceGrid(array $pricing): array
     {
-        if (!$product->has_variants) return null;
-
-        $rows = collect($request->input('variants', []))
-            ->map(fn ($v) => [
-                'id'              => !empty($v['id']) ? (int) $v['id'] : null,
-                'color'           => trim((string) ($v['color'] ?? '')) ?: null,
-                'size'            => trim((string) ($v['size'] ?? '')) ?: null,
-                'barcode'         => trim((string) ($v['barcode'] ?? '')) ?: null,
-                'sale_price'      => ($v['sale_price'] ?? '') === '' ? null : (float) $v['sale_price'],
-                'resale_price'    => ($v['resale_price'] ?? '') === '' ? null : (float) $v['resale_price'],
-                'wholesale_price' => ($v['wholesale_price'] ?? '') === '' ? null : (float) $v['wholesale_price'],
-                'stock'           => (float) ($v['stock'] ?? 0),
-                'is_active'       => (bool) ($v['is_active'] ?? true),
-            ])
-            ->filter(fn ($v) => $v['color'] || $v['size'])
-            ->values();
-
-        // Barcodes must not clash with another product or variant.
-        foreach ($rows as $v) {
-            if (!$v['barcode']) continue;
-            $clash = Product::where('barcode', $v['barcode'])->where('id', '!=', $product->id)->exists()
-                || \App\Models\ProductVariant::where('barcode', $v['barcode'])->where('id', '!=', $v['id'] ?? 0)->exists()
-                || $rows->where('barcode', $v['barcode'])->count() > 1;
-            if ($clash) return "Barcode {$v['barcode']} is already used by another product or variant.";
+        $breakdown = [];
+        $finals = [];
+        foreach (array_keys(self::PRICE_COLUMNS) as $col) {
+            $c    = $pricing[$col] ?? [];
+            $n    = fn ($k) => (($c[$k] ?? '') === '' || !isset($c[$k])) ? null : (float) $c[$k];
+            $base = $n('base') ?? 0;
+            $disc = $n('disc_amt') ?? ($n('disc_pct') !== null ? $base * $n('disc_pct') / 100 : 0);
+            $chg  = $n('chg_amt') ?? ($n('chg_pct') !== null ? $base * $n('chg_pct') / 100 : 0);
+            $final = round(max(0, $base - $disc + $chg), 2);
+            $breakdown[$col] = [
+                'base'     => round($base, 2),
+                'disc_amt' => $disc ? round($disc, 2) : null,
+                'disc_pct' => ($disc && $base) ? round($disc / $base * 100, 2) : null,
+                'chg_amt'  => $chg ? round($chg, 2) : null,
+                'chg_pct'  => ($chg && $base) ? round($chg / $base * 100, 2) : null,
+            ];
+            $finals[$col] = $final;
         }
+        return [$breakdown, $finals];
+    }
 
+    /**
+     * Save size / colour rows as variants. A row price is that type's walk-in list
+     * price; its walk-in / resale / wholesale prices apply the grid's discount and
+     * charge percentages. Rows removed from the form are deleted, or switched off
+     * when already used on an order or cart.
+     */
+    private function saveVariantRows(Request $request, Product $product, $rows, array $breakdown): void
+    {
+        $pct = fn ($col) => 1 - (float) ($breakdown[$col]['disc_pct'] ?? 0) / 100 + (float) ($breakdown[$col]['chg_pct'] ?? 0) / 100;
         $keep = [];
-        foreach ($rows as $i => $v) {
-            $data = collect($v)->except('id')->all() + ['sort_order' => $i];
-            $variant = $v['id'] ? $product->variants()->where('id', $v['id'])->first() : null;
-            if (!$variant) {
-                // Same colour/size typed again after removal → reuse that row.
-                $variant = $product->variants()->where('color', $v['color'])->where('size', $v['size'])->first();
-            }
-            $variant ? $variant->update($data) : ($variant = $product->variants()->create($data));
+        foreach ($rows as $order => $r) {
+            $variant = ($r['id'] ? $product->variants()->where('id', $r['id'])->first() : null)
+                ?: $product->variants()->where('color', $r['color'])->where('size', $r['size'])->first();
+
+            $images = collect($variant?->images ?? []);
+            foreach ($r['remove'] as $rm) if ($images->contains($rm)) Storage::disk('public')->delete($rm);
+            $images = $images->reject(fn ($x) => in_array($x, $r['remove'], true))->values();
+            foreach ((array) $request->file("rows.{$r['i']}.images", []) as $f) $images->push($f->store('products', 'public'));
+
+            $vals = [
+                'color'           => $r['color'],
+                'size'            => $r['size'],
+                'base_price'      => $r['price'],
+                'sale_price'      => $r['price'] !== null ? round($r['price'] * $pct('walkin'), 2) : null,
+                'resale_price'    => $r['price'] !== null ? round($r['price'] * $pct('resale'), 2) : null,
+                'wholesale_price' => $r['price'] !== null ? round($r['price'] * $pct('wholesale'), 2) : null,
+                'stock'           => $r['qty'],
+                'weight'          => $r['weight'],
+                'reorder_level'   => $r['reorder'],
+                'images'          => $images->isEmpty() ? null : $images->all(),
+                'is_active'       => true,
+                'sort_order'      => $order,
+            ];
+            $variant ? $variant->update($vals) : ($variant = $product->variants()->create($vals));
             $keep[] = $variant->id;
         }
 
@@ -390,22 +388,11 @@ class ProductController extends Controller
             $used ? $old->update(['is_active' => false, 'stock' => 0]) : $old->delete();
         }
 
-        // Per-colour photos.
-        $images  = $product->color_images ?? [];
-        $colors  = $rows->pluck('color')->filter()->unique()->values()->all();
-        foreach ((array) $request->input('remove_color_image', []) as $c) {
-            if (isset($images[$c])) { Storage::disk('public')->delete($images[$c]); unset($images[$c]); }
+        // Colour photo for the website / POS picker = first image of that colour.
+        $colorImages = [];
+        foreach ($product->variants()->where('is_active', true)->get() as $v) {
+            if ($v->color && !isset($colorImages[$v->color]) && !empty($v->images)) $colorImages[$v->color] = $v->images[0];
         }
-        foreach ((array) $request->file('color_image', []) as $k => $file) {
-            $color = $request->input("color_image_names.$k");
-            if (!$file || !$color) continue;
-            if (isset($images[$color])) Storage::disk('public')->delete($images[$color]);
-            $images[$color] = $file->store('products', 'public');
-        }
-        $images = array_intersect_key($images, array_flip($colors));
-        $product->update(['color_images' => $images ?: null]);
-
-        $product->refresh()->syncStockFromVariants();
-        return null;
+        $product->update(['color_images' => $colorImages ?: null]);
     }
 }

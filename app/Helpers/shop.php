@@ -389,3 +389,15 @@ if (!function_exists('shop_product_price')) {
         };
     }
 }
+
+if (!function_exists('shop_video_embed')) {
+    /** YouTube watch / share / shorts link → privacy-friendly embed URL, else null. */
+    function shop_video_embed(?string $url): ?string
+    {
+        if (!$url) return null;
+        if (preg_match('~(?:youtu\.be/|youtube\.com/(?:watch\?(?:.*&)?v=|embed/|shorts/|live/))([A-Za-z0-9_-]{11})~', $url, $m)) {
+            return 'https://www.youtube-nocookie.com/embed/' . $m[1];
+        }
+        return null;
+    }
+}

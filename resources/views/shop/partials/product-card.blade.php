@@ -67,6 +67,9 @@
            class="font-semibold text-gray-900 leading-snug line-clamp-2 hover:text-blue-700 transition">
             {{ $product->name }}
         </a>
+        @if ($product->name_ur)
+            <div class="urdu text-sm text-gray-600 line-clamp-1" dir="rtl" lang="ur">{{ $product->name_ur }}</div>
+        @endif
 
         @if ($product->barcode)
             <div class="text-[10px] text-gray-400 font-mono mt-1">Code: {{ $product->barcode }}</div>

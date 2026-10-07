@@ -15,6 +15,7 @@ class ProductVariant extends Model
         'product_id', 'color', 'size', 'barcode',
         'sale_price', 'resale_price', 'wholesale_price',
         'stock', 'is_active', 'sort_order',
+        'base_price', 'weight', 'reorder_level', 'images',
     ];
 
     protected $casts = [
@@ -23,6 +24,8 @@ class ProductVariant extends Model
         'wholesale_price' => 'decimal:2',
         'stock'           => 'decimal:2',
         'is_active'       => 'boolean',
+        'base_price'      => 'decimal:2',
+        'images'          => 'array',
     ];
 
     public function product()

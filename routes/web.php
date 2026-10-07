@@ -110,6 +110,12 @@ Route::middleware(['auth', 'branch', 'permission:manage products'])->group(funct
     Route::post('products/import', [ProductController::class, 'import'])->name('products.import');
     Route::get('products/export', [ProductController::class, 'export'])->name('products.export');
     Route::resource('units', UnitController::class);
+    // Size / colour lists for the product form dropdowns
+    Route::get('product-options', [\App\Http\Controllers\Admin\ProductOptionController::class, 'index'])->name('product-options.index');
+    Route::post('product-options/{type}', [\App\Http\Controllers\Admin\ProductOptionController::class, 'store'])->name('product-options.store');
+    Route::put('product-options/{type}/{id}', [\App\Http\Controllers\Admin\ProductOptionController::class, 'update'])->name('product-options.update');
+    Route::patch('product-options/{type}/{id}/toggle', [\App\Http\Controllers\Admin\ProductOptionController::class, 'toggle'])->name('product-options.toggle');
+    Route::delete('product-options/{type}/{id}', [\App\Http\Controllers\Admin\ProductOptionController::class, 'destroy'])->name('product-options.destroy');
 });
 
 Route::middleware(['auth', 'branch', 'permission:manage categories'])->group(function () {
