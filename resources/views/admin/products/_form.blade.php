@@ -46,6 +46,19 @@
         charges: @js(array_values($charges)),
      })" class="space-y-6">
 
+    {{-- Saving overlay: upload progress, then "processing" while the server saves --}}
+    <div x-show="saving" x-cloak class="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/60 px-4">
+        <div class="w-full max-w-sm rounded-xl bg-white p-6 shadow-2xl text-center">
+            <div class="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+            <div class="font-semibold text-gray-800" x-text="saveLabel"></div>
+            <div class="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-gray-200">
+                <div class="h-full rounded-full bg-blue-600 transition-all duration-200" :style="'width:' + progress + '%'"></div>
+            </div>
+            <div class="mt-1 text-xs text-gray-500" x-text="progress + '%'"></div>
+            <p class="mt-3 text-xs text-gray-400">Please don't close or refresh this page.</p>
+        </div>
+    </div>
+
     @if ($errors->any())
         <div class="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
             @foreach ($errors->all() as $e)<div>{{ $e }}</div>@endforeach
@@ -338,6 +351,45 @@
         const num = v => (v === '' || v === null || v === undefined || isNaN(parseFloat(v))) ? null : parseFloat(v);
         const r2 = v => Math.round(v * 100) / 100;
         return {
+            saving: false,
+            progress: 0,
+            saveLabel: 'Saving product…',
+            // Submit through XHR so the upload shows real progress; the response
+            // (redirect to the list, or this form with errors) then replaces the page.
+            init() {
+                const form = this.$el.closest('form');
+                if (!form) return;
+                form.addEventListener('submit', (e) => {
+                    if (!form.checkValidity()) return;
+                    e.preventDefault();
+                    if (this.saving) return;
+                    this.saving = true; this.progress = 0;
+                    const hasFiles = [...form.querySelectorAll('input[type=file]')].some(i => i.files && i.files.length);
+                    this.saveLabel = hasFiles ? 'Uploading images…' : 'Saving product…';
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', form.action);
+                    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest-Upload');
+                    xhr.upload.onprogress = (ev) => {
+                        if (!ev.lengthComputable) return;
+                        this.progress = Math.min(95, Math.round(ev.loaded / ev.total * 95));
+                        if (ev.loaded >= ev.total) this.saveLabel = 'Processing… almost done';
+                    };
+                    xhr.upload.onload = () => { this.progress = 95; this.saveLabel = 'Processing… almost done'; };
+                    xhr.onload = () => {
+                        this.progress = 100; this.saveLabel = 'Saved — opening…';
+                        const url = xhr.responseURL || form.action;
+                        // Show the server's answer as-is (product list with "saved", or this
+                        // form with errors) so one-time messages aren't lost by reloading.
+                        document.open(); document.write(xhr.responseText); document.close();
+                        try { history.replaceState(null, '', url); } catch (_) {}
+                    };
+                    xhr.onerror = () => {
+                        this.saving = false;
+                        alert('Network error while saving. Please check the connection and try again.');
+                    };
+                    xhr.send(new FormData(form));
+                });
+            },
             pricing: cfg.pricing,
             rows: (cfg.rows || []).map(r => ({
                 key: ++seq, id: r.id || null, size: r.size || '', color: r.color || '',

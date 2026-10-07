@@ -24,10 +24,15 @@ class ProductController extends Controller
             ->with(['category', 'unit'])
             ->get();
 
-        // Attach branch stock for display
+        // Attach branch stock for display — one query for all products (was one per
+        // product, ~1,800 queries on live). "All branches" = sum across branches,
+        // same as Product::getStockForBranch().
         $branchId = $this->branchId();
+        $stockQ = BranchProductStock::query()->whereIn('product_id', $products->pluck('id'));
+        if ($branchId && $branchId !== 'all') $stockQ->where('branch_id', $branchId);
+        $stock = $stockQ->selectRaw('product_id, SUM(stock_quantity) as qty')->groupBy('product_id')->pluck('qty', 'product_id');
         foreach ($products as $product) {
-            $product->branch_stock = $product->getStockForBranch($branchId);
+            $product->branch_stock = (float) ($stock[$product->id] ?? 0);
         }
 
         // Sort by product code (barcode) in natural order, but DESCENDING (client):
