@@ -2,9 +2,6 @@
 @php
     $p        = $product ?? null;
     $isEdit   = $p && $p->exists;
-    $roots    = $categories->whereNull('parent_id')->sortBy('name')->values();
-    $children = $categories->whereNotNull('parent_id')->groupBy('parent_id')
-                    ->map(fn ($g) => $g->sortBy('name')->map(fn ($c) => ['id' => $c->id, 'name' => $c->name])->values());
 
     // Price grid: saved breakdown, else start from the product's current prices.
     $cols = ['cost' => 'cost_price', 'wholesale' => 'wholesale_price', 'resale' => 'resale_price', 'walkin' => 'sale_price'];
@@ -47,9 +44,6 @@
         pricing: @js($pricing),
         rows: @js($rows),
         charges: @js(array_values($charges)),
-        children: @js($children),
-        category: @js((string) old('category_id', $p->category_id ?? '')),
-        subcategory: @js((string) old('subcategory_id', $p->subcategory_id ?? '')),
      })" class="space-y-6">
 
     @if ($errors->any())
@@ -77,22 +71,13 @@
                 <input type="text" name="barcode" value="{{ old('barcode', $p->barcode ?? '') }}" class="{{ $inp }}">
             </div>
 
-            <div>
+            <div class="lg:col-span-2">
                 <label class="block text-xs font-medium text-gray-600">Category *</label>
-                <select name="category_id" x-model="category" @change="subcategory = ''" required class="{{ $inp }}">
+                <select name="category_id" required class="{{ $inp }}">
                     <option value="">Select category</option>
-                    @foreach ($roots as $c)
-                        <option value="{{ $c->id }}">{{ $c->name }}</option>
+                    @foreach ($categories->sortBy('name') as $c)
+                        <option value="{{ $c->id }}" @selected(old('category_id', $p->category_id ?? '') == $c->id)>{{ $c->name }}</option>
                     @endforeach
-                </select>
-            </div>
-            <div>
-                <label class="block text-xs font-medium text-gray-600">Sub category</label>
-                <select name="subcategory_id" x-model="subcategory" class="{{ $inp }}" :disabled="!subOptions.length">
-                    <option value="" x-text="subOptions.length ? 'Select sub category' : 'No sub categories'"></option>
-                    <template x-for="s in subOptions" :key="s.id">
-                        <option :value="String(s.id)" x-text="s.name" :selected="String(s.id) === subcategory"></option>
-                    </template>
                 </select>
             </div>
             <div class="grid grid-cols-2 gap-3">
@@ -115,7 +100,7 @@
                 <label class="block text-xs font-medium text-gray-600">Also show in categories <span class="text-gray-400 font-normal">(optional — hold Ctrl/Cmd to select several)</span></label>
                 <select name="categories[]" multiple size="3" class="{{ $inp }}">
                     @foreach ($categories->sortBy('name') as $c)
-                        <option value="{{ $c->id }}" @selected(in_array($c->id, (array) $selectedExtra))>{{ $c->parent_id ? '— ' : '' }}{{ $c->name }}</option>
+                        <option value="{{ $c->id }}" @selected(in_array($c->id, (array) $selectedExtra))>{{ $c->name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -200,7 +185,10 @@
 
     {{-- ── Product types (size / colour rows) ── --}}
     <div class="rounded-lg border border-gray-200 overflow-x-auto">
-        <div class="px-4 py-2 bg-gray-50 border-b font-semibold text-gray-800">Add product type</div>
+        <div class="px-4 py-2 bg-gray-50 border-b flex flex-wrap items-center justify-between gap-2">
+            <span class="font-semibold text-gray-800">Add product type</span>
+            <a href="{{ route('product-options.index') }}" target="_blank" class="text-xs px-2 py-1 rounded bg-pink-50 text-pink-700 hover:bg-pink-100"><i class="fas fa-palette"></i> Add / manage sizes &amp; colors</a>
+        </div>
         <table class="w-full text-sm min-w-[900px]">
             <thead class="text-xs text-gray-600">
                 <tr>
@@ -358,12 +346,8 @@
                 reorder: r.reorder ?? '', images: r.images || [],
             })),
             charges: (cfg.charges || []).map(c => ({ key: ++seq, title: c.title || '', amount: c.amount ?? '' })),
-            children: cfg.children || {},
-            category: cfg.category || '',
-            subcategory: cfg.subcategory || '',
             sizeList: @js($sizes->pluck('name')),
             colorList: @js($colors->pluck('name')),
-            get subOptions() { return this.children[this.category] || []; },
 
             // ── price grid ──
             base(col) { return num(this.pricing[col].base) || 0; },

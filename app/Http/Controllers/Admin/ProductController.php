@@ -164,7 +164,6 @@ class ProductController extends Controller
             'name_ur'           => 'nullable|string|max:255',
             'barcode'           => 'nullable|string|unique:products,barcode' . ($isNew ? '' : ',' . $product->id),
             'category_id'       => 'required|exists:categories,id',
-            'subcategory_id'    => 'nullable|exists:categories,id',
             'unit_id'           => 'nullable|exists:units,id',
             'rank'              => 'nullable|string|max:50',
             'note'              => 'nullable|string',
@@ -220,12 +219,6 @@ class ProductController extends Controller
                 return 'The same size / color combination is listed twice.';
             }
         }
-        if ($data['subcategory_id'] ?? null) {
-            $sub = Category::find($data['subcategory_id']);
-            if ((int) $sub?->parent_id !== (int) $data['category_id']) {
-                return 'The sub category does not belong to the selected category.';
-            }
-        }
 
         // Price grid → stored prices. price = walk-in list price (shown struck through on the website).
         [$breakdown, $finals] = $this->priceGrid($data['pricing']);
@@ -236,7 +229,6 @@ class ProductController extends Controller
             'name_ur'         => $data['name_ur'] ?? null,
             'barcode'         => $data['barcode'] ?? null,
             'category_id'     => $data['category_id'],
-            'subcategory_id'  => $data['subcategory_id'] ?? null,
             'unit_id'         => $data['unit_id'] ?? null,
             'rank'            => $data['rank'] ?? null,
             'note'            => $data['note'] ?? null,
