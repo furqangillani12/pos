@@ -31,7 +31,7 @@ class ProductOptionController extends Controller
             'name'       => ['required', 'string', 'max:100', Rule::unique($table, 'name')],
             'sort_order' => 'nullable|integer|min:0',
         ]);
-        $model::create(['name' => trim($data['name']), 'sort_order' => $data['sort_order'] ?? 0, 'is_active' => true]);
+        $model::create(['name' => trim($data['name']), 'sort_order' => (int) ($data['sort_order'] ?? 0), 'is_active' => true]);
         return back()->with('success', ucfirst($type) . " \"{$data['name']}\" added.");
     }
 
@@ -43,7 +43,7 @@ class ProductOptionController extends Controller
             'name'       => ['required', 'string', 'max:100', Rule::unique($item->getTable(), 'name')->ignore($item->id)],
             'sort_order' => 'nullable|integer|min:0',
         ]);
-        $item->update(['name' => trim($data['name']), 'sort_order' => $data['sort_order'] ?? 0]);
+        $item->update(['name' => trim($data['name']), 'sort_order' => (int) ($data['sort_order'] ?? 0)]);
         return back()->with('success', ucfirst($type) . ' updated.');
     }
 
