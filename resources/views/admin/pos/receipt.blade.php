@@ -592,11 +592,13 @@
                 {{-- Payment / Balance rows — only show if customer has any khata/balance record --}}
                 @php
                     $paidAmount = $order->counterPaid();
-                    $balanceOnBill = max(0, $order->total - $paidAmount);
+                    // Returns on this bill (completed refunds) come off its balance.
+                    $refundedOnBill = (float) $order->refunds()->where('status', 'completed')->sum('amount');
+                    $balanceOnBill = max(0, round($order->total - $paidAmount - $refundedOnBill, 2));
                     $prevBalance = $order->computePreviousBalance();
                     // Balance as it stood right after THIS bill (previous balance + this bill's
                     // unpaid part), so every bill shows its own position in the khata.
-                    $currentBalance = round($prevBalance + $order->total - $paidAmount, 2);
+                    $currentBalance = round($prevBalance + $order->total - $paidAmount - $refundedOnBill, 2);
                     $hasKhata = $order->customer_id && ($balanceOnBill > 0 || $prevBalance != 0 || $paidAmount != $order->total);
                 @endphp
 
