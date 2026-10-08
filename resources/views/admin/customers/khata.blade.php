@@ -5,8 +5,20 @@
 @section('content')
     <div class="container mx-auto px-4 py-6 max-w-5xl">
 
-        {{-- ── Header ── --}}
-        <div class="flex flex-wrap items-start justify-between gap-3 mb-6">
+        {{-- Print / PDF header (the only heading on the printout) --}}
+        {{-- Print-only header --}}
+        <div id="print-header" style="display:none;">
+            <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ is_object($currentBranch ?? null) ? $currentBranch->name : config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
+            <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata — {{ $customer->name }}</h2>
+            <p style="font-size:12px;color:#666;margin-bottom:2px;text-align:center;">{{ $customer->phone ?? '' }}</p>
+            <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
+            <p style="font-size:11px;color:#888;margin-bottom:10px;text-align:center;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
+            <hr style="margin-bottom:8px;">
+        </div>
+
+
+        {{-- ── Header (screen only) ── --}}
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-6 no-print">
             <div>
                 <a href="{{ route('admin.customers.show', $customer) }}"
                     class="text-sm text-blue-600 hover:underline mb-1 block">← Back to Customer</a>
@@ -47,7 +59,7 @@
                 // sneak through and pre-fill nonsense into the modal.
                 $maxOffset = round(min(max(0, (float)($customer->current_balance ?? 0)), max(0, (float)$linkedSupplierBalance)), 2);
             @endphp
-            <div class="mb-5 bg-white border-2 rounded-xl overflow-hidden" style="border-color:#0891b2;"
+            <div class="mb-5 bg-white border-2 rounded-xl overflow-hidden no-print" style="border-color:#0891b2;"
                  x-data="{ showOffset:false }">
                 <div class="px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                      style="background:linear-gradient(135deg,#ecfeff,#f0f9ff);">
@@ -166,7 +178,7 @@
         @else
             {{-- Not linked yet — small "link to supplier" affordance --}}
             @if ($availableSuppliers->count())
-                <div class="mb-5 bg-white border border-dashed border-gray-300 rounded-xl p-4"
+                <div class="mb-5 bg-white border border-dashed border-gray-300 rounded-xl p-4 no-print"
                      x-data="{ showLink:false }">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-start gap-3">
@@ -495,16 +507,6 @@
                         Reset
                     </a>
                 </form>
-
-                {{-- Print-only header --}}
-                <div id="print-header" style="display:none;">
-                    <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ is_object($currentBranch ?? null) ? $currentBranch->name : config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
-                    <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata — {{ $customer->name }}</h2>
-                    <p style="font-size:12px;color:#666;margin-bottom:2px;text-align:center;">{{ $customer->phone ?? '' }}</p>
-                    <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
-                    <p style="font-size:11px;color:#888;margin-bottom:10px;text-align:center;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
-                    <hr style="margin-bottom:8px;">
-                </div>
 
                 {{-- ── Unified Transaction History ── --}}
                 <div class="bg-white rounded-lg shadow overflow-hidden">
