@@ -505,8 +505,14 @@ class CustomerController extends Controller
         $credits  = $rows->whereIn('type', ['payment', 'offset', 'refund']);
         $payouts  = $rows->where('type', 'payout');
 
-        $totalBilled        = $bills->sum('amount');
-        $totalKhataPayments = $credits->sum('amount');
+        // Balance adjustments: + adds to what is billed, − counts as paid, so the
+        // cards always satisfy Billed + Paid out − Paid = Outstanding.
+        $adjust  = $rows->where('type', 'adjust');
+        $adjUp   = $adjust->filter(fn ($r) => $r['effect'] > 0)->sum('effect');
+        $adjDown = -$adjust->filter(fn ($r) => $r['effect'] < 0)->sum('effect');
+
+        $totalBilled        = $bills->sum('amount') + $adjUp;
+        $totalKhataPayments = $credits->sum('amount') + $adjDown;
         $totalKhataPayouts  = $payouts->sum('amount');
         $totalPaid          = $bills->sum('paid') + $totalKhataPayments;
 
