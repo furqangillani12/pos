@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Employee extends Model
 {
     protected $fillable = [
-        'user_id', 'branch_id', 'phone', 'address', 'salary', 'joining_date'
+        'user_id', 'branch_id', 'phone', 'address', 'salary', 'duty_hours', 'joining_date'
     ];
 
     // Relationship with User

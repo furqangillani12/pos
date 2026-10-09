@@ -83,6 +83,11 @@
                 <input type="number" name="salary" min="0" step="1" value="{{ old('salary', $employee?->salary ?? '') }}" class="{{ $inputClass }}" placeholder="50000">
             </div>
             <div>
+                <label class="block text-xs font-medium text-gray-600 mb-1.5">Daily duty hours</label>
+                <input type="number" name="duty_hours" min="1" max="24" step="0.25" value="{{ old('duty_hours', $employee?->duty_hours ?? 12) }}" class="{{ $inputClass }}">
+                <p class="text-[11px] text-gray-500 mt-1">Salary is paid per minute: salary ÷ (days in month × these hours). Extra minutes are paid at the same rate.</p>
+            </div>
+            <div>
                 <label class="block text-xs font-medium text-gray-600 mb-1.5">Joining Date</label>
                 <input type="date" name="joining_date" value="{{ old('joining_date', $employee?->joining_date ?? '') }}" class="{{ $inputClass }}">
             </div>

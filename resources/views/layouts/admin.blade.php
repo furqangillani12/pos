@@ -623,6 +623,15 @@
                 storefrontOpen: false
             }">
 
+                {{-- ── My attendance (anyone linked to an employee record) ── --}}
+                @if (auth()->user()?->employee)
+                    <a href="{{ route('my-attendance') }}"
+                        class="mb-1 flex items-center justify-between px-4 py-2 rounded-md transition {{ request()->routeIs('my-attendance') ? 'bg-emerald-100 text-emerald-800 font-semibold' : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100' }}">
+                        <span><i class="fas fa-fingerprint mr-2 text-xs"></i> My Attendance</span>
+                        <span class="text-[10px] font-semibold uppercase">Check in / out</span>
+                    </a>
+                @endif
+
                 {{-- ── Dashboard ── --}}
                 <a href="{{ route('admin.dashboard') }}"
                     class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.dashboard') ? 'bg-blue-100 text-blue-700 font-semibold dark:bg-blue-900 dark:text-blue-300' : 'hover:bg-blue-100 dark:hover:bg-blue-900 hover:text-blue-700 dark:hover:text-blue-300' }}">

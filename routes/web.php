@@ -102,6 +102,13 @@ Route::middleware(['auth', 'branch', 'permission:manage attendance'])->group(fun
     Route::get('attendance/reports/yearly', [AttendanceController::class, 'yearlyReport'])->name('admin.attendance.yearly-report');
 });
 
+// ── My attendance: every employee checks themselves in / out ──
+Route::middleware(['auth'])->group(function () {
+    Route::get('my-attendance', [\App\Http\Controllers\Admin\MyAttendanceController::class, 'index'])->name('my-attendance');
+    Route::post('my-attendance/check-in', [\App\Http\Controllers\Admin\MyAttendanceController::class, 'checkIn'])->name('my-attendance.check-in');
+    Route::post('my-attendance/check-out', [\App\Http\Controllers\Admin\MyAttendanceController::class, 'checkOut'])->name('my-attendance.check-out');
+});
+
 // ── Products, Units, Categories ──
 Route::middleware(['auth', 'branch', 'permission:manage products'])->group(function () {
     Route::resource('products', ProductController::class)->except(['show']);
@@ -215,6 +222,7 @@ Route::middleware(['auth', 'branch', 'permission:manage payroll'])->prefix('admi
     Route::post('/payroll/mark-all-paid', [PayrollController::class, 'markAllPaid'])->name('admin.payroll.markAllPaid');
     Route::post('/payroll/{payroll}/mark-paid', [PayrollController::class, 'markPaid'])->name('admin.payroll.markPaid');
     Route::get('/payroll/{payroll}/payslip', [PayrollController::class, 'payslip'])->name('admin.payroll.payslip');
+    Route::get('/payroll/sheet/{employee}', [PayrollController::class, 'sheet'])->name('admin.payroll.sheet');
 });
 
 // ── Orders (auth only, no specific permission) ──

@@ -819,7 +819,7 @@
                    trailing blank page from screen-height wrappers. */
                 html, body { background: #fff !important; height: auto !important; min-height: 0 !important; }
                 .min-h-screen, main { min-height: 0 !important; }
-                main { padding: 0 !important; margin: 0 !important; }
+                main, main.flex-1 { padding: 0 !important; padding-top: 0 !important; margin: 0 !important; }
                 .mobile-sidebar, .sidebar-overlay, .mobile-header { display: none !important; }
                 .overflow-x-auto, .overflow-hidden { overflow: visible !important; }
                 table { min-width: 0 !important; table-layout: auto; }

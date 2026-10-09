@@ -34,6 +34,12 @@ class AuthenticatedSessionController extends Controller
             session(['branch_id' => $user->branch_id]);
         }
 
+        // Staff with the plain "employee" role land straight on their check-in page.
+        $user = $request->user();
+        if ($user->employee && $user->hasRole('employee') && !$user->hasAnyRole(['admin', 'super_admin', 'manager'])) {
+            return redirect()->route('my-attendance');
+        }
+
         return redirect()->intended(route('admin.dashboard', absolute: false));
     }
 

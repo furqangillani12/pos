@@ -1,212 +1,140 @@
 @extends('layouts.admin')
 
-@section('title', 'Attendance Records')
+@section('title', 'Attendance')
+
+@php
+    use App\Services\SalaryCalculator as SC;
+    $isToday = $date->isToday();
+@endphp
 
 @section('content')
-    <div class="space-y-5">
+<div class="space-y-5" x-data="attBoard()">
 
-        {{-- Header --}}
-        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div>
-                <h2 class="text-xl font-bold text-gray-800">Attendance</h2>
-                <p class="text-sm text-gray-500">{{ \Carbon\Carbon::parse($date)->format('l, d M Y') }}</p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <a href="{{ route('admin.attendance.bulk-create', ['date' => $date]) }}"
-                   class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium flex items-center gap-2">
-                    <i class="fas fa-users"></i> Bulk Mark
-                </a>
-                <a href="{{ route('admin.attendance.create') }}"
-                   class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm font-medium flex items-center gap-2">
-                    <i class="fas fa-user-plus"></i> Single Entry
-                </a>
-                <a href="{{ route('admin.attendance.monthly-report') }}"
-                   class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 text-sm font-medium flex items-center gap-2">
-                    <i class="fas fa-chart-bar"></i> Reports
-                </a>
-            </div>
+    {{-- Header --}}
+    <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800">Attendance</h2>
+            <p class="text-sm text-gray-500">{{ $date->format('l, d M Y') }} @if ($isToday)· <span class="font-mono" x-text="clock"></span>@endif</p>
         </div>
-
-        {{-- Flash Messages --}}
-        @if(session('success'))
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                <i class="fas fa-check-circle"></i> {{ session('success') }}
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                <i class="fas fa-exclamation-circle"></i> {{ session('error') }}
-            </div>
-        @endif
-
-        {{-- Summary Cards --}}
-        <div class="grid grid-cols-3 sm:grid-cols-6 gap-3">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-green-700">{{ $summary['present'] }}</p>
-                <p class="text-xs text-green-600 font-medium">Present</p>
-            </div>
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-yellow-700">{{ $summary['late'] }}</p>
-                <p class="text-xs text-yellow-600 font-medium">Late</p>
-            </div>
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-purple-700">{{ $summary['half_day'] }}</p>
-                <p class="text-xs text-purple-600 font-medium">Half Day</p>
-            </div>
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-blue-700">{{ $summary['on_leave'] }}</p>
-                <p class="text-xs text-blue-600 font-medium">On Leave</p>
-            </div>
-            <div class="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-red-700">{{ $summary['absent'] }}</p>
-                <p class="text-xs text-red-600 font-medium">Absent</p>
-            </div>
-            <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 text-center">
-                <p class="text-2xl font-bold text-gray-700">{{ $summary['unmarked'] }}</p>
-                <p class="text-xs text-gray-500 font-medium">Unmarked</p>
-            </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <form method="GET" class="flex items-center gap-1">
+                <a href="{{ route('admin.attendance.index', ['date' => $date->copy()->subDay()->toDateString()]) }}" class="rounded-lg border px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50" title="Previous day"><i class="fas fa-chevron-left"></i></a>
+                <input type="date" name="date" value="{{ $date->toDateString() }}" max="{{ today()->toDateString() }}" onchange="this.form.submit()" class="rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                @if (!$isToday)
+                    <a href="{{ route('admin.attendance.index', ['date' => $date->copy()->addDay()->toDateString()]) }}" class="rounded-lg border px-2 py-1.5 text-sm text-gray-600 hover:bg-gray-50" title="Next day"><i class="fas fa-chevron-right"></i></a>
+                    <a href="{{ route('admin.attendance.index') }}" class="rounded-lg border px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50">Today</a>
+                @endif
+            </form>
+            <a href="{{ route('admin.attendance.create', ['date' => $date->toDateString()]) }}" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"><i class="fas fa-pen-to-square"></i> Add / fix times</a>
+            <a href="{{ route('admin.attendance.bulk-create', ['date' => $date->toDateString()]) }}" class="rounded-lg bg-gray-100 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-200"><i class="fas fa-users"></i> Bulk</a>
+            <a href="{{ route('admin.attendance.monthly-report', ['month' => $date->format('Y-m')]) }}" class="rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700"><i class="fas fa-calendar-days"></i> Month report</a>
         </div>
-
-        {{-- Date Filter --}}
-        <form method="GET" class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 flex flex-wrap items-center gap-3">
-            <i class="fas fa-calendar-alt text-gray-400"></i>
-            <input type="date" name="date"
-                   class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"
-                   value="{{ $date }}" max="{{ now()->format('Y-m-d') }}">
-            <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium">
-                Filter
-            </button>
-            @if($date !== now()->format('Y-m-d'))
-                <a href="{{ route('admin.attendance.index') }}" class="text-sm text-gray-500 hover:text-gray-700">Reset to Today</a>
-            @endif
-        </form>
-
-        {{-- Attendance Table --}}
-        <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600 text-xs uppercase border-b">
-                        <tr>
-                            <th class="px-4 py-3 text-left">Employee</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                            <th class="px-4 py-3 text-left">Sessions</th>
-                            <th class="px-4 py-3 text-center">Hours</th>
-                            <th class="px-4 py-3 text-center">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-50">
-                        @forelse($attendances as $attendance)
-                            @php
-                                $hasOpen = $attendance->sessions->whereNull('check_out')->count() > 0;
-                                $statusColors = [
-                                    'present'  => 'bg-green-100 text-green-700',
-                                    'late'     => 'bg-yellow-100 text-yellow-700',
-                                    'on_leave' => 'bg-blue-100 text-blue-700',
-                                    'half_day' => 'bg-purple-100 text-purple-700',
-                                    'absent'   => 'bg-red-100 text-red-700',
-                                ];
-                            @endphp
-                            <tr class="hover:bg-gray-50 transition {{ $hasOpen ? 'bg-green-50/30' : '' }}">
-                                <td class="px-4 py-3">
-                                    <div class="flex items-center gap-3">
-                                        <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold
-                                            {{ $attendance->status === 'present' || $attendance->status === 'late' ? 'bg-green-200 text-green-700' : 'bg-gray-200 text-gray-600' }}">
-                                            {{ strtoupper(substr($attendance->employee->user->name ?? '?', 0, 1)) }}
-                                        </div>
-                                        <div>
-                                            <p class="font-medium text-gray-800">{{ $attendance->employee->user->name }}</p>
-                                            @if($attendance->notes)
-                                                <p class="text-xs text-gray-400">{{ $attendance->notes }}</p>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </td>
-
-                                <td class="px-4 py-3 text-center">
-                                    <span class="px-2.5 py-1 text-xs font-semibold rounded-full {{ $statusColors[$attendance->status] ?? 'bg-gray-100 text-gray-700' }}">
-                                        {{ ucfirst(str_replace('_', ' ', $attendance->status)) }}
-                                    </span>
-                                    @if($hasOpen)
-                                        <span class="ml-1 inline-flex items-center gap-1 text-xs text-green-600">
-                                            <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span> Active
-                                        </span>
-                                    @endif
-                                </td>
-
-                                <td class="px-4 py-3">
-                                    @if($attendance->sessions->count())
-                                        <div class="space-y-1">
-                                            @foreach($attendance->sessions as $s)
-                                                <div class="flex items-center gap-2 text-xs">
-                                                    <span class="font-mono text-gray-700">{{ \Carbon\Carbon::parse($s->check_in)->format('h:i A') }}</span>
-                                                    <span class="text-gray-300">→</span>
-                                                    @if($s->check_out)
-                                                        <span class="font-mono text-gray-700">{{ \Carbon\Carbon::parse($s->check_out)->format('h:i A') }}</span>
-                                                        <span class="text-gray-400 text-[10px]">
-                                                            ({{ \Carbon\Carbon::parse($s->check_in)->diff(\Carbon\Carbon::parse($s->check_out))->format('%hh %im') }})
-                                                        </span>
-                                                    @else
-                                                        <span class="text-green-600 font-medium">ongoing...</span>
-                                                    @endif
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                    @else
-                                        <span class="text-gray-300 text-xs">No sessions</span>
-                                    @endif
-                                </td>
-
-                                <td class="px-4 py-3 text-center">
-                                    <span class="font-semibold text-gray-800">{{ $attendance->total_worked_hours }}</span>
-                                    <span class="text-xs text-gray-400">hrs</span>
-                                </td>
-
-                                <td class="px-4 py-3 text-center">
-                                    <div class="flex items-center justify-center gap-1">
-                                        @if($hasOpen && $attendance->status !== 'on_leave')
-                                            <form method="POST" action="{{ route('admin.attendance.checkout', $attendance) }}" class="inline">
-                                                @csrf
-                                                <button type="submit"
-                                                        class="bg-orange-100 hover:bg-orange-200 text-orange-700 text-xs px-3 py-1.5 rounded-lg font-medium transition"
-                                                        title="Mark Check Out">
-                                                    <i class="fas fa-sign-out-alt"></i> Out
-                                                </button>
-                                            </form>
-                                        @endif
-                                        <form method="POST" action="{{ route('admin.attendance.destroy', $attendance) }}" class="inline"
-                                              onsubmit="return confirm('Delete this attendance record?')">
-                                            @csrf @method('DELETE')
-                                            <button type="submit" class="text-gray-300 hover:text-red-500 text-xs p-1.5 rounded transition" title="Delete">
-                                                <i class="fas fa-trash-alt"></i>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-4 py-12 text-center">
-                                    <div class="text-gray-400">
-                                        <i class="fas fa-clipboard-list text-3xl mb-2"></i>
-                                        <p class="font-medium">No attendance records for this date</p>
-                                        <a href="{{ route('admin.attendance.bulk-create', ['date' => $date]) }}"
-                                           class="text-blue-600 hover:underline text-sm mt-2 inline-block">
-                                            Mark attendance now →
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
-
-            @if($attendances->hasPages())
-                <div class="px-4 py-3 border-t">
-                    {{ $attendances->appends(['date' => $date])->links() }}
-                </div>
-            @endif
-        </div>
-
     </div>
+
+    @if (session('success'))
+        <div class="rounded-xl bg-green-50 border border-green-200 text-green-800 px-4 py-3 text-sm"><i class="fas fa-circle-check mr-1"></i> {{ session('success') }}</div>
+    @endif
+    @if (session('error'))
+        <div class="rounded-xl bg-red-50 border border-red-200 text-red-700 px-4 py-3 text-sm"><i class="fas fa-circle-exclamation mr-1"></i> {{ session('error') }}</div>
+    @endif
+
+    {{-- Summary --}}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div class="rounded-xl bg-white border border-gray-100 p-4 shadow-sm"><div class="text-xs text-gray-500">Staff</div><div class="text-2xl font-bold text-gray-800">{{ $summary['total'] }}</div></div>
+        <div class="rounded-xl bg-white border border-green-100 p-4 shadow-sm"><div class="text-xs text-green-700"><span class="mr-1 inline-block h-2 w-2 rounded-full bg-green-500"></span>{{ $isToday ? 'Working now' : 'Still open' }}</div><div class="text-2xl font-bold text-green-700">{{ $summary['in'] }}</div></div>
+        <div class="rounded-xl bg-white border border-blue-100 p-4 shadow-sm"><div class="text-xs text-blue-700">Checked out</div><div class="text-2xl font-bold text-blue-700">{{ $summary['out'] }}</div></div>
+        <div class="rounded-xl bg-white border border-gray-100 p-4 shadow-sm"><div class="text-xs text-gray-500">{{ $isToday ? 'Not in yet' : 'Absent' }}</div><div class="text-2xl font-bold text-gray-500">{{ $summary['none'] }}</div></div>
+    </div>
+
+    {{-- Board --}}
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        @foreach ($board as $row)
+            @php
+                $e = $row['employee'];
+                $target = (int) round(($e->duty_hours ?: 12) * 60);
+                $stateCls = ['in' => 'border-green-300', 'out' => 'border-blue-200', 'leave' => 'border-amber-200', 'none' => 'border-gray-200'][$row['state']];
+            @endphp
+            <div class="rounded-xl bg-white border-2 {{ $stateCls }} p-4 shadow-sm">
+                <div class="flex items-start justify-between gap-2">
+                    <div class="flex items-center gap-3">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 font-bold text-gray-600">{{ strtoupper(mb_substr($e->user->name ?? '?', 0, 1)) }}</div>
+                        <div>
+                            <div class="font-semibold text-gray-900">{{ $e->user->name ?? 'Employee' }}</div>
+                            <div class="text-xs">
+                                @if ($row['state'] === 'in')
+                                    <span class="text-green-700"><span class="mr-1 inline-block h-2 w-2 animate-pulse rounded-full bg-green-500"></span>In since {{ $row['openSince']->format('h:i A') }}</span>
+                                @elseif ($row['state'] === 'out')
+                                    <span class="text-blue-700">Checked out</span>
+                                @elseif ($row['state'] === 'leave')
+                                    <span class="text-amber-700">On leave</span>
+                                @else
+                                    <span class="text-gray-400">{{ $isToday ? 'Not checked in' : 'Absent' }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-mono text-lg font-bold text-gray-800"
+                             x-data="{ c: {{ $row['closed'] }}, s: {{ $row['openSince'] && $isToday ? $row['openSince']->timestamp : 'null' }} }"
+                             x-text="fmt(c + (s ? Math.max(0, Math.floor((now / 1000 - s) / 60)) : 0))">{{ SC::hm($row['closed']) }}</div>
+                        <div class="text-[10px] text-gray-400">of {{ SC::hm($target) }} hrs</div>
+                    </div>
+                </div>
+
+                @if ($row['sessions']->count())
+                    <div class="mt-3 flex flex-wrap gap-1.5">
+                        @foreach ($row['sessions'] as $s)
+                            <span class="rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 font-mono text-[11px] text-gray-700">
+                                {{ \Carbon\Carbon::parse($s->check_in)->format('h:i A') }} → {{ $s->check_out ? \Carbon\Carbon::parse($s->check_out)->format('h:i A') : 'now' }}
+                            </span>
+                        @endforeach
+                    </div>
+                @endif
+
+                <div class="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+                    @if ($isToday)
+                        @if ($row['state'] === 'in')
+                            <form method="POST" action="{{ route('admin.attendance.checkout', $row['attendance']) }}">
+                                @csrf
+                                <button class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-rose-700"><i class="fas fa-right-from-bracket"></i> Check out</button>
+                            </form>
+                        @else
+                            <form method="POST" action="{{ route('admin.attendance.quick-checkin') }}">
+                                @csrf
+                                <input type="hidden" name="employee_id" value="{{ $e->id }}">
+                                <button class="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"><i class="fas fa-fingerprint"></i> Check in</button>
+                            </form>
+                        @endif
+                    @endif
+                    <a href="{{ route('admin.attendance.create', ['date' => $date->toDateString(), 'employee_id' => $e->id]) }}" class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"><i class="fas fa-pen"></i> Fix times</a>
+                    @can('manage payroll')
+                        <a href="{{ route('admin.payroll.sheet', ['employee' => $e->id, 'month' => $date->format('Y-m')]) }}" class="rounded-lg bg-gray-100 px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-200"><i class="fas fa-file-invoice"></i> Month sheet</a>
+                    @endcan
+                    @if ($row['attendance'])
+                        <form method="POST" action="{{ route('admin.attendance.destroy', $row['attendance']) }}" class="ml-auto" onsubmit="return confirm('Delete this day\'s attendance for {{ addslashes($e->user->name ?? '') }}?')">
+                            @csrf @method('DELETE')
+                            <button class="text-xs text-red-400 hover:text-red-600" title="Delete this day"><i class="fas fa-trash-alt"></i></button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    @if ($board->isEmpty())
+        <div class="rounded-xl bg-white border p-10 text-center text-gray-400">No employees in this branch yet.</div>
+    @endif
+</div>
+
+<script>
+    window.attBoard = function () {
+        return {
+            now: Date.now(),
+            init() { setInterval(() => this.now = Date.now(), 30000); setInterval(() => this.tick = Date.now(), 1000); },
+            tick: Date.now(),
+            get clock() { return new Date(this.tick).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); },
+            fmt(m) { m = Math.max(0, Math.round(m)); return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); },
+        };
+    };
+</script>
 @endsection

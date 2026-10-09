@@ -14,27 +14,47 @@ class AttendanceController extends Controller
 {
     use BranchScoped;
 
+    /** Today board: every employee with their check-in state and time worked. */
     public function index(Request $request)
     {
-        $date = $request->date ?? Carbon::today()->format('Y-m-d');
+        $date = Carbon::parse($request->date ?? today()->toDateString());
 
-        $attendances = $this->scopeBranch(Attendance::with(['employee.user', 'sessions']))
-            ->whereDate('date', $date)
-            ->orderBy('date', 'desc')
-            ->paginate(20);
+        $employees = $this->scopeBranch(Employee::with('user'))->get()
+            ->sortBy(fn ($e) => strtolower($e->user->name ?? ''))->values();
 
-        $allAttendances = $this->scopeBranch(Attendance::whereDate('date', $date))->get();
-        $totalEmployees = $this->scopeBranch(Employee::query())->count();
+        $attendances = Attendance::with('sessions')
+            ->whereIn('employee_id', $employees->pluck('id'))
+            ->whereDate('date', $date)->get()->keyBy('employee_id');
+
+        $board = $employees->map(function ($e) use ($attendances, $date) {
+            $att = $attendances->get($e->id);
+            $sessions = $att ? $att->sessions->sortBy('check_in')->values() : collect();
+            $open = $sessions->first(fn ($s) => !$s->check_out);
+            $closed = $sessions->sum(function ($s) use ($date) {
+                if (!$s->check_in || !$s->check_out) return 0;
+                $in = Carbon::parse($date->toDateString() . ' ' . $s->check_in);
+                $out = Carbon::parse($date->toDateString() . ' ' . $s->check_out);
+                return $out->gt($in) ? $in->diffInMinutes($out) : 0;
+            });
+            return [
+                'employee'   => $e,
+                'attendance' => $att,
+                'sessions'   => $sessions,
+                'open'       => $open,
+                'closed'     => (int) $closed,
+                'openSince'  => $open ? Carbon::parse($date->toDateString() . ' ' . $open->check_in) : null,
+                'state'      => $open ? 'in' : ($sessions->count() ? 'out' : ($att && $att->status === 'on_leave' ? 'leave' : 'none')),
+            ];
+        });
+
         $summary = [
-            'present'  => $allAttendances->where('status', 'present')->count(),
-            'late'     => $allAttendances->where('status', 'late')->count(),
-            'on_leave' => $allAttendances->where('status', 'on_leave')->count(),
-            'half_day' => $allAttendances->where('status', 'half_day')->count(),
-            'absent'   => $allAttendances->where('status', 'absent')->count(),
-            'unmarked' => $totalEmployees - $allAttendances->count(),
+            'in'    => $board->where('state', 'in')->count(),
+            'out'   => $board->where('state', 'out')->count(),
+            'none'  => $board->whereIn('state', ['none', 'leave'])->count(),
+            'total' => $board->count(),
         ];
 
-        return view('admin.attendance.index', compact('attendances', 'date', 'summary', 'totalEmployees'));
+        return view('admin.attendance.index', compact('board', 'date', 'summary'));
     }
 
     public function create()
@@ -204,7 +224,7 @@ class AttendanceController extends Controller
                 'date'        => $date,
             ],
             [
-                'status'    => $now > '09:15' ? 'late' : 'present',
+                'status'    => 'present', // flexible shift: no late marks
                 'branch_id' => $branchId !== 'all' ? $branchId : null,
             ]
         );
@@ -255,22 +275,15 @@ class AttendanceController extends Controller
             $query->whereBetween('date', [$start, $end])->with('sessions');
         }]))->get();
 
-        $workingDays = $this->getWorkingDays($start, $end);
+        // Days counted so far this month (all days, no weekends off — client rule).
+        $workingDays = (int) ($end->isFuture() ? today()->day : $start->daysInMonth);
 
         foreach ($employees as $employee) {
-            $totalMinutes = 0;
-            foreach ($employee->attendances as $attendance) {
-                $totalMinutes += $attendance->total_worked_minutes;
-            }
-            $totalHours       = round($totalMinutes / 60, 2);
-            $hoursPerMonth    = max($workingDays * 8, 1);
-            $hourlyRate       = $employee->salary ? ($employee->salary / $hoursPerMonth) : 0;
-            $calculatedSalary = round($totalHours * $hourlyRate, 2);
-
-            $employee->total_minutes     = $totalMinutes;
-            $employee->total_hours       = $totalHours;
-            $employee->hourly_rate       = round($hourlyRate, 2);
-            $employee->calculated_salary = $calculatedSalary;
+            $sheet = \App\Services\SalaryCalculator::sheet($employee, $start->year, $start->month);
+            $employee->total_minutes     = $sheet['worked_minutes'];
+            $employee->total_hours       = round($sheet['worked_minutes'] / 60, 2);
+            $employee->hourly_rate       = $sheet['per_hour'];
+            $employee->calculated_salary = $sheet['earned'];
         }
 
         return view('admin.attendance.monthly-report', compact('employees', 'month', 'workingDays'));

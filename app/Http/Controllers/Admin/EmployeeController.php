@@ -67,8 +67,9 @@ class EmployeeController extends Controller
             'branch_id' => ($branchId && $branchId !== 'all') ? $branchId : null,
             'phone' => $request->phone,
             'address' => $request->address,
-            'salary' => $request->salary,
-            'joining_date' => $request->joining_date
+            'salary' => (float) ($request->salary ?: 0),
+            'duty_hours' => min(24, max(1, (float) ($request->duty_hours ?: 12))),
+            'joining_date' => $request->joining_date ?: null
         ]);
 
         return redirect()->route('employees.index')->with('success', 'Employee created successfully');
@@ -109,8 +110,9 @@ class EmployeeController extends Controller
         $employee->update([
             'phone' => $request->phone,
             'address' => $request->address,
-            'salary' => $request->salary,
-            'joining_date' => $request->joining_date
+            'salary' => (float) ($request->salary ?: 0),
+            'duty_hours' => min(24, max(1, (float) ($request->duty_hours ?: 12))),
+            'joining_date' => $request->joining_date ?: null
         ]);
 
         return redirect()->route('employees.index')->with('success', 'Employee updated successfully');

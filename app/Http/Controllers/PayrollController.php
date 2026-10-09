@@ -34,68 +34,30 @@ class PayrollController extends Controller
         return view('admin.payroll.index', compact('payrolls', 'month', 'year', 'months', 'years', 'workingDays'));
     }
 
+    /** Salary is spread over every day of the month (client rule). */
     private function getWorkingDays($month, $year)
     {
-        $start  = Carbon::create($year, $month, 1)->startOfMonth();
-        $end    = Carbon::create($year, $month, 1)->endOfMonth();
-        $days   = 0;
-        $cursor = $start->copy();
-
-        while ($cursor <= $end) {
-            if (!$cursor->isWeekend()) {
-                $days++;
-            }
-            $cursor->addDay();
-        }
-
-        return $days;
+        return Carbon::create($year, $month, 1)->daysInMonth;
     }
 
+    /** Per-minute salary for the month (see SalaryCalculator). */
     private function calculatePayroll(Employee $employee, $month, $year)
     {
-        $attendances = $employee->attendances()
-            ->whereYear('date', $year)
-            ->whereMonth('date', $month)
-            ->with('sessions')
-            ->get();
-
-        $totalWorkedMinutes = $attendances->sum(function ($attendance) {
-            return $attendance->sessions->sum(function ($session) {
-                if ($session->check_in && $session->check_out) {
-                    return Carbon::parse($session->check_in)->diffInMinutes(Carbon::parse($session->check_out));
-                }
-                return 0;
-            });
-        });
-
-        $totalWorkedHours     = round($totalWorkedMinutes / 60, 2);
-        $workingDays          = $this->getWorkingDays($month, $year);
-        $expectedMonthlyHours = max($workingDays * 8, 1);
-        $hourlyRate           = $employee->salary / $expectedMonthlyHours;
-        $grossSalary          = $employee->salary;
-        $calculatedSalary     = $hourlyRate * $totalWorkedHours;
-
-        $presentDays = $attendances->where('status', 'present')->count();
-        $lateDays    = $attendances->where('status', 'late')->count();
-        $halfDays    = $attendances->where('status', 'half_day')->count();
-        $leaveDays   = $attendances->where('status', 'on_leave')->count();
-        $absentDays  = $attendances->where('status', 'absent')->count();
-
-        $deductions = max(0, $grossSalary - $calculatedSalary);
-        $netSalary  = min($calculatedSalary, $grossSalary);
+        $sheet  = \App\Services\SalaryCalculator::sheet($employee, (int) $year, (int) $month);
+        $earned = $sheet['earned'];
 
         return [
             'employee_id'  => $employee->id,
             'month'        => $month,
             'year'         => $year,
-            'present_days' => $presentDays,
-            'absent_days'  => $absentDays,
-            'late_days'    => $lateDays,
-            'total_hours'  => $totalWorkedHours,
-            'hourly_rate'  => round($hourlyRate, 2),
-            'gross_salary' => round($grossSalary, 2),
-            'deductions'   => round($deductions, 2),
-            'net_salary'   => round($netSalary, 2),
+            'present_days' => $sheet['present_days'],
+            'absent_days'  => $sheet['absent_days'],
+            'late_days'    => 0,
+            'total_hours'  => round($sheet['worked_minutes'] / 60, 2),
+            'hourly_rate'  => $sheet['per_hour'],
+            'gross_salary' => round($sheet['salary'], 2),
+            'deductions'   => round(max(0, $sheet['salary'] - $earned), 2),
+            'net_salary'   => round($earned, 2),
             'status'       => 'unpaid',
         ];
     }
@@ -115,6 +77,10 @@ class PayrollController extends Controller
         $count     = 0;
 
         foreach ($employees as $employee) {
+            // Already paid → keep that record as it was paid.
+            if (Payroll::where('employee_id', $employee->id)->where('month', $month)->where('year', $year)->where('status', 'paid')->exists()) {
+                continue;
+            }
             $data = $this->calculatePayroll($employee, $month, $year);
 
             Payroll::updateOrCreate(
@@ -148,10 +114,21 @@ class PayrollController extends Controller
 
     public function payslip(Payroll $payroll)
     {
-        $payroll->load('employee.user');
-        $workingDays = $this->getWorkingDays($payroll->month, $payroll->year);
+        $payroll->load('employee.user', 'employee.branch');
+        $sheet = \App\Services\SalaryCalculator::sheet($payroll->employee, (int) $payroll->year, (int) $payroll->month);
 
-        return view('admin.payroll.payslip', compact('payroll', 'workingDays'));
+        return view('admin.payroll.payslip', compact('payroll', 'sheet'));
+    }
+
+    /** Month sheet for any employee / month, without generating payroll first. */
+    public function sheet(Request $request, Employee $employee)
+    {
+        $m = $request->input('month') ? Carbon::parse($request->input('month') . '-01') : now()->startOfMonth();
+        $employee->load('user', 'branch');
+        $sheet = \App\Services\SalaryCalculator::sheet($employee, $m->year, $m->month);
+        $payroll = Payroll::where('employee_id', $employee->id)->where('month', $m->month)->where('year', $m->year)->first();
+
+        return view('admin.payroll.payslip', compact('payroll', 'sheet'));
     }
 
     public function markPaid(Payroll $payroll)
