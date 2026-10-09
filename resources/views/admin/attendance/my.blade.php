@@ -53,18 +53,18 @@
         </form>
 
         {{-- Today --}}
-        <div class="mt-6 grid grid-cols-3 gap-3 text-left">
+        <div class="mt-6 g-3 gap-2 sm:gap-3 text-left">
             <div class="rounded-xl bg-blue-50 p-3">
                 <div class="text-[11px] uppercase tracking-wide text-blue-700">Worked today</div>
-                <div class="text-xl font-bold text-blue-900 font-mono" x-text="fmt(workedToday)"></div>
+                <div class="text-lg sm:text-xl font-bold text-blue-900 font-mono" x-text="fmt(workedToday)"></div>
             </div>
             <div class="rounded-xl bg-purple-50 p-3">
                 <div class="text-[11px] uppercase tracking-wide text-purple-700">Duty target</div>
-                <div class="text-xl font-bold text-purple-900 font-mono">{{ SC::hm($targetToday) }}</div>
+                <div class="text-lg sm:text-xl font-bold text-purple-900 font-mono">{{ SC::hm($targetToday) }}</div>
             </div>
             <div class="rounded-xl p-3" :class="workedToday >= target ? 'bg-green-50' : 'bg-amber-50'">
                 <div class="text-[11px] uppercase tracking-wide" :class="workedToday >= target ? 'text-green-700' : 'text-amber-700'" x-text="workedToday >= target ? 'Extra' : 'Remaining'"></div>
-                <div class="text-xl font-bold font-mono" :class="workedToday >= target ? 'text-green-900' : 'text-amber-900'" x-text="fmt(Math.abs(target - workedToday))"></div>
+                <div class="text-lg sm:text-xl font-bold font-mono" :class="workedToday >= target ? 'text-green-900' : 'text-amber-900'" x-text="fmt(Math.abs(target - workedToday))"></div>
             </div>
         </div>
         <div class="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-gray-100">
@@ -93,7 +93,7 @@
                 <input type="month" name="month" value="{{ $month->format('Y-m') }}" max="{{ now()->format('Y-m') }}" class="rounded-lg border border-gray-300 px-2 py-1 text-sm" onchange="this.form.submit()">
             </form>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 p-5">
+        <div class="g-2-4 gap-3 p-4 sm:p-5">
             <div><div class="text-[11px] uppercase text-gray-500">Worked</div><div class="text-lg font-bold">{{ SC::hm($sheet['worked_minutes']) }} <span class="text-xs font-normal text-gray-400">hrs</span></div></div>
             <div><div class="text-[11px] uppercase text-gray-500">Days present</div><div class="text-lg font-bold">{{ $sheet['present_days'] }} <span class="text-xs font-normal text-gray-400">/ {{ $sheet['days_in_month'] }}</span></div></div>
             <div><div class="text-[11px] uppercase text-gray-500">Rate</div><div class="text-lg font-bold">Rs. {{ number_format($sheet['per_hour'], 2) }} <span class="text-xs font-normal text-gray-400">/ hr</span></div></div>
@@ -126,6 +126,13 @@
     </div>
 </div>
 
+
+<style>
+    /* Own grid helpers (the layout forces .grid-cols-* to 2 columns on phones). */
+    .g-3   { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g-2-4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (min-width: 640px) { .g-2-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>
 <script>
     window.myAttendance = function (cfg) {
         return {

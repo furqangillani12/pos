@@ -39,7 +39,7 @@
     @endif
 
     {{-- Summary --}}
-    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+    <div class="g-2-4 gap-3">
         <div class="rounded-xl bg-white border border-gray-100 p-4 shadow-sm"><div class="text-xs text-gray-500">Staff</div><div class="text-2xl font-bold text-gray-800">{{ $summary['total'] }}</div></div>
         <div class="rounded-xl bg-white border border-green-100 p-4 shadow-sm"><div class="text-xs text-green-700"><span class="mr-1 inline-block h-2 w-2 rounded-full bg-green-500"></span>{{ $isToday ? 'Working now' : 'Still open' }}</div><div class="text-2xl font-bold text-green-700">{{ $summary['in'] }}</div></div>
         <div class="rounded-xl bg-white border border-blue-100 p-4 shadow-sm"><div class="text-xs text-blue-700">Checked out</div><div class="text-2xl font-bold text-blue-700">{{ $summary['out'] }}</div></div>
@@ -126,6 +126,13 @@
     @endif
 </div>
 
+
+<style>
+    /* Own grid helpers (the layout forces .grid-cols-* to 2 columns on phones). */
+    .g-3   { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .g-2-4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    @media (min-width: 640px) { .g-2-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+</style>
 <script>
     window.attBoard = function () {
         return {
