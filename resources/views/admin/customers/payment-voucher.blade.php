@@ -355,7 +355,7 @@
         msg += `*{{ $isPayout ? 'Amount Paid Out' : 'Amount Received' }}*: Rs. {{ number_format($payment->amount, 0) }}\n`;
         msg += `*{{ $isPayout ? 'Payout' : 'Payment' }} Method*: {{ ucfirst(str_replace('_', ' ', $payment->payment_method)) }}\n\n`;
         msg += `*Balance Before*: Rs. {{ number_format(abs($balanceBefore), 0) }}{{ $balanceBefore > 0 ? ' (Due)' : ($balanceBefore < 0 ? ' (Advance)' : '') }}\n`;
-        msg += `*Balance After*: {{ $balanceAfter == 0 ? 'Rs. 0 — Settled ✅' : 'Rs. ' . number_format(abs($balanceAfter), 0) . ($balanceAfter > 0 ? ' (Due)' : ' (Advance)') }}\n\n`;
+        msg += `*Balance After*: {{ $balanceAfter == 0 ? 'Rs. 0, Settled ✅' : 'Rs. ' . number_format(abs($balanceAfter), 0) . ($balanceAfter > 0 ? ' (Due)' : ' (Advance)') }}\n\n`;
         msg += `{{ $isPayout ? 'Amount paid out to customer.' : 'Thank you for your payment!' }}\n`;
         msg += `AlMufeed Saqafti Markaz\n03007951919`;
 

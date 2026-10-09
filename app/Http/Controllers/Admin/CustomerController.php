@@ -726,12 +726,12 @@ class CustomerController extends Controller
 
         $isPayout = $payment->payment_type === 'khata_payout';
 
-        // Balance before this payment: every khata row strictly before it.
-        $balanceBefore = round(\App\Services\KhataService::entries($customer)
-            ->reject(fn ($r) => $r['type'] !== 'order' && $r['type'] !== 'refund' && $r['id'] === $payment->id)
-            ->filter(fn ($r) => \Carbon\Carbon::parse($r['date'])->lt($payment->created_at))
-            ->sum('effect'), 2);
-        $balanceAfter  = $balanceBefore + ($isPayout ? $payment->amount : -$payment->amount);
+        // Before / after exactly as on the customer statement: the payment sits at its
+        // own (payment) date there, even when it was entered into the system later.
+        [$rows] = \App\Services\KhataService::withRunningBalance($customer, \App\Services\KhataService::entries($customer));
+        $row = $rows->first(fn ($r) => in_array($r['type'], ['payment', 'payout'], true) && $r['id'] === $payment->id);
+        $balanceAfter  = $row ? (float) $row['running_balance'] : (float) $customer->current_balance;
+        $balanceBefore = round($balanceAfter - ($row['effect'] ?? ($isPayout ? $payment->amount : -$payment->amount)), 2);
 
         return view('admin.customers.payment-voucher', compact(
             'customer', 'payment', 'balanceBefore', 'balanceAfter', 'isPayout'
