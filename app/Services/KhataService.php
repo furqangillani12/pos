@@ -281,7 +281,7 @@ class KhataService
             'payment_method'   => $method,
             'reference_number' => $ref,
             'notes'            => ($isPayment ? 'Website payment request #' : 'Website withdrawal request #') . $req->id
-                                  . ($req->sender_name ? ' — ' . $req->sender_name : ''),
+                                  . ($req->sender_name ? ', ' . $req->sender_name : ''),
             'status'           => 'completed',
             'created_by'       => auth()->id(),
         ]);

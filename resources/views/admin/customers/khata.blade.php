@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Customer Khata — ' . $customer->name)
+@section('title', 'Customer Khata: ' . $customer->name)
 
 @section('content')
     <div class="container mx-auto px-4 py-6 max-w-5xl">
@@ -9,9 +9,9 @@
         {{-- Print-only header --}}
         <div id="print-header" style="display:none;">
             <h1 style="font-size:20px;font-weight:900;margin-bottom:4px;text-align:center;">{{ is_object($currentBranch ?? null) ? $currentBranch->name : config('app.name', 'Almufeed Saqafti Markaz') }}</h1>
-            <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata — {{ $customer->name }}</h2>
+            <h2 style="font-size:16px;font-weight:bold;margin-bottom:2px;text-align:center;">Customer Khata: {{ $customer->name }}</h2>
             <p style="font-size:12px;color:#666;margin-bottom:2px;text-align:center;">{{ $customer->phone ?? '' }}</p>
-            <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
+            <p style="font-size:11px;color:#888;text-align:center;">Statement: {{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</p>
             <p style="font-size:11px;color:#888;margin-bottom:10px;text-align:center;">Balance: Rs. {{ number_format(abs($customer->current_balance ?? 0), 0) }} {{ ($customer->current_balance ?? 0) > 0 ? '(Due)' : (($customer->current_balance ?? 0) < 0 ? '(Advance)' : '(Clear)') }}</p>
             <hr style="margin-bottom:8px;">
         </div>
@@ -24,7 +24,7 @@
                     class="text-sm text-blue-600 hover:underline mb-1 block">← Back to Customer</a>
                 <h1 class="text-2xl font-bold text-gray-800">📒 Customer Khata</h1>
                 <p class="text-sm text-gray-500 mt-1">Account statement for <strong>{{ $customer->name }}</strong>
-                    <br><span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} — {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</span>
+                    <br><span class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($fromDate)->format('d M Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('d M Y') }}</span>
                 </p>
             </div>
             <div class="flex gap-2 flex-wrap">
@@ -93,7 +93,7 @@
                             <button type="button" @click="showOffset = true"
                                     class="inline-flex items-center gap-2 px-3 py-2 text-white text-xs font-semibold rounded-lg shadow-sm"
                                     style="background:linear-gradient(135deg,#0891b2,#0e7490);"
-                                    title="Lena-Dena ek dosray say katwa do — koi cash nahi chalega">
+                                    title="Lena-Dena ek dosray say katwa do, koi cash nahi chalega">
                                 <i class="fas fa-right-left"></i> Adjust Rs. {{ number_format($maxOffset, 0) }} <span class="opacity-80">(لینا/دینا کاٹیں)</span>
                             </button>
                         @else
@@ -130,8 +130,8 @@
                         </div>
                         <div class="text-xs text-gray-600 mb-4 leading-relaxed bg-cyan-50/50 border border-cyan-100 rounded-md p-3">
                             <strong class="text-cyan-800">Yeh kya karega?</strong>
-                            <br>Customer <strong>{{ $customer->name }}</strong> ka khata aur supplier <strong>{{ $linkedSupplier->name }}</strong> ka dena — dono ek saath barabar amount say kam ho jayenge.
-                            <br><em class="text-gray-500">Cash ka koi lain-dain nahi hota — sirf hisaab apas mein adjust hota hai.</em>
+                            <br>Customer <strong>{{ $customer->name }}</strong> ka khata aur supplier <strong>{{ $linkedSupplier->name }}</strong> ka dena, dono ek saath barabar amount say kam ho jayenge.
+                            <br><em class="text-gray-500">Cash ka koi lain-dain nahi hota, sirf hisaab apas mein adjust hota hai.</em>
                             <br><span class="text-gray-500">(Misaal: Customer ka 1000 Lena hai, supplier ka 600 Dena hai → 600 ka Adjust karne se: Customer pe 400 Lena rah jayega, supplier ka hisaab saaf.)</span>
                         </div>
 
@@ -203,7 +203,7 @@
                             <input type="hidden" name="redirect_to" value="customer">
                             <select name="supplier_id" required
                                     class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500">
-                                <option value="">— Select supplier —</option>
+                                <option value="">Select supplier</option>
                                 @foreach ($availableSuppliers as $s)
                                     <option value="{{ $s->id }}">
                                         {{ $s->name }}{{ $s->company_name ? ' (' . $s->company_name . ')' : '' }}{{ $s->phone ? ' · ' . $s->phone : '' }}
@@ -567,7 +567,7 @@
                                                     <p class="text-xs text-gray-500">
                                                         {{ ucfirst(str_replace('_', ' ', $txn['method'] ?? '')) }}
                                                         @if (!empty($txn['notes']))
-                                                            — {{ $txn['notes'] }}
+                                                            · {{ str_replace('—', '-', $txn['notes']) }}
                                                         @endif
                                                     </p>
                                                 </div>
@@ -577,17 +577,17 @@
                                                     <p class="text-xs text-gray-500">
                                                         {{ ucfirst(str_replace('_', ' ', $txn['method'] ?? '')) }}
                                                         @if (!empty($txn['notes']))
-                                                            — {{ $txn['notes'] }}
+                                                            · {{ str_replace('—', '-', $txn['notes']) }}
                                                         @endif
                                                     </p>
                                                 </div>
                                             @elseif ($isOffset)
                                                 <div>
-                                                    <p class="font-semibold" style="color:#0e7490;"><i class="fas fa-right-left text-xs mr-1"></i>Adjust — Supplier ke saath (حساب کٹا)</p>
+                                                    <p class="font-semibold" style="color:#0e7490;"><i class="fas fa-right-left text-xs mr-1"></i>Adjust: Supplier ke saath (حساب کٹا)</p>
                                                     <p class="text-xs text-gray-500">
                                                         Ref: {{ $txn['reference'] }}
                                                         @if (!empty($txn['notes']))
-                                                            — {{ $txn['notes'] }}
+                                                            · {{ str_replace('—', '-', $txn['notes']) }}
                                                         @endif
                                                     </p>
                                                 </div>
@@ -602,7 +602,7 @@
                                                     <p class="text-xs text-gray-500">
                                                         {{ $txn['reference'] }}
                                                         @if (!empty($txn['notes']))
-                                                            — {{ $txn['notes'] }}
+                                                            · {{ str_replace('—', '-', $txn['notes']) }}
                                                         @endif
                                                     </p>
                                                 </div>
@@ -632,7 +632,7 @@
                                             @elseif ($isPayout)
                                                 Rs. {{ number_format($txn['amount'], 0) }}
                                             @else
-                                                —
+                                                
                                             @endif
                                         </td>
 
@@ -646,7 +646,7 @@
                                             @elseif($isOrder && $txn['paid'] > 0)
                                                 Rs. {{ number_format($txn['paid'], 0) }}
                                             @else
-                                                —
+                                                
                                             @endif
                                         </td>
 
@@ -685,7 +685,7 @@
                                             @elseif ($isAdjust)
                                                 <span class="text-[10px] text-gray-400 italic">Adjustment</span>
                                             @elseif ($isOffset)
-                                                <span class="text-[10px] text-gray-400 italic" title="Yeh entry supplier ke saath jori hui hai — sirf yahan se delete nahi hoti">Mila hua</span>
+                                                <span class="text-[10px] text-gray-400 italic" title="Yeh entry supplier ke saath jori hui hai, sirf yahan se delete nahi hoti">Mila hua</span>
                                             @else
                                                 <a href="{{ route('admin.pos.receipt', $txn['id']) }}" target="_blank"
                                                     class="text-blue-400 hover:text-blue-600 text-xs"
@@ -735,7 +735,7 @@
                     <div class="bg-white rounded-xl shadow-sm border border-red-100 mt-4 no-print">
                         <div class="px-4 py-3 border-b border-red-100">
                             <h3 class="font-bold text-red-700 text-sm"><i class="fas fa-trash-can mr-1"></i> Deleted payments (record)</h3>
-                            <p class="text-[11px] text-gray-500">These payments were deleted — reversed from both the balance and the Cash book.</p>
+                            <p class="text-[11px] text-gray-500">These payments were deleted and reversed from both the balance and the Cash book.</p>
                         </div>
                         <table class="w-full text-xs">
                             <tbody class="divide-y divide-gray-100">
@@ -744,7 +744,7 @@
                                         <td class="px-4 py-2">{{ $dp->payment_date?->format('d M Y') }}</td>
                                         <td class="px-4 py-2">{{ $dp->payment_type === 'khata_payout' ? 'Cash Out' : 'Payment' }} · {{ $dp->payment_number }}</td>
                                         <td class="px-4 py-2 text-right font-semibold line-through text-gray-500">Rs. {{ number_format($dp->amount, 0) }}</td>
-                                        <td class="px-4 py-2 text-gray-500">Deleted {{ $dp->deleted_at?->format('d M Y h:i A') }} by {{ $deletedByNames[$dp->deleted_by] ?? '—' }}</td>
+                                        <td class="px-4 py-2 text-gray-500">Deleted {{ $dp->deleted_at?->format('d M Y h:i A') }} by {{ $deletedByNames[$dp->deleted_by] ?? 'unknown' }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -803,7 +803,28 @@
 
     @push('styles')
         <style>
+            /* A small page margin keeps the browser's own header/footer (date, page
+               title, URL, page number) off the printout, with no extra blank page. */
+            @page { size: A4; margin: 6mm; }
+
             @media print {
+                html, body { margin: 0 !important; }
+                body { padding: 0 !important; }
+
+                /* "Period Total" only once, at the end — not repeated on every page. */
+                tfoot { display: table-row-group !important; }
+                thead { display: table-header-group; }
+
+                /* Fit the table to the page (no clipped Balance column) and no
+                   trailing blank page from screen-height wrappers. */
+                html, body { background: #fff !important; height: auto !important; min-height: 0 !important; }
+                .min-h-screen, main { min-height: 0 !important; }
+                main { padding: 0 !important; margin: 0 !important; }
+                .mobile-sidebar, .sidebar-overlay, .mobile-header { display: none !important; }
+                .overflow-x-auto, .overflow-hidden { overflow: visible !important; }
+                table { min-width: 0 !important; table-layout: auto; }
+                th, td { padding-left: 4px !important; padding-right: 4px !important; }
+
                 .no-print,
                 nav,
                 aside,

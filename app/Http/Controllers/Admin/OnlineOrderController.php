@@ -409,7 +409,7 @@ class OnlineOrderController extends Controller
                     'payment_date'     => now()->toDateString(),
                     'payment_method'   => $method,
                     'reference_number' => $data['payment_ref'] ?? null,
-                    'notes'            => "Extra received with order {$order->order_number} payment (Rs. " . number_format($amount, 0) . ' total) — kept as advance',
+                    'notes'            => "Extra received with order {$order->order_number} payment (Rs. " . number_format($amount, 0) . ' total), kept as advance',
                     'status'           => 'completed',
                     'created_by'       => auth()->id(),
                 ]);
