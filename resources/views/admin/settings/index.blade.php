@@ -247,7 +247,7 @@
                 <h2 class="text-lg font-semibold text-gray-800 flex items-center gap-2">
                     <i class="fas fa-comment-dots text-cyan-500"></i> Order status messages
                 </h2>
-                <p class="text-xs text-gray-500 mt-1">Sent with each status (email + WhatsApp). Placeholders: <code class="bg-gray-100 px-1 rounded">{name}</code> <code class="bg-gray-100 px-1 rounded">{order}</code> <code class="bg-gray-100 px-1 rounded">{courier}</code> <code class="bg-gray-100 px-1 rounded">{tracking}</code> <code class="bg-gray-100 px-1 rounded">{track_link}</code> <code class="bg-gray-100 px-1 rounded">{total}</code>. Add review-points text here, e.g. for “Confirmed”.</p>
+                <p class="text-xs text-gray-500 mt-1">Sent with each status (email + WhatsApp). Placeholders: <code class="bg-gray-100 px-1 rounded">{name}</code> <code class="bg-gray-100 px-1 rounded">{order}</code> <code class="bg-gray-100 px-1 rounded">{courier}</code> <code class="bg-gray-100 px-1 rounded">{tracking}</code> <code class="bg-gray-100 px-1 rounded">{track_link}</code> (our website's tracking page) <code class="bg-gray-100 px-1 rounded">{courier_link}</code> (courier's own tracking) <code class="bg-gray-100 px-1 rounded">{total}</code>. Add review-points text here, e.g. for “Confirmed”.</p>
             </div>
             <form action="{{ route('admin.settings.status-templates.update') }}" method="POST" class="p-5">
                 @csrf

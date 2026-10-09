@@ -190,6 +190,23 @@ if (!function_exists('order_track_url')) {
     }
 }
 
+if (!function_exists('order_site_track_url')) {
+    /**
+     * Our own order-tracking page (almufeed.com.pk/track-order/{token}) — used in
+     * messages sent to the customer (WhatsApp / email). That page shows the
+     * order status and links on to the courier's tracking.
+     */
+    function order_site_track_url($order): ?string
+    {
+        if (!$order) return null;
+        if (empty($order->receipt_token)) {
+            $order->receipt_token = bin2hex(random_bytes(16));
+            $order->saveQuietly();
+        }
+        return route('shop.track.view', $order->receipt_token);
+    }
+}
+
 if (!function_exists('order_status_tokens')) {
     /** Placeholder map shared by the status template + message builders. */
     function order_status_tokens($order, string $status): array
@@ -202,7 +219,8 @@ if (!function_exists('order_status_tokens')) {
             '{status}'     => order_status_meta($status)['label'],
             '{courier}'    => $order->dispatch_method ?? '',
             '{tracking}'   => $order->tracking_id ?? '',
-            '{track_link}' => order_track_url($order) ?? '',
+            '{track_link}' => order_site_track_url($order) ?? '',
+            '{courier_link}' => order_track_url($order) ?? '',
             '{total}'      => 'Rs. ' . number_format((float) $order->total, 0),
         ];
     }
@@ -234,7 +252,7 @@ if (!function_exists('order_status_message')) {
     {
         $status = order_status_norm($status ?: $order->status);
         $name   = trim(($order->shipping_first_name ?? '') . ' ' . ($order->shipping_last_name ?? '')) ?: ($order->customer?->name ?? 'there');
-        $track  = order_track_url($order);
+        $track  = order_site_track_url($order);   // our site's tracking page
         $label  = order_status_meta($status)['label'];
 
         $lines = ['Assalam-o-Alaikum', "Dear: {$name},", "your order: {$order->order_number}"];

@@ -58,7 +58,7 @@ class OrderStatusMail extends Mailable
                 'intro'   => "Your order {$num} is on its way" . ($order->dispatch_method ? " via {$order->dispatch_method}" : '') . '.',
                 'lines'   => array_values(array_filter([
                     $order->tracking_id ? "Tracking number: {$order->tracking_id}" : null,
-                    order_track_url($order) ? 'Track it here: ' . order_track_url($order) : null,
+                    order_site_track_url($order) ? 'Track it here: ' . order_site_track_url($order) : null,
                 ])),
             ],
             'delivered' => [
