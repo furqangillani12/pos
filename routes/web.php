@@ -344,6 +344,7 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/account-requests',                          [\App\Http\Controllers\Admin\AccountRequestController::class, 'index'])->name('account-requests.index');
     Route::post('/account-requests/{accountRequest}/approve', [\App\Http\Controllers\Admin\AccountRequestController::class, 'approve'])->name('account-requests.approve');
     Route::post('/account-requests/{accountRequest}/reject',  [\App\Http\Controllers\Admin\AccountRequestController::class, 'reject'])->name('account-requests.reject');
+    Route::patch('/account-requests/{accountRequest}/date',   [\App\Http\Controllers\Admin\AccountRequestController::class, 'updateDate'])->name('account-requests.date');
 
     // ── Coupons / discount codes — #18 ──
     Route::get('/coupons',                    [\App\Http\Controllers\Admin\CouponController::class, 'index'])->name('coupons.index');

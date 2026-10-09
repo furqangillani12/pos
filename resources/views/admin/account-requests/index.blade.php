@@ -5,7 +5,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-6">
         <div>
             <h1 class="text-2xl font-semibold text-gray-800">Payment & Withdrawal Requests</h1>
-            <p class="text-sm text-gray-600 mt-1">Customers ki payment (khata) aur withdrawal (credit) requests — approve karne par balance update ho jayega.</p>
+            <p class="text-sm text-gray-600 mt-1">Customer payment (khata) and withdrawal (credit) requests. Approving one updates the customer's balance on the date you choose.</p>
         </div>
         <div class="flex items-center gap-2 text-sm">
             @foreach (['' => 'All', 'payment' => 'Payments', 'withdrawal' => 'Withdrawals'] as $val => $label)
@@ -39,7 +39,7 @@
                         </div>
                         @if ($r->type === 'payment')
                             <div class="text-xs text-gray-500 mt-1">
-                                Sender: {{ $r->sender_name ?: '—' }} @if($r->sender_bank) · {{ $r->sender_bank }} @endif @if($r->reference) · Ref: {{ $r->reference }} @endif
+                                Sender: {{ $r->sender_name ?: '-' }} @if($r->sender_bank) · {{ $r->sender_bank }} @endif @if($r->reference) · Ref: {{ $r->reference }} @endif
                             </div>
                             @if ($r->proof_path)
                                 <a href="{{ asset('storage/' . $r->proof_path) }}" target="_blank" class="inline-block mt-2">
@@ -57,19 +57,32 @@
                             @endif
                         @endif
                         @if ($r->admin_note)<div class="text-xs text-gray-400 mt-1">Note: {{ $r->admin_note }}</div>@endif
+                        @if ($r->status === 'approved' && isset($paidOn['REQ-' . $r->id]))
+                            <form method="POST" action="{{ route('admin.account-requests.date', $r) }}" class="mt-2 flex flex-wrap items-center gap-2 text-xs" x-data="{ edit: false }">
+                                @csrf @method('PATCH')
+                                <span class="text-gray-500">{{ $r->type === 'payment' ? 'Received on' : 'Paid on' }}:</span>
+                                <strong x-show="!edit">{{ \Carbon\Carbon::parse($paidOn['REQ-' . $r->id])->format('d M Y') }}</strong>
+                                <button type="button" x-show="!edit" @click="edit = true" class="text-blue-600 hover:underline"><i class="fas fa-pen text-[10px]"></i> Edit date</button>
+                                <input x-show="edit" x-cloak type="date" name="paid_on" value="{{ \Carbon\Carbon::parse($paidOn['REQ-' . $r->id])->toDateString() }}" max="{{ today()->toDateString() }}" class="rounded border border-gray-300 px-2 py-1">
+                                <button x-show="edit" x-cloak class="rounded bg-blue-600 px-2 py-1 font-semibold text-white">Save</button>
+                                <button type="button" x-show="edit" x-cloak @click="edit = false" class="text-gray-500">Cancel</button>
+                            </form>
+                        @endif
                     </div>
 
                     @if ($r->status === 'new')
                         <div class="flex flex-col gap-2 w-full sm:w-64">
                             <form method="POST" action="{{ route('admin.account-requests.approve', $r) }}" enctype="multipart/form-data" class="space-y-2 border border-gray-100 rounded-lg p-3 bg-gray-50">
                                 @csrf
+                                <label class="block text-[11px] text-gray-500">{{ $r->type === 'payment' ? 'Received on' : 'Paid on' }}</label>
+                                <input type="date" name="paid_on" value="{{ today()->toDateString() }}" max="{{ today()->toDateString() }}" required class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
                                 <input type="text" name="admin_note" placeholder="Note (optional)" class="w-full px-2 py-1.5 border border-gray-300 rounded text-xs">
                                 @if ($r->type === 'withdrawal')
                                     <label class="block text-[11px] text-gray-500">Payout screenshot (optional)</label>
                                     <input type="file" name="admin_proof" accept="image/*" class="w-full text-xs">
                                 @endif
                                 <button class="w-full px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded"
-                                        onclick="return confirm('Approve? Customer balance update ho jayega.')">
+                                        onclick="return confirm('Approve this request? The customer\'s balance will be updated.')">
                                     <i class="fas fa-check"></i> Approve & update balance
                                 </button>
                             </form>
