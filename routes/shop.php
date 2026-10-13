@@ -104,6 +104,8 @@ $registerShopRoutes = function () {
         // Open to guests too. The CheckoutController fills customer_id when
         // authenticated, otherwise stores email/phone on the order.
         Route::get('/checkout',                   [CheckoutController::class, 'index'])->name('checkout');
+        Route::get('/checkout/gift',              [CheckoutController::class, 'gift'])->name('checkout.gift');
+        Route::post('/checkout/gift',             [CheckoutController::class, 'chooseGift'])->name('checkout.gift.choose');
         Route::get('/checkout/lookup',            [CheckoutController::class, 'lookup'])->name('checkout.lookup');
         Route::post('/checkout/place',            [CheckoutController::class, 'place'])->name('checkout.place');
         Route::get('/checkout/thank-you/{order}', [CheckoutController::class, 'thankYou'])->name('checkout.thanks');

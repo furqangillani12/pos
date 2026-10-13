@@ -9,7 +9,7 @@ class OrderItem extends Model
     protected $fillable = [
         'order_id', 'product_id',
         'variant_id', 'variant_label', 'quantity', 'unit_price', 'cost_price', 'retail_price', 'original_price', 'line_discount', 'total_price',
-        'packing_charge', 'packing_label',
+        'packing_charge', 'packing_label', 'is_gift',
     ];
 
     protected $casts = [
@@ -18,6 +18,7 @@ class OrderItem extends Model
         'line_discount'  => 'decimal:2',
         'total_price'    => 'decimal:2',
         'packing_charge' => 'decimal:2',
+        'is_gift'        => 'boolean',
     ];
 
     public function hasLineDiscount(): bool

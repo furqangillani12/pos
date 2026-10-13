@@ -56,6 +56,7 @@ class CartService
             : ($variant ? $variant->priceFor(Auth::guard('customer')->user()?->customer_type ?? 'customer') : shop_product_price($product));
 
         $existing = $this->query()
+            ->where('is_gift', false)
             ->where('product_id', $product->id)
             ->where('variant_id', $variant?->id)
             ->where('selected_size', $size)
@@ -110,9 +111,40 @@ class CartService
         return $n;
     }
 
+    /** Paid (non-gift) subtotal: what the gift rules look at. */
+    public function paidSubtotal(): float
+    {
+        return (float) $this->items()->where('is_gift', false)->sum(fn ($i) => (float) $i->qty * (float) $i->unit_price);
+    }
+
+    public function giftItems()
+    {
+        return $this->items()->where('is_gift', true)->values();
+    }
+
+    /** Replace the chosen gifts (one of each, at the gift's price, from the gift's branch). */
+    public function setGifts($gifts): void
+    {
+        $this->query()->where('is_gift', true)->delete();
+        foreach ($gifts as $gift) {
+            $p = $gift->product;
+            CartItem::create([
+                'customer_id' => Auth::guard('customer')->id(),
+                'session_id'  => Auth::guard('customer')->check() ? null : $this->sessionKey(),
+                'product_id'  => $p->id,
+                'branch_id'   => $p->branch_id,
+                'qty'         => 1,
+                'unit_price'  => (float) $gift->price,
+                'is_gift'     => true,
+            ]);
+        }
+        Session::put('shop.gift_done', true);
+    }
+
     public function update(CartItem $item, float $qty): CartItem
     {
         if (!$this->ownsItem($item)) abort(403);
+        if ($item->is_gift) return $item;   // one of each gift
         $item->qty = max(0.01, $qty);
         $item->save();
         return $item;
@@ -127,7 +159,7 @@ class CartService
     public function clear(): void
     {
         $this->query()->delete();
-        Session::forget('shop.coupon');
+        Session::forget(['shop.coupon', 'shop.gift_done']);
     }
 
     public function ownsItem(CartItem $item): bool
@@ -147,8 +179,12 @@ class CartService
         $sessionKey = $this->sessionKey();
         $guest = CartItem::where('session_id', $sessionKey)->get();
 
+        $hasGifts = CartItem::where('customer_id', $customerId)->where('is_gift', true)->exists();
         foreach ($guest as $row) {
-            $existing = CartItem::where('customer_id', $customerId)
+            // Keep one set of gifts: the customer's own, if they already chose some.
+            if ($row->is_gift && $hasGifts) { $row->delete(); continue; }
+            $existing = $row->is_gift ? null : CartItem::where('customer_id', $customerId)
+                ->where('is_gift', false)
                 ->where('product_id', $row->product_id)
                 ->where('variant_id', $row->variant_id)
                 ->where('selected_size', $row->selected_size)

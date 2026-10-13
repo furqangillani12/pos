@@ -184,6 +184,25 @@ Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->group(fu
     Route::get('/api/packages', [PackageController::class, 'apiList'])->name('packages.api');
 });
 
+// ── Sales & Gifts ──
+Route::middleware(['auth', 'branch', 'permission:manage products'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/sales', [\App\Http\Controllers\Admin\SaleController::class, 'index'])->name('sales.index');
+    Route::get('/sales/create', [\App\Http\Controllers\Admin\SaleController::class, 'create'])->name('sales.create');
+    Route::post('/sales', [\App\Http\Controllers\Admin\SaleController::class, 'store'])->name('sales.store');
+    Route::get('/sales/{sale}/edit', [\App\Http\Controllers\Admin\SaleController::class, 'edit'])->name('sales.edit');
+    Route::put('/sales/{sale}', [\App\Http\Controllers\Admin\SaleController::class, 'update'])->name('sales.update');
+    Route::patch('/sales/{sale}/toggle', [\App\Http\Controllers\Admin\SaleController::class, 'toggle'])->name('sales.toggle');
+    Route::delete('/sales/{sale}', [\App\Http\Controllers\Admin\SaleController::class, 'destroy'])->name('sales.destroy');
+
+    Route::get('/gifts', [\App\Http\Controllers\Admin\GiftController::class, 'index'])->name('gifts.index');
+    Route::post('/gifts', [\App\Http\Controllers\Admin\GiftController::class, 'store'])->name('gifts.store');
+    Route::put('/gifts/{gift}', [\App\Http\Controllers\Admin\GiftController::class, 'update'])->name('gifts.update');
+    Route::delete('/gifts/{gift}', [\App\Http\Controllers\Admin\GiftController::class, 'destroy'])->name('gifts.destroy');
+    Route::post('/gifts/rules', [\App\Http\Controllers\Admin\GiftController::class, 'saveTiers'])->name('gifts.tiers');
+});
+// The POS "Add gift" list (any POS user).
+Route::middleware(['auth', 'branch'])->prefix('admin')->name('admin.')->get('/api/gifts', [\App\Http\Controllers\Admin\GiftController::class, 'api'])->name('gifts.api');
+
 // ── Reports ──
 Route::middleware(['auth', 'branch', 'permission:manage reports'])->prefix('admin')->name('admin.')->group(function () {
     Route::prefix('reports')->name('reports.')->group(function () {

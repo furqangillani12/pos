@@ -98,7 +98,8 @@ if (!function_exists('shop_strike_price')) {
             $retail = (float) max((float) ($product->price ?? 0), (float) ($product->sale_price ?? 0));
             return $retail > $paid ? $retail : null;
         }
-        $list = (float) ($product->price ?? 0);
+        // List price, or the pre-sale price when a running sale lowered it.
+        $list = max((float) ($product->price ?? 0), shop_product_base_price($product));
         return $list > $paid ? $list : null;
     }
 }
@@ -400,7 +401,16 @@ if (!function_exists('shop_product_price')) {
     function shop_product_price($product): float
     {
         $type = Auth::guard('customer')->user()?->customer_type ?? 'customer';
-        return match ($type) {
+        // A running sale for this customer type takes its % off (admin: Sales).
+        return \App\Services\SaleService::apply($product->id, shop_product_base_price($product), $type);
+    }
+}
+
+if (!function_exists('shop_product_base_price')) {
+    /** The visitor's tier price before any running sale. */
+    function shop_product_base_price($product): float
+    {
+        return match (Auth::guard('customer')->user()?->customer_type ?? 'customer') {
             'reseller'  => (float) ($product->resale_price    ?: $product->sale_price ?: $product->price),
             'wholesale' => (float) ($product->wholesale_price ?: $product->sale_price ?: $product->price),
             default     => (float) ($product->sale_price ?: $product->price),

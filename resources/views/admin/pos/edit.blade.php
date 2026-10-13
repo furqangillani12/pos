@@ -264,11 +264,11 @@
             <h3>Items</h3>
             <div id="editItems">
                 @foreach ($order->items as $item)
-                    <div class="item-row" data-product-id="{{ $item->product_id }}">
+                    <div class="item-row" data-product-id="{{ $item->product_id }}" data-gift="{{ $item->is_gift ? 1 : 0 }}">
                         <div class="product-search-wrap">
                             <input type="hidden" class="edit-product-id" value="{{ $item->product_id }}">
                             <input type="hidden" class="edit-variant-id" value="{{ $item->variant_id }}">
-                            <input type="text" class="product-search-input" value="{{ $item->product?->name ?? 'Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}" onfocus="openProductDropdown(this)" oninput="filterProductDropdown(this)">
+                            <input type="text" class="product-search-input" value="{{ $item->product?->name ?? 'Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}{{ $item->is_gift ? ' (Gift)' : '' }}" onfocus="openProductDropdown(this)" oninput="filterProductDropdown(this)">
                             <div class="product-dropdown"></div>
                         </div>
                         <input type="number" class="item-input edit-qty" value="{{ $item->quantity }}" step="0.01"
@@ -444,7 +444,7 @@
             const customerType = getCurrentCustomerType();
             document.querySelectorAll('.item-row').forEach(row => {
                 const productId = row.querySelector('.edit-product-id')?.value;
-                if (!productId) return;
+                if (!productId || row.dataset.gift === '1') return;   // gift price stays as set
                 const variantId = row.querySelector('.edit-variant-id')?.value || '';
                 const product = productsData.find(p => p.id == productId && String(p.variant_id || '') === variantId);
                 if (!product) return;
@@ -576,6 +576,7 @@
                     variant_id: variantId ? parseInt(variantId) : null,
                     quantity: parseFloat(row.querySelector('.edit-qty').value),
                     unit_price: parseFloat(row.querySelector('.edit-price').value),
+                    is_gift: row.dataset.gift === '1' ? 1 : 0,
                 });
             });
 

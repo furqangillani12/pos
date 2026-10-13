@@ -340,12 +340,27 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="text-sm font-semibold truncate">{{ $i->product?->name }}</div>
                                     @if ($i->variant)<div class="text-[11px] text-pink-600 font-semibold">{{ $i->variant->label }}</div>@endif
+                                    @if ($i->is_gift)<div class="text-[11px] text-rose-600 font-bold"><i class="fas fa-gift"></i> Gift</div>@endif
                                     <div class="text-[11px] text-gray-500">Qty {{ (int) $i->qty }}</div>
                                 </div>
-                                <div class="text-sm font-bold whitespace-nowrap" style="color:var(--brand-navy);">{{ shop_price($i->qty * $i->unit_price) }}</div>
+                                <div class="text-sm font-bold whitespace-nowrap" style="color:var(--brand-navy);">{{ $i->is_gift && (float) $i->unit_price == 0 ? 'Free' : shop_price($i->qty * $i->unit_price) }}</div>
                             </div>
                         @endforeach
                     </div>
+                    @if ($giftOffer['gifts']->isNotEmpty() && ($giftOffer['allowed'] > 0 || $giftOffer['next']))
+                        <div class="rounded-xl border border-rose-100 bg-rose-50 px-3 py-2 mb-4 text-xs text-rose-700 flex items-center justify-between gap-2">
+                            <span><i class="fas fa-gift mr-1"></i>
+                                @if ($giftOffer['allowed'] > 0)
+                                    You can choose {{ $giftOffer['allowed'] === 1 ? '1 gift' : "up to {$giftOffer['allowed']} gifts" }}.
+                                @else
+                                    Add {{ shop_price($giftOffer['next']['min'] - $giftOffer['paid']) }} more to get {{ $giftOffer['next']['gifts'] === 1 ? 'a gift' : $giftOffer['next']['gifts'] . ' gifts' }}.
+                                @endif
+                            </span>
+                            @if ($giftOffer['allowed'] > 0)
+                                <a href="{{ route('shop.checkout.gift') }}" class="font-bold underline whitespace-nowrap">{{ $items->where('is_gift', true)->isNotEmpty() ? 'Change' : 'Choose' }}</a>
+                            @endif
+                        </div>
+                    @endif
                     {{-- Reward points redemption (#B) — only when the customer has usable points --}}
                     @if (($maxRedeemable ?? 0) > 0)
                         <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 mb-4">

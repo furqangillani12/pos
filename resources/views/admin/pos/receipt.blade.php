@@ -466,10 +466,10 @@
                             <tr style="{{ $isFull ? 'background:#fef2f2;' : '' }}">
                                 <td>
                                     @if($isFull)
-                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}</span>
+                                        <span style="text-decoration:line-through;color:#9ca3af;">{{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}{{ $item->is_gift ? ' (Gift)' : '' }}</span>
                                         <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">RETURNED</span>
                                     @else
-                                        {{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
+                                        {{ $item->product?->name ?? 'Deleted Product' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}{{ $item->is_gift ? ' (Gift)' : '' }}
                                         @if($isPartial)
                                             <span style="background:#fff7ed;color:#c2410c;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">{{ $rQty }} RETURNED</span>
                                         @endif
@@ -854,7 +854,7 @@
                                 {{ $fullyRet ? 'disabled' : '' }}>
                             <div style="flex:1;">
                                 <div style="font-size:13px;font-weight:600;color:{{ $fullyRet ? '#9ca3af' : '#1e293b' }};">
-                                    {{ $item->product?->name ?? 'Unknown' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}
+                                    {{ $item->product?->name ?? 'Unknown' }}{{ $item->variant_label ? ' (' . $item->variant_label . ')' : '' }}{{ $item->is_gift ? ' (Gift)' : '' }}
                                     @if($fullyRet)
                                         <span style="background:#fee2e2;color:#dc2626;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px;">FULLY RETURNED</span>
                                     @elseif($alreadyRet > 0)

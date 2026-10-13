@@ -34,7 +34,7 @@
             $variantData[] = [
                 'id' => $v->id, 'color' => $v->color, 'size' => $v->size, 'label' => $v->label,
                 'price' => $vp,
-                'strike' => $isRes ? ($vr > $vp ? $vr : null) : ((float) $product->price > $vp ? (float) $product->price : null),
+                'strike' => $isRes ? ($vr > $vp ? $vr : null) : (($vl = max((float) $product->price, $v->priceFor($ctype, false))) > $vp ? $vl : null),
                 'stock' => $product->track_inventory ? (float) $v->stock : 9999,
             ];
         }
@@ -136,6 +136,13 @@
                         @endif
                     @endif
                 </div>
+                @endif
+                @php $saleType = auth('customer')->user()?->customer_type ?? 'customer'; $salePct = \App\Services\SaleService::percent($product->id, $saleType); @endphp
+                @if ($salePct > 0)
+                    @php $saleEnds = \App\Services\SaleService::endsAt($product->id, $saleType); @endphp
+                    <div class="mt-2 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-1 text-xs font-bold text-rose-600">
+                        <i class="fas fa-bolt"></i> Sale {{ rtrim(rtrim(number_format($salePct, 2), '0'), '.') }}% off{{ $saleEnds ? ' · ends ' . $saleEnds->format('d M, g:i a') : '' }}
+                    </div>
                 @endif
 
                 @if ($product->summary)

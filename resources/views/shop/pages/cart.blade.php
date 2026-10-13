@@ -36,10 +36,17 @@
                             <div class="flex-1 min-w-0">
                                 <a href="{{ route('shop.product', $item->product?->slug ?? $item->product?->id) }}" class="font-bold text-gray-900 hover:text-blue-700 transition block">{{ $item->product?->name ?? 'Product' }}</a>
                                 @if ($item->variant)<div class="text-xs text-pink-600 font-semibold mt-0.5">{{ $item->variant->label }}</div>@endif
+                                @if ($item->is_gift)<div class="inline-flex items-center gap-1 mt-1 rounded-full bg-rose-50 px-2 py-0.5 text-[11px] font-bold text-rose-600"><i class="fas fa-gift"></i> Your gift</div>@endif
                                 @if ($item->product?->brand)
                                     <div class="text-[10px] uppercase tracking-widest text-gray-400 mt-0.5">{{ $item->product->brand->name }}</div>
                                 @endif
-                                <div class="text-sm font-bold mt-2" style="color:var(--brand-cyan);">{{ shop_price($item->unit_price) }}</div>
+                                <div class="text-sm font-bold mt-2" style="color:var(--brand-cyan);">{{ $item->is_gift && (float) $item->unit_price == 0 ? 'Free' : shop_price($item->unit_price) }}</div>
+                                @if ($item->is_gift)
+                                <div class="flex flex-wrap items-center gap-3 mt-3">
+                                    <a href="{{ route('shop.checkout.gift') }}" class="text-xs text-blue-700 hover:underline"><i class="fas fa-rotate text-[10px] mr-1"></i> Change gift</a>
+                                    <button type="button" @click="removeItem('{{ route('shop.cart.remove', $item) }}', {{ $item->id }})" class="text-xs text-red-500 hover:underline"><i class="fas fa-trash text-[10px] mr-1"></i> Remove</button>
+                                </div>
+                                @else
                                 <div class="flex flex-wrap items-center gap-3 mt-3">
                                     {{-- Qty updates over AJAX — no page reload; type a number or use ± (client #3) --}}
                                     <div class="flex items-center gap-1 bg-gray-100 rounded-lg overflow-hidden" :class="busy['{{ $item->id }}'] && 'opacity-50 pointer-events-none'">
@@ -51,6 +58,7 @@
                                     </div>
                                     <button type="button" @click="removeItem('{{ route('shop.cart.remove', $item) }}', {{ $item->id }})" class="text-xs text-red-500 hover:underline"><i class="fas fa-trash text-[10px] mr-1"></i> Remove</button>
                                 </div>
+                                @endif
                             </div>
                             <div class="text-right">
                                 <div class="text-xs text-gray-500">Line total</div>

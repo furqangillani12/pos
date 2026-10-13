@@ -39,22 +39,23 @@ class ProductVariant extends Model
         return implode(' / ', array_values(array_filter([$this->color, $this->size], fn ($v) => $v !== null && $v !== '')));
     }
 
-    /** Price for a customer type (customer / walkin / reseller / wholesale). */
-    public function priceFor(?string $customerType): float
+    /** Price for a customer type (customer / walkin / reseller / wholesale), after any running sale. */
+    public function priceFor(?string $customerType, bool $withSale = true): float
     {
         $p = $this->product;
         $retail = (float) ($this->sale_price ?? 0) ?: (float) ($p->sale_price ?: $p->price ?: 0);
-        return match ($customerType) {
+        $price = match ($customerType) {
             'reseller'               => (float) ($this->resale_price ?? 0) ?: (float) ($p->resale_price ?? 0) ?: $retail,
             'wholesale', 'wholesaler' => (float) ($this->wholesale_price ?? 0) ?: (float) ($p->wholesale_price ?? 0) ?: $retail,
             default                  => $retail,
         };
+        return $withSale ? \App\Services\SaleService::apply($this->product_id, $price, $customerType) : $price;
     }
 
-    /** Retail (walk-in) price of this variant. */
+    /** Retail (walk-in) list price of this variant, before any sale. */
     public function retailPrice(): float
     {
-        return $this->priceFor('customer');
+        return $this->priceFor('customer', false);
     }
 
     public function inStock(): bool

@@ -704,6 +704,16 @@
                         class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.packages.*') ? 'bg-purple-100 text-purple-700 font-semibold' : 'hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700' }}">
                         <i class="fas fa-box mr-2 text-xs"></i> Packages
                     </a>
+                    @can('manage products')
+                        <a href="{{ route('admin.sales.index') }}"
+                            class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.sales.*') ? 'bg-purple-100 text-purple-700 font-semibold' : 'hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700' }}">
+                            <i class="fas fa-percent mr-2 text-xs"></i> Sales
+                        </a>
+                        <a href="{{ route('admin.gifts.index') }}"
+                            class="block px-4 py-2 rounded-md transition {{ request()->routeIs('admin.gifts.*') ? 'bg-purple-100 text-purple-700 font-semibold' : 'hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700' }}">
+                            <i class="fas fa-gift mr-2 text-xs"></i> Gifts
+                        </a>
+                    @endcan
                     @can('manage inventory')
                         <a href="{{ route('inventory.index') }}"
                             class="block px-4 py-2 rounded-md transition hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300">

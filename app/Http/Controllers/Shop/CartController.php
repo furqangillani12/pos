@@ -98,7 +98,7 @@ class CartController extends Controller
         $items   = $this->cart->items()->map(fn ($i) => [
             'id'         => $i->id,
             'product_id' => $i->product_id,
-            'name'       => ($i->product?->name ?? 'Product') . ($i->variant ? ' (' . $i->variant->label . ')' : ''),
+            'name'       => ($i->product?->name ?? 'Product') . ($i->variant ? ' (' . $i->variant->label . ')' : '') . ($i->is_gift ? ' (Gift)' : ''),
             'image'      => shop_image($i->product?->image),
             'qty'        => (float) $i->qty,
             'unit_price' => (float) $i->unit_price,

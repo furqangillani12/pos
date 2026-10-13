@@ -23,7 +23,16 @@ class CheckoutController extends Controller
     public function index()
     {
         $items = $this->cart->items();
-        if ($items->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+        if ($items->where('is_gift', false)->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+
+        // Gift step (admin: Gifts): offered once before checkout; too many gifts
+        // for the current cart amount sends the customer back to re-pick.
+        $giftOffer = $this->giftOffer($items);
+        $giftCount = $items->where('is_gift', true)->count();
+        if ($giftCount > $giftOffer['allowed']
+            || ($giftCount === 0 && $giftOffer['gifts']->isNotEmpty() && $giftOffer['allowed'] > 0 && !Session::get('shop.gift_done'))) {
+            return redirect()->route('shop.checkout.gift');
+        }
 
         $totals = $this->cart->totals();
         $coupon = $this->cart->activeCoupon();
@@ -75,8 +84,59 @@ class CheckoutController extends Controller
         return view('shop.pages.checkout', compact(
             'items', 'totals', 'coupon', 'customer', 'isGuest',
             'dispatchMethods', 'paymentMethods', 'deliveryCharges', 'weight', 'provinces',
-            'pointsBalance', 'pointValue', 'maxRedeemable', 'packingTotal', 'groups'
+            'pointsBalance', 'pointValue', 'maxRedeemable', 'packingTotal', 'groups', 'giftOffer'
         ));
+    }
+
+    /** Gift picker shown before checkout. */
+    public function gift()
+    {
+        $items = $this->cart->items();
+        if ($items->where('is_gift', false)->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+
+        $offer = $this->giftOffer($items);
+        if ($offer['gifts']->isEmpty()) {
+            Session::put('shop.gift_done', true);
+            return redirect()->route('shop.checkout');
+        }
+        $chosen = $items->where('is_gift', true)->pluck('product_id')->all();
+
+        return view('shop.pages.gift', $offer + compact('chosen'));
+    }
+
+    public function chooseGift(Request $request)
+    {
+        $items = $this->cart->items();
+        if ($items->where('is_gift', false)->isEmpty()) return redirect()->route('shop.cart');
+
+        $offer = $this->giftOffer($items);
+        $ids   = array_map('intval', (array) $request->input('gifts', []));
+        $picked = $request->input('action') === 'skip' ? collect() : $offer['gifts']->whereIn('id', $ids)->values();
+
+        if ($picked->count() > $offer['allowed']) {
+            return back()->with('shop_error', $offer['allowed'] === 1 ? 'Please choose only 1 gift.' : "Please choose up to {$offer['allowed']} gifts.");
+        }
+        $this->cart->setGifts($picked);
+
+        return redirect()->route('shop.checkout');
+    }
+
+    /**
+     * Gifts this cart may pick: active, in stock, from a branch the cart already
+     * orders from (so a gift never opens a separate delivery), and how many.
+     */
+    private function giftOffer($items): array
+    {
+        $paid     = (float) $items->where('is_gift', false)->sum(fn ($i) => (float) $i->qty * (float) $i->unit_price);
+        $branches = $this->branchGroups($items->where('is_gift', false))->keys()->all();
+        $gifts    = \App\Models\Gift::available()->filter(fn ($g) => in_array((int) $g->product->branch_id, $branches, true))->values();
+
+        return [
+            'gifts'   => $gifts,
+            'allowed' => \App\Models\Gift::allowedFor($paid),
+            'next'    => \App\Models\Gift::nextTier($paid),
+            'paid'    => $paid,
+        ];
     }
 
     /**
@@ -150,7 +210,10 @@ class CheckoutController extends Controller
         ]);
 
         $items = $this->cart->items();
-        if ($items->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+        if ($items->where('is_gift', false)->isEmpty()) return redirect()->route('shop.cart')->with('shop_error', 'Your cart is empty.');
+        if ($items->where('is_gift', true)->count() > $this->giftOffer($items)['allowed']) {
+            return redirect()->route('shop.checkout.gift')->with('shop_error', 'Your cart changed; please choose your gifts again.');
+        }
 
         $customer = Auth::guard('customer')->user();
         $totals   = $this->cart->totals();
@@ -322,6 +385,7 @@ class CheckoutController extends Controller
                         ...\App\Services\KhataService::itemSnapshot($product, $row->variant),
                         'packing_charge' => (float) ($product->packing_charge ?? 0),
                         'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
+                        'is_gift'        => (bool) $row->is_gift,
                     ]);
                     if ($product->track_inventory && $branchId) {
                         $product->decrementBranchStock($branchId, (float) $row->qty, $row->variant_id);

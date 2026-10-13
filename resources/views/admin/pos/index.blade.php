@@ -1461,6 +1461,16 @@
                         </span>
                         <span class="val tax">Rs. 0.00</span>
                     </div>
+                    {{-- Gift (admin: Gifts) --}}
+                    <div style="margin-bottom:4px;position:relative;">
+                        <button type="button" id="giftBtn" onclick="toggleGiftList()"
+                            style="width:100%;padding:4px 8px;background:#fff1f2;border:1.5px solid #fecdd3;border-radius:6px;font-size:11px;font-weight:700;color:#be123c;cursor:pointer;text-align:left;">
+                            <i class="fas fa-gift"></i> Add gift
+                        </button>
+                        <div id="giftDropdown"
+                            style="display:none;position:absolute;bottom:100%;left:0;right:0;background:#fff;border:1.5px solid #fb7185;border-radius:6px 6px 0 0;max-height:220px;overflow-y:auto;z-index:200;box-shadow:0 -4px 12px rgba(0,0,0,.1);">
+                        </div>
+                    </div>
                     {{-- Package search --}}
                     <div style="margin-bottom:4px;">
                         <div style="position:relative;">
@@ -1807,6 +1817,10 @@
             const priceLabel = card._variants.length
                 ? (Math.min(...vPrices) !== Math.max(...vPrices) ? 'From Rs. ' + Math.min(...vPrices).toLocaleString() : 'Rs. ' + Math.min(...vPrices).toLocaleString())
                 : null;
+            // Running sale (admin: Sales) — prices from the server already have it taken off.
+            const salePcts = Object.entries(p.sale_pct || {});
+            const saleBadge = salePcts.length
+                ? `<div style="font-size:10px;font-weight:700;color:#e11d48;margin-top:2px;"><i class="fas fa-bolt"></i> SALE ${salePcts.map(([t, v]) => (t === 'customer' ? 'Walk-in' : t.charAt(0).toUpperCase() + t.slice(1)) + ' ' + parseFloat(v) + '%').join(' · ')}</div>` : '';
             const optBadge = card._variants.length
                 ? `<div style="font-size:10px;font-weight:700;color:#db2777;margin-top:2px;"><i class="fas fa-palette"></i> ${card._variants.length} options</div>` : '';
 
@@ -1817,6 +1831,7 @@
                     ${barcodeHtml}
                     <div class="price-text">${priceLabel || ('Rs. ' + (Number.isInteger(parseFloat(p.sale_price)) ? parseInt(p.sale_price) : parseFloat(p.sale_price).toFixed(2)))}</div>
                     ${optBadge}
+                    ${saleBadge}
                     <div class="stock-text ${stockClass}">Stock: ${Math.floor(p.stock_quantity)}${p.unit ? ' ' + p.unit : ''}</div>
                 </div>`;
 
@@ -1841,7 +1856,7 @@
             if (type === 'wholesale') price = wholesale || price;
 
             const variantId = variant ? String(variant.id) : null;
-            const existing = window.cart.find(i => i.id === card.dataset.id && (i.variantId || null) === variantId);
+            const existing = window.cart.find(i => !i.isGift && i.id === card.dataset.id && (i.variantId || null) === variantId);
             if (existing) {
                 existing.quantity++;
             } else {
@@ -2758,6 +2773,7 @@
                         if (priceEl) priceEl.textContent = 'Rs. ' + parseFloat(price).toFixed(2);
                     });
                     window.cart.forEach(item => {
+                        if (item.isGift) return;   // gift price stays as set
                         let price = item.salePrice;
                         if (type === 'reseller') price = item.resalePrice || price;
                         if (type === 'wholesale') price = item.wholesalePrice || price;
@@ -2894,6 +2910,49 @@
             });
 
             updateCartDisplay();
+        });
+
+        // ── Gifts ──────────────────────────────────────────────────
+        const giftsApiUrl = '{{ route("admin.gifts.api") }}';
+        window.toggleGiftList = async function() {
+            const dd = document.getElementById('giftDropdown');
+            if (dd.style.display === 'block') { dd.style.display = 'none'; return; }
+            dd.innerHTML = '<div style="padding:8px 10px;font-size:12px;color:#9ca3af;">Loading…</div>';
+            dd.style.display = 'block';
+            let gifts = [];
+            try { gifts = await (await fetch(giftsApiUrl)).json(); } catch (e) {}
+            window._gifts = gifts;
+            dd.innerHTML = gifts.length ? gifts.map(g => `
+                <div onclick="addGiftToCart(${g.id})" style="display:flex;gap:8px;align-items:center;padding:6px 10px;font-size:12px;cursor:pointer;border-bottom:1px solid #fff1f2;${g.stock < 1 ? 'opacity:.5;' : ''}"
+                    onmouseover="this.style.background='#fff1f2'" onmouseout="this.style.background=''">
+                    ${g.image ? `<img src="${g.image}" style="width:28px;height:28px;object-fit:cover;border-radius:4px;">` : '<i class="fas fa-gift" style="color:#fb7185;width:28px;text-align:center;"></i>'}
+                    <div style="flex:1;min-width:0;">
+                        <div style="font-weight:700;color:#881337;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${g.name}</div>
+                        <div style="color:#6b7280;font-size:10px;">${g.price > 0 ? 'Rs. ' + g.price.toLocaleString() : 'Free'} · Stock: ${Math.floor(g.stock)}</div>
+                    </div>
+                </div>`).join('')
+                : '<div style="padding:8px 10px;font-size:12px;color:#9ca3af;">No gifts set up. Add them under Products → Gifts.</div>';
+        };
+        window.addGiftToCart = function(giftId) {
+            const g = (window._gifts || []).find(x => x.id === giftId);
+            if (!g) return;
+            if (g.stock < 1) { alert('This gift is out of stock.'); return; }
+            document.getElementById('giftDropdown').style.display = 'none';
+            const existing = window.cart.find(i => i.isGift && i.id === String(g.product_id));
+            if (existing) existing.quantity++;
+            else window.cart.push({
+                id: String(g.product_id), variantId: null, isGift: true,
+                name: g.name + ' (Gift)', price: g.price, weight: g.weight || 0, unit: g.unit || '', quantity: 1,
+                salePrice: g.price, resalePrice: g.price, wholesalePrice: g.price,
+                line_discount: 0, line_discount_type: 'percent',
+            });
+            updateCartDisplay();
+        };
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('#giftBtn') && !e.target.closest('#giftDropdown')) {
+                const dd = document.getElementById('giftDropdown');
+                if (dd) dd.style.display = 'none';
+            }
         });
 
         // ── Process Order ──────────────────────────────────────────
@@ -3108,6 +3167,7 @@
                         unit_price: effectivePrice,
                         original_price: dAmt > 0 ? parseFloat(i.price) : null,
                         line_discount: dAmt > 0 ? parseFloat(dAmt.toFixed(2)) : 0,
+                        is_gift: i.isGift ? 1 : 0,
                     };
                 }),
                 payment_method: paymentMethod,

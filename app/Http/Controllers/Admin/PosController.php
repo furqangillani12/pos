@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\SaleService;
 
 class PosController extends Controller
 {
@@ -93,9 +94,11 @@ class PosController extends Controller
                     'id'              => $p->id,
                     'name'            => $p->name,
                     'barcode'         => $p->barcode,
-                    'sale_price'      => $p->sale_price,
-                    'resale_price'    => $p->resale_price,
-                    'wholesale_price' => $p->wholesale_price,
+                    // Running sales are already taken off (admin: Sales).
+                    'sale_price'      => SaleService::apply($p->id, (float) $p->sale_price, 'customer'),
+                    'resale_price'    => $p->resale_price !== null ? SaleService::apply($p->id, (float) $p->resale_price, 'reseller') : null,
+                    'wholesale_price' => $p->wholesale_price !== null ? SaleService::apply($p->id, (float) $p->wholesale_price, 'wholesale') : null,
+                    'sale_pct'        => array_filter(['customer' => SaleService::percent($p->id, 'customer'), 'reseller' => SaleService::percent($p->id, 'reseller'), 'wholesale' => SaleService::percent($p->id, 'wholesale')]),
                     'weight'          => $p->weight ?? 0,
                     'unit'            => $p->unit->abbreviation ?? '',
                     'category_id'     => $p->category_id,
@@ -139,6 +142,7 @@ class PosController extends Controller
                 'items.*.unit_price'     => 'nullable|numeric|min:0',
                 'items.*.original_price' => 'nullable|numeric|min:0',
                 'items.*.line_discount'  => 'nullable|numeric|min:0',
+                'items.*.is_gift'        => 'nullable|boolean',
                 'payment_method'         => 'required|string',
                 'notes'                  => 'nullable|string|max:1000',
                 'paid_amount'        => 'nullable|numeric|min:0',
@@ -178,9 +182,12 @@ class PosController extends Controller
                         throw new \Exception("Please choose a colour / size for {$product->name}");
                     }
                 }
-                $unitPrice = !empty($item['unit_price'])
+                $isGift    = !empty($item['is_gift']);
+                // A gift keeps the price the cashier set, even Rs 0.
+                $unitPrice = $isGift ? (float) ($item['unit_price'] ?? 0)
+                    : (!empty($item['unit_price'])
                     ? (float) $item['unit_price']
-                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType));
+                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType)));
                 $itemTotal = $unitPrice * $item['quantity'];
                 $subtotal += $itemTotal;
 
@@ -203,6 +210,7 @@ class PosController extends Controller
                     'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
                     'line_discount'  => !empty($item['line_discount'])  ? (float)$item['line_discount']  : 0,
                     'total'          => $itemTotal,
+                    'is_gift'        => $isGift,
                 ];
             }
 
@@ -284,6 +292,7 @@ class PosController extends Controller
                     ...\App\Services\KhataService::itemSnapshot($product, $itemData['variant']),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
+                    'is_gift'        => $itemData['is_gift'] ?? false,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {
@@ -341,14 +350,12 @@ class PosController extends Controller
 
     private function getPriceForCustomerType($product, $customerType)
     {
-        switch ($customerType) {
-            case 'reseller':
-                return $product->resale_price ?? $product->sale_price;
-            case 'wholesale':
-                return $product->wholesale_price ?? $product->sale_price;
-            default:
-                return $product->sale_price;
-        }
+        $price = match ($customerType) {
+            'reseller'  => $product->resale_price ?? $product->sale_price,
+            'wholesale' => $product->wholesale_price ?? $product->sale_price,
+            default     => $product->sale_price,
+        };
+        return \App\Services\SaleService::apply($product->id, (float) $price, $customerType);
     }
 
     public function processCreditSale(Request $request, Order $order)
@@ -481,6 +488,7 @@ class PosController extends Controller
                 'items.*.unit_price'     => 'nullable|numeric|min:0',
                 'items.*.original_price' => 'nullable|numeric|min:0',
                 'items.*.line_discount'  => 'nullable|numeric|min:0',
+                'items.*.is_gift'        => 'nullable|boolean',
                 'payment_method'         => 'required|string',
                 'paid_amount'            => 'nullable|numeric|min:0',
                 'dispatch_method'    => 'nullable|string',
@@ -540,9 +548,12 @@ class PosController extends Controller
                         throw new \Exception("Please choose a colour / size for {$product->name}");
                     }
                 }
-                $unitPrice = !empty($item['unit_price'])
+                $isGift    = !empty($item['is_gift']);
+                // A gift keeps the price the cashier set, even Rs 0.
+                $unitPrice = $isGift ? (float) ($item['unit_price'] ?? 0)
+                    : (!empty($item['unit_price'])
                     ? (float) $item['unit_price']
-                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType));
+                    : ($variant ? $variant->priceFor($customerType) : $this->getPriceForCustomerType($product, $customerType)));
                 $itemTotal = $unitPrice * $item['quantity'];
                 $subtotal += $itemTotal;
 
@@ -563,6 +574,7 @@ class PosController extends Controller
                     'original_price' => !empty($item['original_price']) ? (float)$item['original_price'] : null,
                     'line_discount'  => !empty($item['line_discount'])  ? (float)$item['line_discount']  : 0,
                     'total'          => $itemTotal,
+                    'is_gift'        => $isGift,
                 ];
             }
 
@@ -631,6 +643,7 @@ class PosController extends Controller
                     ...\App\Services\KhataService::itemSnapshot($product, $itemData['variant']),
                     'packing_charge' => (float) ($product->packing_charge ?? 0),
                     'packing_label'  => ($product->packing_charge ?? 0) > 0 ? ($product->packing_label ?: 'Packing charges') : null,
+                    'is_gift'        => $itemData['is_gift'] ?? false,
                 ]);
 
                 if ($product->track_inventory && $branchId && $branchId !== 'all') {

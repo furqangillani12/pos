@@ -9,12 +9,13 @@ class CartItem extends Model
 {
     protected $fillable = [
         'customer_id', 'session_id', 'product_id', 'variant_id', 'branch_id',
-        'qty', 'unit_price', 'selected_size', 'selected_color',
+        'qty', 'unit_price', 'selected_size', 'selected_color', 'is_gift',
     ];
 
     protected $casts = [
         'qty'        => 'decimal:2',
         'unit_price' => 'decimal:2',
+        'is_gift'    => 'boolean',
     ];
 
     public function product(): BelongsTo
