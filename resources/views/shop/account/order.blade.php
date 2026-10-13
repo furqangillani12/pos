@@ -141,19 +141,51 @@
                     </div>
                     <hr class="my-3 border-gray-100">
                     <div class="flex justify-between items-baseline"><span class="font-bold">Total</span><span class="text-lg font-extrabold" style="color:var(--brand-navy);">{{ shop_price($order->total) }}</span></div>
-                    {{-- Paid vs pending for this order (client #1a) --}}
-                    <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Paid</span><span class="font-semibold text-emerald-600">{{ shop_price($order->paid_amount ?? 0) }}</span></div>
+                    {{-- Paid vs pending for this order (client #1a). Money received above the
+                         bill (e.g. a reseller's profit) went to the khata as credit. --}}
+                    @php
+                        $paidHere = $order->counterPaid();
+                        $refunded = (float) $order->refunds()->where('status', 'completed')->sum('amount');
+                        $extra    = $order->customer_id
+                            ? (float) \App\Models\Payment::where('customer_id', $order->customer_id)->where('payment_type', 'khata')
+                                ->where('notes', 'like', 'Extra received with order ' . $order->order_number . ' %')->sum('amount')
+                            : 0.0;
+                        $received = $paidHere + $extra;
+                    @endphp
+                    <div class="flex justify-between text-sm mt-1"><span class="text-gray-500">Paid on this order</span><span class="font-semibold text-emerald-600">{{ shop_price($paidHere) }}</span></div>
+                    @if ($extra > 0)
+                        <div class="flex justify-between text-sm"><span class="text-gray-500">Extra received (credited to your khata)</span><span class="font-semibold text-emerald-600">{{ shop_price($extra) }}</span></div>
+                        <div class="flex justify-between text-sm font-bold"><span>Total received</span><span class="text-emerald-700">{{ shop_price($received) }}</span></div>
+                    @endif
+                    @if ($refunded > 0)
+                        <div class="flex justify-between text-sm"><span class="text-gray-500">Returned</span><span class="font-semibold text-emerald-600">-{{ shop_price($refunded) }}</span></div>
+                    @endif
                     @if (($order->balance_amount ?? 0) > 0)
                         <div class="flex justify-between text-sm"><span class="text-gray-500">Pending</span><span class="font-semibold text-red-600">{{ shop_price($order->balance_amount) }}</span></div>
                     @endif
 
-                    {{-- Previous khata + what's left to clear (logged-in customers) --}}
-                    @if (($order->previous_balance ?? 0) > 0)
-                        <div class="mt-3 rounded-lg bg-amber-50 border border-amber-100 p-3 text-sm">
-                            <div class="flex justify-between"><span class="text-amber-800">Previous balance (khata)</span><span class="font-semibold">{{ shop_price($order->previous_balance) }}</span></div>
-                            <div class="flex justify-between mt-1"><span class="text-amber-800">This order</span><span class="font-semibold">{{ shop_price($order->total) }}</span></div>
-                            <div class="flex justify-between mt-1 pt-1 border-t border-amber-200 font-bold text-amber-900"><span>Total to clear</span><span>{{ shop_price(($order->previous_balance ?? 0) + ($order->balance_amount ?? 0)) }}</span></div>
-                        </div>
+                    {{-- Khata position as of this order, worked out like the statement. --}}
+                    @if ($order->customer_id)
+                        @php
+                            $prev  = $order->computePreviousBalance();
+                            $after = round($prev + (float) $order->total - $received - $refunded, 2);
+                        @endphp
+                        @if (abs($prev) >= 1 || abs($after) >= 1)
+                            <div class="mt-3 rounded-lg bg-amber-50 border border-amber-100 p-3 text-sm">
+                                <div class="flex justify-between"><span class="text-amber-800">{{ $prev < 0 ? 'Previous advance (khata)' : 'Previous balance (khata)' }}</span><span class="font-semibold">{{ shop_price(abs($prev)) }}</span></div>
+                                <div class="flex justify-between mt-1"><span class="text-amber-800">This order</span><span class="font-semibold">+ {{ shop_price($order->total) }}</span></div>
+                                @if ($received > 0)
+                                    <div class="flex justify-between mt-1"><span class="text-amber-800">Received</span><span class="font-semibold">- {{ shop_price($received) }}</span></div>
+                                @endif
+                                @if ($refunded > 0)
+                                    <div class="flex justify-between mt-1"><span class="text-amber-800">Returned</span><span class="font-semibold">- {{ shop_price($refunded) }}</span></div>
+                                @endif
+                                <div class="flex justify-between mt-1 pt-1 border-t border-amber-200 font-bold text-amber-900">
+                                    <span>{{ $after < 0 ? 'Advance after this order' : 'Balance after this order' }}</span><span>{{ shop_price(abs($after)) }}</span>
+                                </div>
+                                <a href="{{ route('shop.account.statement') }}" class="mt-2 inline-block text-xs font-semibold underline" style="color:var(--rose);">View full statement</a>
+                            </div>
+                        @endif
                     @endif
                 </div>
 
