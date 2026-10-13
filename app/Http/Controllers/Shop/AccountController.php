@@ -93,10 +93,15 @@ class AccountController extends Controller
         $isReseller = in_array($customer->customer_type, ['reseller', 'wholesale'], true);
         $bills      = $entries->where('type', 'order');
 
+        // Balance adjustments: + counts as purchased, − as paid, so Purchased − Paid = Remaining.
+        $adjust  = $entries->where('type', 'adjust');
+        $adjUp   = (float) $adjust->filter(fn ($r) => $r['effect'] > 0)->sum('effect');
+        $adjDown = (float) -$adjust->filter(fn ($r) => $r['effect'] < 0)->sum('effect');
+
         $summary = [
             'orders'      => $bills->count(),
-            'business'    => (float) $bills->sum('amount'),                                   // how much purchased
-            'paid'        => (float) ($bills->sum('paid') + $entries->whereIn('type', ['payment', 'offset', 'refund'])->sum('amount')),
+            'business'    => (float) $bills->sum('amount') + $adjUp,                          // how much purchased
+            'paid'        => (float) ($bills->sum('paid') + $entries->whereIn('type', ['payment', 'offset', 'refund'])->sum('amount') + $adjDown),
             'outstanding' => (float) ($customer->current_balance ?? 0),                       // what's remaining (khata)
             'earnings'    => $isReseller ? \App\Services\KhataService::resellerEarnings($customer, $from, $to) : 0.0,
             'is_reseller' => $isReseller,
